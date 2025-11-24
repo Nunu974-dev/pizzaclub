@@ -63,8 +63,54 @@ $headers .= "X-Mailer: PHP/" . phpversion() . "\r\n";
 $headers .= "MIME-Version: 1.0\r\n";
 $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
 
-// Envoi de l'email
+// Envoi de l'email au restaurant
 $emailSent = mail($to, $subject, $message, $headers);
+
+// Envoi de l'email de confirmation au client
+$clientEmailSent = false;
+if (!empty($orderData['customer']['email'])) {
+    $clientSubject = 'Confirmation de commande ' . $orderData['orderNumber'] . ' - Pizza Club';
+    
+    $clientMessage = "Bonjour {$orderData['customer']['firstName']},\n\n";
+    $clientMessage .= "Merci pour votre commande chez Pizza Club !\n\n";
+    $clientMessage .= "📋 RÉCAPITULATIF DE VOTRE COMMANDE\n";
+    $clientMessage .= "Numéro de commande : {$orderData['orderNumber']}\n";
+    $clientMessage .= "Date : " . date('d/m/Y à H:i') . "\n\n";
+    
+    $clientMessage .= "MODE : " . $deliveryMode . "\n";
+    if ($orderData['customer']['deliveryMode'] === 'livraison') {
+        $clientMessage .= "Adresse de livraison :\n{$orderData['customer']['address']}\n{$orderData['customer']['postalCode']} {$orderData['customer']['city']}\n\n";
+    } else {
+        $clientMessage .= "À retirer au restaurant : 43 Rue Four à Chaux, 97410 Saint-Pierre\n\n";
+    }
+    
+    $clientMessage .= "VOTRE COMMANDE :\n" . $itemsList . "\n";
+    $clientMessage .= "Sous-total : " . number_format($orderData['subtotal'], 2) . "€\n";
+    $clientMessage .= "Frais de livraison : " . number_format($orderData['deliveryFee'], 2) . "€\n";
+    $clientMessage .= "TOTAL : " . number_format($orderData['total'], 2) . "€\n\n";
+    
+    $clientMessage .= "⏱️ Temps de préparation estimé : {$orderData['estimatedTime']}\n\n";
+    
+    if (!empty($orderData['customer']['comments'])) {
+        $clientMessage .= "Votre commentaire : {$orderData['customer']['comments']}\n\n";
+    }
+    
+    $clientMessage .= "Nous préparons votre commande avec soin ! 🍕\n\n";
+    $clientMessage .= "Pour toute question, contactez-nous :\n";
+    $clientMessage .= "📞 0262 66 82 30\n";
+    $clientMessage .= "📧 commande@pizzaclub.re\n";
+    $clientMessage .= "📍 43 Rue Four à Chaux, 97410 Saint-Pierre, La Réunion\n\n";
+    $clientMessage .= "À très bientôt !\n";
+    $clientMessage .= "L'équipe Pizza Club 🍕";
+    
+    $clientHeaders = "From: Pizza Club <commande@pizzaclub.re>\r\n";
+    $clientHeaders .= "Reply-To: commande@pizzaclub.re\r\n";
+    $clientHeaders .= "X-Mailer: PHP/" . phpversion() . "\r\n";
+    $clientHeaders .= "MIME-Version: 1.0\r\n";
+    $clientHeaders .= "Content-Type: text/plain; charset=UTF-8\r\n";
+    
+    $clientEmailSent = mail($orderData['customer']['email'], $clientSubject, $clientMessage, $clientHeaders);
+}
 
 // Envoi WhatsApp via API (nécessite un compte WhatsApp Business API)
 $whatsappSent = false;
@@ -160,6 +206,7 @@ file_put_contents($jsonFile, $jsonData);
 $response = [
     'success' => $emailSent,
     'emailSent' => $emailSent,
+    'clientEmailSent' => $clientEmailSent,
     'whatsappSent' => $whatsappSent,
     'orderNumber' => $orderData['orderNumber'],
     'message' => $emailSent ? 'Commande envoyée avec succès' : 'Erreur lors de l\'envoi'
