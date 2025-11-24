@@ -2,12 +2,10 @@
 // CONFIGURATION
 // ========================================
 const CONFIG = {
-    // Email configuration (EmailJS)
+    // Email configuration
     email: {
-        serviceId: 'YOUR_EMAILJS_SERVICE_ID', // À remplacer par votre Service ID EmailJS
-        templateId: 'YOUR_EMAILJS_TEMPLATE_ID', // À remplacer par votre Template ID
-        publicKey: 'YOUR_EMAILJS_PUBLIC_KEY', // À remplacer par votre clé publique
-        recipientEmail: 'contact@pizzaclub.fr' // Email où recevoir les commandes
+        recipientEmail: 'commande@pizzaclub.re', // Email où recevoir les commandes
+        ccEmail: '' // Email en copie (optionnel)
     },
     
     // SMS configuration (Twilio)
@@ -34,6 +32,7 @@ const CONFIG = {
         name: 'Pizza Club',
         address: '43 Rue Four à Chaux, 97410 Saint-Pierre, La Réunion',
         phone: '0262 66 82 30',
+        whatsapp: '262692620062',
         email: 'contact@pizzaclub.fr'
     },
     

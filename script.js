@@ -2511,56 +2511,31 @@ function generateOrderNumber() {
 }
 
 async function sendOrderByEmail(orderData) {
-    // Préparer le contenu de l'email
-    const emailContent = formatOrderForEmail(orderData);
-
-    // Vérifier si EmailJS est configuré
-    if (typeof EMAILJS_CONFIG === 'undefined' || EMAILJS_CONFIG.USER_ID === 'VOTRE_USER_ID') {
-        // Simulation d'envoi si pas encore configuré
-        console.log('⚠️ EmailJS n\'est pas encore configuré');
-        console.log('=== EMAIL SIMULÉ ===');
-        console.log('À: contact@pizzaclub.re');
-        console.log('Sujet: Nouvelle commande', orderData.orderNumber);
-        console.log(emailContent.text);
-        console.log('===================');
-        console.log('📖 Consultez GUIDE_EMAILJS.md pour configurer l\'envoi d\'emails');
-        return;
-    }
-
-    // Préparer l'adresse complète pour la livraison
-    let deliveryAddress = 'À emporter';
-    if (orderData.customer.deliveryMode === 'livraison') {
-        deliveryAddress = `${orderData.customer.address}\n${orderData.customer.postalCode} ${orderData.customer.city}`;
-    }
-
-    // Envoyer via EmailJS
     try {
-        const response = await emailjs.send(
-            EMAILJS_CONFIG.SERVICE_ID,
-            EMAILJS_CONFIG.TEMPLATE_ID,
-            {
-                to_email: 'contact@pizzaclub.re',
-                from_name: `${orderData.customer.firstName} ${orderData.customer.lastName}`,
-                customer_phone: orderData.customer.phone,
-                customer_email: orderData.customer.email || 'Non renseigné',
-                order_type: orderData.customer.deliveryMode === 'livraison' ? 'Livraison' : 'À emporter',
-                delivery_address: deliveryAddress,
-                order_items: emailContent.text,
-                subtotal: orderData.subtotal.toFixed(2) + '€',
-                delivery_fee: orderData.deliveryFee.toFixed(2) + '€',
-                total: orderData.total.toFixed(2) + '€',
-                comments: orderData.customer.comments || 'Aucun commentaire',
-                order_number: orderData.orderNumber,
-                order_date: new Date().toLocaleString('fr-FR')
-            }
-        );
-        
-        console.log('✅ Email envoyé avec succès!', response);
-        showNotification('Commande envoyée par email !', 'success');
-        
+        // Envoyer la commande au serveur PHP
+        const response = await fetch('send-order.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(orderData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            console.log('✅ Commande envoyée avec succès!');
+            console.log('📧 Email:', result.emailSent ? 'Envoyé' : 'Échec');
+            console.log('📱 WhatsApp:', result.whatsappSent ? 'Envoyé' : 'Non configuré');
+            showNotification('Commande envoyée avec succès !', 'success');
+        } else {
+            throw new Error('Erreur lors de l\'envoi de la commande');
+        }
+
     } catch (error) {
-        console.error('❌ Erreur lors de l\'envoi de l\'email:', error);
-        showNotification('Erreur d\'envoi email. Appelez le 0262 66 82 30', 'error');
+        console.error('❌ Erreur:', error);
+        showNotification('Erreur lors de l\'envoi. Appelez le 0262 66 82 30', 'error');
+        throw error;
     }
 }
 
