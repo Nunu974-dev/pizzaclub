@@ -121,7 +121,7 @@ const PIZZAS_DATA = [
         ingredients: ['Tomate', 'Fromage', 'Poulet péi', 'Olive', 'Ananas Victoria'],
         price33: 14.90,
         price40: 17.90,
-        image: 'img/SHOOT JULIEN 2021/Hawaii.png',
+        image: 'img/SHOOT JULIEN 2021/Hawaienne.png',
         badge: 'Halal',
         isSpicy: false,
         isPremium: false
@@ -505,7 +505,7 @@ const PATES_DATA = [
         description: 'Sauce maison : Crème, lardons frais, oignon, aromate',
         priceL: 8.90,
         priceXL: 11.90,
-        image: 'img/Pâtes/carbo decoupe.png',
+        image: 'img/Pates/carbo decoupe.png',
         category: 'pates',
         bases: ['Classique', 'Ricotta Épinard', 'Gnocchi']
     },
@@ -515,7 +515,7 @@ const PATES_DATA = [
         description: 'Sauce maison bolognaise : Carotte, oignon, bœuf selon arrivage, aromate',
         priceL: 8.90,
         priceXL: 11.90,
-        image: 'img/Pâtes/PATE_BOLOGNAISE.jpg',
+        image: 'img/Pates/PATE_BOLOGNAISE.jpg',
         category: 'pates',
         bases: ['Classique', 'Ricotta Épinard', 'Gnocchi']
     },
@@ -525,7 +525,7 @@ const PATES_DATA = [
         description: 'Sauce maison : Poulet, crème, oignon, aromate',
         priceL: 8.90,
         priceXL: 11.90,
-        image: 'img/Pâtes/PATE POULETjpg.jpg',
+        image: 'img/Pates/PATE POULETjpg.jpg',
         category: 'pates',
         bases: ['Classique', 'Ricotta Épinard', 'Gnocchi']
     },
@@ -535,7 +535,7 @@ const PATES_DATA = [
         description: 'Sauce maison : Crème, saumon fumé, aromate',
         priceL: 8.90,
         priceXL: 11.90,
-        image: 'img/Pâtes/PATE SAUMON.jpg',
+        image: 'img/Pates/PATE SAUMON.jpg',
         category: 'pates',
         bases: ['Classique', 'Ricotta Épinard', 'Gnocchi']
     },
@@ -545,7 +545,7 @@ const PATES_DATA = [
         description: 'Sauce pesto : Basilic, pignon de pin, huile d\'olive, aromate',
         priceL: 8.90,
         priceXL: 11.90,
-        image: 'img/Pâtes/Pâte Pesto/AR5A9018.jpg',
+        image: 'img/Pates/Pate Pesto/AR5A9018.jpg',
         category: 'pates',
         bases: ['Classique', 'Ricotta Épinard', 'Gnocchi']
     },
@@ -555,7 +555,7 @@ const PATES_DATA = [
         description: 'Sauce maison curry : Poulet, poivron, oignon, crème, curry',
         priceL: 8.90,
         priceXL: 11.90,
-        image: 'img/Pâtes/PATE POULETjpg.jpg',
+        image: 'img/Pates/PATE POULETjpg.jpg',
         category: 'pates',
         bases: ['Classique', 'Ricotta Épinard', 'Gnocchi']
     },
@@ -565,7 +565,7 @@ const PATES_DATA = [
         description: 'Sauce maison : Saucisse fumée, oignon, tomate, gros piment',
         priceL: 8.90,
         priceXL: 11.90,
-        image: 'img/Pâtes/PATE_BOLOGNAISE.jpg',
+        image: 'img/Pates/PATE_BOLOGNAISE.jpg',
         category: 'pates',
         bases: ['Classique', 'Ricotta Épinard', 'Gnocchi']
     }
