@@ -19,11 +19,26 @@ let promoCodeApplied = null; // Code promo actuellement appliqué
 let promoDiscount = 0; // Montant de la réduction
 
 // ========================================
+// GESTION DU LOGO ADAPTATIF (MODE SOMBRE/CLAIR)
+// ========================================
+function updateLogo() {
+    const logo = document.querySelector('.logo');
+    if (!logo) return;
+    
+    // Détecter le mode sombre
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // Changer le logo en fonction du mode
+    logo.src = isDarkMode ? 'img/New logo blanc 2022.png' : 'img/New logo noir 2022.png';
+}
+
+// ========================================
 // INITIALISATION
 // ========================================
 document.addEventListener('DOMContentLoaded', () => {
     loadCartFromStorage(); // Charger le panier EN PREMIER
     initApp(); // Puis initialiser avec les préférences
+    updateLogo(); // Mettre à jour le logo selon le mode
     
     // Charger tous les produits
     renderPizzas();
@@ -34,6 +49,11 @@ document.addEventListener('DOMContentLoaded', () => {
     renderDesserts();
     
     setupEventListeners();
+    
+    // Écouter les changements de mode sombre/clair
+    if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateLogo);
+    }
     
     // Vérifier la disponibilité de la formule midi
     updateFormuleMidiAvailability();
