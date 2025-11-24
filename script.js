@@ -2616,6 +2616,14 @@ function closeConfirmationModal() {
 // ========================================
 function openCart() {
     console.log('openCart() appelée'); // Debug
+    
+    // Ne pas ouvrir automatiquement sur mobile
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+        console.log('Mobile détecté - panier non ouvert automatiquement');
+        return;
+    }
+    
     const cartSidebar = document.getElementById('cartSidebar');
     console.log('cartSidebar element:', cartSidebar); // Debug
     if (cartSidebar) {
@@ -3146,12 +3154,15 @@ function openDeliveryTimeModal() {
     // Références aux radios
     const maintenantRadio = document.querySelector('input[name="globalDeliveryTime"][value="maintenant"]');
     const programmeeRadio = document.querySelector('input[name="globalDeliveryTime"][value="programmee"]');
+    const maintenantLabel = maintenantRadio ? maintenantRadio.closest('.time-option, label') : null;
+    const isMobile = window.innerWidth <= 768;
     
     if (canNow) {
         // Heures d'ouverture : les deux options disponibles
         if (maintenantRadio) {
             maintenantRadio.disabled = false;
             maintenantRadio.checked = true;
+            if (maintenantLabel) maintenantLabel.style.display = '';
             console.log('Radio maintenant enabled and checked');
         }
         if (programmeeRadio) {
@@ -3162,6 +3173,10 @@ function openDeliveryTimeModal() {
         if (maintenantRadio) {
             maintenantRadio.disabled = true;
             maintenantRadio.checked = false;
+            // Sur mobile, cacher complètement le bouton Maintenant
+            if (isMobile && maintenantLabel) {
+                maintenantLabel.style.display = 'none';
+            }
             console.log('Radio maintenant disabled (fermé)');
         }
         if (programmeeRadio) {
