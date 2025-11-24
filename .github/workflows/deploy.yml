@@ -26,7 +26,7 @@ jobs:
         set ftp:ssl-allow no;
         open -u $FTP_USERNAME,$FTP_PASSWORD $FTP_SERVER;
         cd public_html;
-        mirror -Rev --exclude .git/ --exclude .github/ --exclude-glob *.md . .;
+        mirror -Rev --exclude .git/ --exclude .github/ --exclude img/ --exclude-glob *.md . .;
         bye
         "
 
