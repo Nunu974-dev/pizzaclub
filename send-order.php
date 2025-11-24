@@ -34,10 +34,30 @@ if ($orderData['customer']['deliveryMode'] === 'livraison') {
                        $orderData['customer']['postalCode'] . " " . $orderData['customer']['city'];
 }
 
-// Formater les articles
+// Formater les articles avec détails complets
 $itemsList = '';
 foreach ($orderData['items'] as $item) {
-    $itemsList .= $item['name'] . " x" . $item['quantity'] . " - " . number_format($item['totalPrice'], 2) . "€\n";
+    $itemsList .= $item['name'];
+    
+    // Ajouter la taille si présente
+    if (!empty($item['size'])) {
+        $itemsList .= " (" . $item['size'] . ")";
+    }
+    
+    // Ajouter les suppléments si présents
+    if (!empty($item['supplements']) && is_array($item['supplements']) && count($item['supplements']) > 0) {
+        $itemsList .= "\n  Suppléments: " . implode(', ', $item['supplements']);
+    }
+    
+    // Ajouter les options si présentes
+    if (!empty($item['options'])) {
+        $itemsList .= "\n  Options: " . $item['options'];
+    }
+    
+    // Ajouter la quantité et le prix
+    $itemsList .= "\n  Quantité: x" . $item['quantity'];
+    $itemsList .= " - Prix unitaire: " . number_format($item['price'], 2) . "€";
+    $itemsList .= " - Total: " . number_format($item['totalPrice'], 2) . "€\n\n";
 }
 
 // Corps de l'email
