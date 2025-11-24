@@ -121,7 +121,7 @@ const PIZZAS_DATA = [
         ingredients: ['Tomate', 'Fromage', 'Poulet péi', 'Olive', 'Ananas Victoria'],
         price33: 14.90,
         price40: 17.90,
-        image: 'img/SHOOT JULIEN 2021/Hawaienne.png',
+        image: 'img/SHOOT JULIEN 2021/Hawaii.png',
         badge: 'Halal',
         isSpicy: false,
         isPremium: false
