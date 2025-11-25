@@ -27,7 +27,7 @@
     <header class="header" id="header">
         <nav class="navbar container">
             <div class="nav-logo">
-                <img src="img/New logo noir 2022.png" alt="Pizza Club Logo" class="logo" id="mainLogo">
+                <img src="img/New_logo_noir_2022.png" alt="Pizza Club Logo" class="logo" id="mainLogo">
             </div>
             
             <ul class="nav-menu" id="navMenu">
@@ -1932,14 +1932,14 @@
         // Adapter le logo selon le thème (clair/sombre) - AVANT chargement DOM
         (function() {
             const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const logoSrc = isDark ? 'img/New logo blanc 2022.png' : 'img/New logo noir 2022.png';
+            const logoSrc = isDark ? 'img/New_logo_blanc_2022.png' : 'img/New_logo_noir_2022.png';
             
             // Fonction pour mettre à jour le logo
             function updateLogo() {
                 const logo = document.getElementById('mainLogo');
                 if (logo) {
                     const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                    logo.src = isDark ? 'img/New logo blanc 2022.png' : 'img/New logo noir 2022.png';
+                    logo.src = isDark ? 'img/New_logo_blanc_2022.png' : 'img/New_logo_noir_2022.png';
                 }
             }
             
