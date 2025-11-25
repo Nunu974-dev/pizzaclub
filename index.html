@@ -21,6 +21,18 @@
     
     <!-- CSS -->
     <link rel="stylesheet" href="style.css?v=20251125e">
+    
+    <!-- Script critique : forcer scroll en haut IMMÉDIATEMENT -->
+    <script>
+        // Exécuté immédiatement, avant même le chargement du DOM
+        if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+        }
+        // Force le scroll en haut dès maintenant
+        window.scrollTo(0, 0);
+        // Et le forcer à nouveau après un court instant
+        setTimeout(() => window.scrollTo(0, 0), 0);
+    </script>
 </head>
 <body>
     <!-- HEADER / NAVBAR -->
@@ -107,40 +119,40 @@
         </div>
     </section>
 
+    <!-- Navigation Catégories Principales (GLOBAL - en dehors des sections) -->
+    <div class="main-categories">
+        <button class="category-btn active" data-category="pizzas">
+            <i class="fas fa-pizza-slice"></i>
+            <span>Pizzas</span>
+        </button>
+        <button class="category-btn" data-category="pates">
+            <i class="fas fa-utensils"></i>
+            <span>Pâtes</span>
+        </button>
+        <button class="category-btn" data-category="salades">
+            <i class="fas fa-leaf"></i>
+            <span>Salades</span>
+        </button>
+        <button class="category-btn" data-category="buns">
+            <i class="fas fa-hamburger"></i>
+            <span>Buns</span>
+        </button>
+        <button class="category-btn" data-category="rolls">
+            <i class="fas fa-bread-slice"></i>
+            <span>Rolls</span>
+        </button>
+        <button class="category-btn" data-category="desserts">
+            <i class="fas fa-ice-cream"></i>
+            <span>Desserts</span>
+        </button>
+    </div>
+
     <!-- MENU PIZZAS -->
     <section class="menu-section" id="menu">
         <div class="container">
             <div class="section-header">
                 <h2 class="section-title">Notre Carte</h2>
                 <p class="section-subtitle">Découvrez tous nos produits</p>
-            </div>
-
-            <!-- Navigation Catégories Principales -->
-            <div class="main-categories">
-                <button class="category-btn active" data-category="pizzas">
-                    <i class="fas fa-pizza-slice"></i>
-                    <span>Pizzas</span>
-                </button>
-                <button class="category-btn" data-category="pates">
-                    <i class="fas fa-utensils"></i>
-                    <span>Pâtes</span>
-                </button>
-                <button class="category-btn" data-category="salades">
-                    <i class="fas fa-leaf"></i>
-                    <span>Salades</span>
-                </button>
-                <button class="category-btn" data-category="buns">
-                    <i class="fas fa-hamburger"></i>
-                    <span>Buns</span>
-                </button>
-                <button class="category-btn" data-category="rolls">
-                    <i class="fas fa-bread-slice"></i>
-                    <span>Rolls</span>
-                </button>
-                <button class="category-btn" data-category="desserts">
-                    <i class="fas fa-ice-cream"></i>
-                    <span>Desserts</span>
-                </button>
             </div>
 
             <!-- Filtres Pizzas (visible uniquement quand Pizzas est sélectionné) -->
