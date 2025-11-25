@@ -1098,7 +1098,9 @@ function removePromoCode() {
 // MODAL PERSONNALISATION
 // ========================================
 function openCustomizeModal(pizzaId) {
+    console.log('🔧 openCustomizeModal appelé avec pizzaId:', pizzaId);
     const pizza = PIZZAS_DATA.find(p => p.id === pizzaId);
+    console.log('🍕 Pizza trouvée:', pizza ? pizza.name : 'NON TROUVÉE');
     currentPizza = pizza;
 
     // Si c'est la Marmaille (ID 38), ouvrir le modal spécial de choix viande
@@ -1251,6 +1253,23 @@ function addCustomizedToCart() {
     if (window.pendingFormuleMidi) {
         const formuleInfo = window.pendingFormuleMidi;
         
+        // Si la boisson n'est pas encore choisie, on stocke la personnalisation et on rouvre le modal formule
+        if (!formuleInfo.boissonChosen) {
+            // Stocker la personnalisation de la pizza
+            window.pendingFormuleMidi.pizzaCustomization = customization;
+            window.pendingFormuleMidi.quantity = quantity;
+            
+            // Fermer le modal de personnalisation
+            closeCustomizeModal();
+            
+            // Rouvrir le modal formule pour choisir la boisson
+            setTimeout(() => {
+                openFormuleMidiModalForBoisson();
+            }, 300);
+            return;
+        }
+        
+        // Si on arrive ici, la boisson a été choisie, on ajoute au panier
         const cartItem = {
             id: Date.now(),
             type: 'formule',
@@ -1261,7 +1280,7 @@ function addCustomizedToCart() {
             totalPrice: formuleInfo.basePrice,
             customization: {
                 pizza: currentPizza.name,
-                pizzaCustomization: customization,
+                pizzaCustomization: formuleInfo.pizzaCustomization,
                 boisson: formuleInfo.boisson
             }
         };
@@ -2044,6 +2063,13 @@ let selectedFormuleMidiPizza = null;
 function openFormuleMidiModal() {
     const modal = document.getElementById('formuleMidiModal');
     
+    // Réinitialiser l'affichage des sections
+    const pizzasSection = modal.querySelector('.formule-pizzas-section');
+    if (pizzasSection) pizzasSection.style.display = 'block';
+    
+    const boissonSection = modal.querySelector('.formule-boissons-section');
+    if (boissonSection) boissonSection.style.display = 'none';
+    
     // Générer la liste des pizzas (toutes sauf Burger et Américaine)
     const pizzasList = document.getElementById('formuleMidiPizzasList');
     pizzasList.innerHTML = '';
@@ -2054,21 +2080,43 @@ function openFormuleMidiModal() {
         const isPremium = excludedIds.includes(pizza.id);
         const priceNote = isPremium ? ' (+1€)' : '';
         
-        const div = document.createElement('label');
+        const div = document.createElement('div');
         div.className = 'formule-item-option';
+        div.style.cursor = 'pointer';
         div.innerHTML = `
-            <input type="radio" name="formuleMidiPizza" value="${pizza.id}" onchange="updateFormuleMidiPrice()">
             <div class="formule-item-content">
                 <div class="formule-item-name">${pizza.name}</div>
                 ${priceNote ? `<div class="formule-item-note">${priceNote}</div>` : ''}
             </div>
         `;
+        
+        // Au clic, stocker la pizza et ouvrir le modal de personnalisation
+        div.onclick = () => {
+            // Stocker les infos de la formule
+            let price = FORMULES_DATA.midi.price;
+            if (isPremium) {
+                price += FORMULES_DATA.midi.priceExtra;
+            }
+            
+            window.pendingFormuleMidi = {
+                boisson: 'Coca-Cola', // Boisson par défaut, on pourra la changer après
+                basePrice: price,
+                isPremium: isPremium,
+                pizzaId: pizza.id,
+                boissonChosen: false // Pas encore choisi la boisson
+            };
+            
+            console.log('🍕 Pizza sélectionnée dans formule midi:', pizza.name);
+            
+            // Fermer le modal formule
+            closeFormuleMidiModal();
+            
+            // Ouvrir le modal de personnalisation
+            openCustomizeModal(pizza.id);
+        };
+        
         pizzasList.appendChild(div);
     });
-    
-    // Sélectionner la première pizza par défaut
-    const firstRadio = pizzasList.querySelector('input[type="radio"]');
-    if (firstRadio) firstRadio.checked = true;
     
     updateFormuleMidiPrice();
     modal.classList.add('active');
@@ -2079,57 +2127,65 @@ function closeFormuleMidiModal() {
     selectedFormuleMidiPizza = null;
 }
 
-function updateFormuleMidiPrice() {
-    const selectedPizzaInput = document.querySelector('input[name="formuleMidiPizza"]:checked');
-    if (!selectedPizzaInput) return;
+function openFormuleMidiModalForBoisson() {
+    const modal = document.getElementById('formuleMidiModal');
     
-    const pizzaId = parseInt(selectedPizzaInput.value);
-    const excludedIds = FORMULES_DATA.midi.excludedPizzas || [];
-    const isPremium = excludedIds.includes(pizzaId);
+    // Masquer la section pizzas
+    const pizzasSection = modal.querySelector('.formule-pizzas-section');
+    if (pizzasSection) pizzasSection.style.display = 'none';
     
-    let price = FORMULES_DATA.midi.price;
-    if (isPremium) {
-        price += FORMULES_DATA.midi.priceExtra;
+    // Afficher la section boissons
+    const boissonSection = modal.querySelector('.formule-boissons-section');
+    if (boissonSection) {
+        boissonSection.style.display = 'block';
+        
+        // Générer la liste des boissons si pas déjà fait
+        const boissonsList = document.getElementById('formuleMidiBoissonsList');
+        if (!boissonsList.innerHTML) {
+            const boissons = ['Coca-Cola', 'Coca-Cola Zero', 'Fanta', 'Sprite', 'Ice Tea', 'Eau'];
+            boissons.forEach((boisson, index) => {
+                const label = document.createElement('label');
+                label.className = 'formule-item-option';
+                label.innerHTML = `
+                    <input type="radio" name="formuleMidiBoisson" value="${boisson}" ${index === 0 ? 'checked' : ''}>
+                    <div class="formule-item-content">
+                        <div class="formule-item-name">${boisson}</div>
+                    </div>
+                `;
+                boissonsList.appendChild(label);
+            });
+        }
     }
     
-    document.getElementById('formuleMidiPrice').textContent = `${price.toFixed(2)}€`;
+    // Changer le texte du bouton confirmer
+    const confirmBtn = modal.querySelector('.btn-confirm-formule');
+    if (confirmBtn) {
+        confirmBtn.textContent = 'Ajouter au panier';
+        confirmBtn.onclick = confirmFormuleMidiWithBoisson;
+    }
+    
+    modal.classList.add('active');
 }
 
-function addFormuleMidiToCart() {
-    const selectedPizzaInput = document.querySelector('input[name="formuleMidiPizza"]:checked');
+function confirmFormuleMidiWithBoisson() {
     const selectedBoissonInput = document.querySelector('input[name="formuleMidiBoisson"]:checked');
     
-    if (!selectedPizzaInput) {
-        showNotification('Veuillez sélectionner une pizza', 'error');
+    if (!selectedBoissonInput) {
+        showNotification('Veuillez sélectionner une boisson', 'error');
         return;
     }
     
-    const pizzaId = parseInt(selectedPizzaInput.value);
-    const pizza = PIZZAS_DATA.find(p => p.id === pizzaId);
-    
-    // Stocker les informations de la formule pour les utiliser après personnalisation
-    const boisson = selectedBoissonInput ? selectedBoissonInput.value : 'Coca-Cola';
-    
-    const excludedIds = FORMULES_DATA.midi.excludedPizzas || [];
-    const isPremium = excludedIds.includes(pizzaId);
-    
-    let price = FORMULES_DATA.midi.price;
-    if (isPremium) {
-        price += FORMULES_DATA.midi.priceExtra;
+    // Mettre à jour pendingFormuleMidi avec la boisson
+    if (window.pendingFormuleMidi) {
+        window.pendingFormuleMidi.boisson = selectedBoissonInput.value;
+        window.pendingFormuleMidi.boissonChosen = true;
+        
+        // Fermer le modal
+        closeFormuleMidiModal();
+        
+        // Rappeler addToCart pour finaliser l'ajout au panier
+        addToCart();
     }
-    
-    // Stocker les infos de la formule dans une variable temporaire
-    window.pendingFormuleMidi = {
-        boisson: boisson,
-        basePrice: price,
-        isPremium: isPremium
-    };
-    
-    // Fermer le modal de formule et ouvrir la personnalisation pizza
-    closeFormuleMidiModal();
-    
-    // Ouvrir le modal de personnalisation pour cette pizza
-    openCustomizeModal(pizzaId);
 }
 
 // ========================================
@@ -3084,8 +3140,17 @@ function getDeliveryHour() {
         return scheduledDeliveryHour;
     }
     
-    // Sinon retourner l'heure actuelle
-    return new Date().getHours();
+    // En mode "maintenant", calculer l'heure de livraison estimée
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinutes = now.getMinutes();
+    
+    // Ajouter le délai de préparation (30-45 min)
+    const preparationMinutes = 40; // moyenne
+    const totalMinutes = currentMinutes + preparationMinutes;
+    const deliveryHour = currentHour + Math.floor(totalMinutes / 60);
+    
+    return deliveryHour;
 }
 
 function isScheduledForFuture() {
