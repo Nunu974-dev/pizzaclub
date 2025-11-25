@@ -2289,20 +2289,20 @@ function openPatesCustomizeModal(pateId) {
     
     const modal = document.getElementById('customizeModal');
     const modalTitle = document.getElementById('customizeModalTitle');
-    const customizeContent = document.querySelector('.customize-content');
+    const customizeContent = document.getElementById('customizeModalBody');
     
     modalTitle.textContent = `Personnaliser - ${pate.name}`;
     
     customizeContent.innerHTML = `
         <!-- Base de pâtes -->
         <div class="customize-section">
-            <h3>Choisissez votre base</h3>
-            <div class="customize-options">
+            <h4>Choisissez votre base</h4>
+            <div class="base-options">
                 ${pate.bases.map(base => {
                     const baseKey = base.toLowerCase().replace(/[éè]/g, 'e').replace(/\s+/g, '');
                     const basePrice = EXTRAS.patesBases[baseKey] || 0;
                     return `
-                        <label class="customize-option">
+                        <label class="base-option">
                             <input type="radio" name="pateBase" value="${baseKey}" ${base === 'Classique' ? 'checked' : ''}>
                             <span>${base} ${basePrice > 0 ? `(+${basePrice.toFixed(2)}€)` : ''}</span>
                         </label>
@@ -2313,13 +2313,13 @@ function openPatesCustomizeModal(pateId) {
         
         <!-- Taille -->
         <div class="customize-section">
-            <h3>Choisissez votre taille</h3>
-            <div class="customize-options">
-                <label class="customize-option">
+            <h4>Choisissez votre taille</h4>
+            <div class="size-options">
+                <label class="size-option">
                     <input type="radio" name="pateSize" value="L" checked>
                     <span>L (${pate.priceL.toFixed(2)}€)</span>
                 </label>
-                <label class="customize-option">
+                <label class="size-option">
                     <input type="radio" name="pateSize" value="XL">
                     <span>XL (+${EXTRAS.patesSizes.XL.price.toFixed(2)}€ = ${pate.priceXL.toFixed(2)}€)</span>
                 </label>
@@ -2328,13 +2328,13 @@ function openPatesCustomizeModal(pateId) {
         
         <!-- Suppléments -->
         <div class="customize-section">
-            <h3>Suppléments (optionnel)</h3>
-            <div id="patesSupplementsContainer"></div>
+            <h4>Suppléments (optionnel)</h4>
+            <div id="patesSupplementsContainer" class="ingredients-add"></div>
         </div>
         
-        <div class="customize-footer">
-            <button class="btn-secondary" onclick="cancelPatesCustomization()">Annuler</button>
-            <button class="btn-primary" onclick="confirmPatesCustomization()">Confirmer</button>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="cancelPatesCustomization()">Annuler</button>
+            <button class="btn btn-primary" onclick="confirmPatesCustomization()">Confirmer</button>
         </div>
     `;
     
@@ -2362,13 +2362,13 @@ function generatePatesSupplementsList() {
     const toppingsHTML = Object.entries(EXTRAS.toppings)
         .filter(([key]) => !['base-creme', 'base-tomate'].includes(key))
         .map(([key, topping]) => `
-            <label class="customize-option">
+            <label class="ingredient-checkbox">
                 <input type="checkbox" name="patesSupplement" value="${key}">
-                <span>${topping.name} (+${supplementPrice.toFixed(2)}€)</span>
+                <span>+ ${topping.name} <small>(+${supplementPrice.toFixed(2)}€)</small></span>
             </label>
         `).join('');
     
-    container.innerHTML = `<div class="customize-options">${toppingsHTML}</div>`;
+    container.innerHTML = toppingsHTML;
 }
 
 function confirmPatesCustomization() {
@@ -2420,17 +2420,17 @@ function openSaladesCustomizeModal(saladeId) {
     
     const modal = document.getElementById('customizeModal');
     const modalTitle = document.getElementById('customizeModalTitle');
-    const customizeContent = document.querySelector('.customize-content');
+    const customizeContent = document.getElementById('customizeModalBody');
     
     modalTitle.textContent = `Personnaliser - ${salade.name}`;
     
     customizeContent.innerHTML = `
         <!-- Base de salade -->
         <div class="customize-section">
-            <h3>Choisissez votre base</h3>
-            <div class="customize-options">
+            <h4>Choisissez votre base</h4>
+            <div class="base-options">
                 ${salade.bases.map(base => `
-                    <label class="customize-option">
+                    <label class="base-option">
                         <input type="radio" name="saladeBase" value="${base.toLowerCase().replace(/\s+/g, '')}" ${base === 'Salade verte' ? 'checked' : ''}>
                         <span>${base}</span>
                     </label>
@@ -2440,22 +2440,22 @@ function openSaladesCustomizeModal(saladeId) {
         
         <!-- Suppléments (même prix que pâtes L) -->
         <div class="customize-section">
-            <h3>Suppléments (optionnel)</h3>
-            <div class="customize-options">
+            <h4>Suppléments (optionnel)</h4>
+            <div class="ingredients-add">
                 ${Object.entries(EXTRAS.toppings)
                     .filter(([key]) => !['base-creme', 'base-tomate'].includes(key))
                     .map(([key, topping]) => `
-                        <label class="customize-option">
+                        <label class="ingredient-checkbox">
                             <input type="checkbox" name="saladeSupplement" value="${key}">
-                            <span>${topping.name} (+${EXTRAS.patesSupplements.L.toFixed(2)}€)</span>
+                            <span>+ ${topping.name} <small>(+${EXTRAS.patesSupplements.L.toFixed(2)}€)</small></span>
                         </label>
                     `).join('')}
             </div>
         </div>
         
-        <div class="customize-footer">
-            <button class="btn-secondary" onclick="cancelSaladesCustomization()">Annuler</button>
-            <button class="btn-primary" onclick="confirmSaladesCustomization()">Confirmer</button>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="cancelSaladesCustomization()">Annuler</button>
+            <button class="btn btn-primary" onclick="confirmSaladesCustomization()">Confirmer</button>
         </div>
     `;
     
