@@ -27,12 +27,27 @@
     <header class="header" id="header">
         <nav class="navbar container">
             <div class="nav-logo">
-                <picture>
-                    <!-- Mobile en mode sombre : logo blanc -->
-                    <source srcset="img/New_logo_blanc_2022.png" media="(max-width: 768px) and (prefers-color-scheme: dark)">
-                    <!-- Tous les autres cas : logo noir -->
-                    <img src="img/New_logo_noir_2022.png" alt="Pizza Club Logo" class="logo" id="mainLogo">
-                </picture>
+                <img src="img/New_logo_noir_2022.png" alt="Pizza Club Logo" class="logo" id="mainLogo">
+                <script>
+                    // Charger logo blanc sur mobile en mode sombre
+                    (function() {
+                        const isMobile = window.innerWidth <= 768;
+                        const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                        const logo = document.getElementById('mainLogo');
+                        
+                        if (logo && isMobile && isDark) {
+                            // Précharger l'image avant de l'afficher
+                            const img = new Image();
+                            img.onload = function() {
+                                logo.src = 'img/New_logo_blanc_2022.png';
+                            };
+                            img.onerror = function() {
+                                console.error('Logo blanc non trouvé, utilisation du logo noir');
+                            };
+                            img.src = 'img/New_logo_blanc_2022.png';
+                        }
+                    })();
+                </script>
             </div>
             
             <ul class="nav-menu" id="navMenu">
