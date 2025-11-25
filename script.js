@@ -97,33 +97,33 @@ function setupMobileCategoriesSticky() {
         const menuTop = menuSection.getBoundingClientRect().top;
         const menuBottom = menuSection.getBoundingClientRect().bottom;
         
-        // Afficher les filtres UNIQUEMENT quand le haut du menu a dépassé le haut de l'écran
-        // (menuTop < 80 signifie que le menu est sous le header, donc on a scrollé le hero)
-        if (menuTop < 80 && menuBottom > 200) {
-            categories.style.setProperty('display', 'flex', 'important');
+        // Afficher les filtres dès qu'on a scrollé le hero
+        if (menuTop < 80) {
+            // Vérifier si on n'a pas dépassé les desserts
+            if (dessertsSection) {
+                const dessertsBottom = dessertsSection.getBoundingClientRect().bottom;
+                // Cacher seulement si on a complètement dépassé les desserts
+                if (dessertsBottom < 100) {
+                    categories.style.setProperty('display', 'none', 'important');
+                } else {
+                    categories.style.setProperty('display', 'flex', 'important');
+                }
+            } else {
+                categories.style.setProperty('display', 'flex', 'important');
+            }
         } else {
             categories.style.setProperty('display', 'none', 'important');
-        }
-        
-        // Vérifier aussi la section desserts
-        if (dessertsSection) {
-            const dessertsBottom = dessertsSection.getBoundingClientRect().bottom;
-            // Cacher si on a dépassé les desserts
-            if (dessertsBottom < 100) {
-                categories.style.setProperty('display', 'none', 'important');
-            }
         }
     });
     
     // Vérifier au chargement - ne PAS afficher les filtres par défaut
     setTimeout(() => {
         const menuTop = menuSection.getBoundingClientRect().top;
-        const menuBottom = menuSection.getBoundingClientRect().bottom;
         // Seulement si on a déjà scrollé (menuTop < 80)
-        if (menuTop < 80 && menuBottom > 200) {
+        if (menuTop < 80) {
             categories.style.setProperty('display', 'flex', 'important');
         } else {
-            categories.style.setProperty('display', 'none', 'important'); // Explicitement cacher si on est sur le hero
+            categories.style.setProperty('display', 'none', 'important');
         }
     }, 100);
 }
@@ -264,7 +264,13 @@ function setupEventListeners() {
             }
             
             if (targetSection) {
-                targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                // Calculer l'offset pour compenser header + filtres
+                const headerHeight = 80; // Hauteur du header
+                const filtersHeight = 50; // Hauteur approximative des filtres
+                const offset = headerHeight + filtersHeight + 10; // +10px de marge
+                
+                const targetPosition = targetSection.getBoundingClientRect().top + window.pageYOffset - offset;
+                window.scrollTo({ top: targetPosition, behavior: 'smooth' });
                 
                 // Afficher/masquer les filtres pizzas
                 const pizzaFilters = document.getElementById('pizzaFilters');
@@ -2346,12 +2352,34 @@ function openFormuleMidiModalForBoisson() {
             const boissons = ['Coca-Cola', 'Sambo', 'Thé Pêche', 'Thé Melon', 'Edena', 'Cilaos'];
             boissons.forEach((boisson, index) => {
                 const label = document.createElement('label');
-                label.className = 'ingredient-checkbox';
+                label.className = 'ingredient-checkbox boisson-option';
                 label.innerHTML = `
                     <input type="radio" name="formuleMidiBoisson" value="${boisson}" ${index === 0 ? 'checked' : ''}>
                     <span>${boisson}</span>
+                    <span class="boisson-badge" style="display: none;">1</span>
                 `;
+                
+                // Ajouter event listener pour afficher/masquer le badge
+                const input = label.querySelector('input');
+                input.addEventListener('change', function() {
+                    // Masquer tous les badges
+                    document.querySelectorAll('.boisson-badge').forEach(badge => {
+                        badge.style.display = 'none';
+                    });
+                    // Afficher le badge de la boisson sélectionnée
+                    if (this.checked) {
+                        const badge = label.querySelector('.boisson-badge');
+                        if (badge) badge.style.display = 'inline-block';
+                    }
+                });
+                
                 boissonsList.appendChild(label);
+                
+                // Afficher le badge du premier élément (checked par défaut)
+                if (index === 0) {
+                    const badge = label.querySelector('.boisson-badge');
+                    if (badge) badge.style.display = 'inline-block';
+                }
             });
             console.log('🔵 Boissons ajoutées');
         }
@@ -3682,7 +3710,24 @@ async function sendOrderByEmail(orderData) {
             body: JSON.stringify(orderData)
         });
 
-        const result = await response.json();
+        // Vérifier si la réponse est OK
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // Lire le texte brut pour déboguer
+        const text = await response.text();
+        console.log('📄 Réponse brute du serveur:', text);
+
+        // Essayer de parser en JSON
+        let result;
+        try {
+            result = JSON.parse(text);
+        } catch (parseError) {
+            console.error('❌ Erreur de parsing JSON:', parseError);
+            console.error('📄 Contenu reçu:', text.substring(0, 500)); // Afficher les 500 premiers caractères
+            throw new Error('Réponse invalide du serveur');
+        }
 
         if (result.success) {
             console.log('✅ Commande envoyée avec succès!');
@@ -3690,7 +3735,8 @@ async function sendOrderByEmail(orderData) {
             console.log('📱 WhatsApp:', result.whatsappSent ? 'Envoyé' : 'Non configuré');
             showNotification('Commande envoyée avec succès !', 'success');
         } else {
-            throw new Error('Erreur lors de l\'envoi de la commande');
+            console.error('❌ Erreur serveur:', result.error || 'Erreur inconnue');
+            throw new Error(result.error || 'Erreur lors de l\'envoi de la commande');
         }
 
     } catch (error) {
@@ -4281,11 +4327,40 @@ function selectPromoBoisson(button, boissonName) {
     // Ajouter la boisson (même si elle existe déjà)
     selectedPromoBoissons.push(boissonName);
     
+    // Ajouter ou mettre à jour le badge sur le bouton
+    let badge = button.querySelector('.boisson-count-badge');
+    if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'boisson-count-badge';
+        button.appendChild(badge);
+    }
+    
+    // Compter combien de fois cette boisson a été sélectionnée
+    const count = selectedPromoBoissons.filter(b => b === boissonName).length;
+    badge.textContent = count;
+    badge.style.display = 'inline-flex';
+    
     updateSelectedBoissonsDisplay();
 }
 
 function removePromoBoisson(index) {
+    const removedBoisson = selectedPromoBoissons[index];
     selectedPromoBoissons.splice(index, 1);
+    
+    // Mettre à jour tous les badges des boutons
+    document.querySelectorAll('.boisson-btn').forEach(btn => {
+        const boissonName = btn.dataset.boisson;
+        const badge = btn.querySelector('.boisson-count-badge');
+        const count = selectedPromoBoissons.filter(b => b === boissonName).length;
+        
+        if (count > 0 && badge) {
+            badge.textContent = count;
+            badge.style.display = 'inline-flex';
+        } else if (badge) {
+            badge.style.display = 'none';
+        }
+    });
+    
     updateSelectedBoissonsDisplay();
 }
 
