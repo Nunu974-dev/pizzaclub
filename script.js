@@ -2127,7 +2127,9 @@ function addFormuleMidiToCart() {
     
     // Fermer le modal de formule et ouvrir la personnalisation pizza
     closeFormuleMidiModal();
-    addToCart(pizzaId);
+    
+    // Ouvrir le modal de personnalisation pour cette pizza
+    openCustomizeModal(pizzaId);
 }
 
 // ========================================

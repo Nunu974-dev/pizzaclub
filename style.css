@@ -1169,14 +1169,16 @@ input, textarea, select {
     display: flex;
     gap: 0.5rem;
     margin-bottom: 0.5rem;
+    width: 100%;
 }
 
 .promo-input-wrapper input {
-    flex: 2;
+    flex: 1;
+    min-width: 0;
     padding: 0.75rem;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     text-transform: uppercase;
 }
 
@@ -1187,9 +1189,9 @@ input, textarea, select {
 
 .promo-input-wrapper .btn-sm {
     flex: 0 0 auto;
-    padding: 0.75rem 1.25rem;
+    padding: 0.6rem 1rem;
     white-space: nowrap;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .promo-message {
