@@ -27,7 +27,7 @@
     <header class="header" id="header">
         <nav class="navbar container">
             <div class="nav-logo">
-                <img src="img/New logo noir 2022.png" alt="Pizza Club Logo" class="logo">
+                <img src="img/New logo noir 2022.png" alt="Pizza Club Logo" class="logo" id="mainLogo">
             </div>
             
             <ul class="nav-menu" id="navMenu">
@@ -1929,24 +1929,30 @@
     
     <!-- Config & Scripts -->
     <script>
-        // Adapter le logo selon le thème (clair/sombre)
-        function updateLogo() {
+        // Adapter le logo selon le thème (clair/sombre) - AVANT chargement DOM
+        (function() {
             const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const logo = document.querySelector('.nav-logo img');
-            if (logo) {
-                logo.src = isDark ? 'img/New logo blanc 2022.png' : 'img/New logo noir 2022.png';
+            const logoSrc = isDark ? 'img/New logo blanc 2022.png' : 'img/New logo noir 2022.png';
+            
+            // Fonction pour mettre à jour le logo
+            function updateLogo() {
+                const logo = document.getElementById('mainLogo');
+                if (logo) {
+                    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    logo.src = isDark ? 'img/New logo blanc 2022.png' : 'img/New logo noir 2022.png';
+                }
             }
-        }
-        
-        // Écouter les changements de thème
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateLogo);
-        
-        // Appliquer au chargement
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', updateLogo);
-        } else {
-            updateLogo();
-        }
+            
+            // Écouter les changements de thème
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateLogo);
+            
+            // Appliquer dès que le DOM est prêt
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', updateLogo);
+            } else {
+                updateLogo();
+            }
+        })();
     </script>
     <script src="config.js?v=20251125"></script>
     <script src="data.js?v=20251125"></script>
