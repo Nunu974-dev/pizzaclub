@@ -2613,12 +2613,18 @@ function confirmMenuPatesSaladeWithBoissonDessert() {
         }
     };
     
-    addToCart(cartItem);
+    // Ajouter directement au panier
+    cart.push(cartItem);
+    saveCartToStorage();
+    updateCartUI();
     showNotification('Menu ajouté au panier', 'success');
     
     // Réinitialiser
     window.pendingMenuPatesSalade = null;
     closeMenuPatesSaladeModal();
+    
+    // Ouvrir le panier
+    setTimeout(() => openCart(), 100);
 }
 
 // Ancienne fonction conservée pour compatibilité si besoin
