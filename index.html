@@ -1739,7 +1739,7 @@
                     <span>Prix total:</span>
                     <span id="menuPatesSaladePrice">12.80€</span>
                 </div>
-                <button class="btn btn-primary" onclick="addMenuPatesSaladeToCart()">
+                <button class="btn btn-primary" onclick="window.pendingMenuPatesSalade ? confirmMenuPatesSaladeWithBoissonDessert() : addMenuPatesSaladeToCart()">
                     <i class="fas fa-cart-plus"></i> Ajouter au panier
                 </button>
             </div>
@@ -1957,7 +1957,7 @@
     <script src="config.js?v=20251125"></script>
     <script src="data.js?v=20251125"></script>
     <script src="emailjs-config.js?v=20251125"></script>
-    <script src="script.js?v=20251125"></script>
+    <script src="script.js?v=20251125b"></script>
     <!-- Widget WhatsApp -->
     <a href="https://wa.me/262692620062?text=Bonjour%20Pizza%20Club%20!%20" 
        class="whatsapp-float" 

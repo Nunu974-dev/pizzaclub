@@ -2260,29 +2260,403 @@ function openMenuPatesSaladeModal() {
 }
 
 function closeMenuPatesSaladeModal() {
-    document.getElementById('menuPatesSaladeModal').classList.remove('active');
+    const modal = document.getElementById('menuPatesSaladeModal');
+    modal.classList.remove('active');
     selectedMenuPatesSaladeItem = null;
+    
+    // Réinitialiser le modal pour la prochaine ouverture
+    const summaryDiv = document.getElementById('menuItemSummary');
+    if (summaryDiv) summaryDiv.style.display = 'none';
+    
+    document.getElementById('menuPatesSelection').style.display = 'block';
+    document.getElementById('menuSaladesSelection').style.display = 'none';
+    
+    const typeSection = modal.querySelector('.customize-section:has(input[name="menuType"])');
+    if (typeSection) typeSection.style.display = 'block';
+    
+    // Réinitialiser la sélection type
+    const pateTypeInput = modal.querySelector('input[name="menuType"][value="pate"]');
+    if (pateTypeInput) pateTypeInput.checked = true;
 }
+
+// === Personnalisation Pâtes ===
+function openPatesCustomizeModal(pateId) {
+    const pate = PATES_DATA.find(p => p.id === pateId);
+    if (!pate) {
+        console.error('Pâte non trouvée:', pateId);
+        return;
+    }
+    
+    const modal = document.getElementById('customizeModal');
+    const modalTitle = document.getElementById('customizeModalTitle');
+    const customizeContent = document.querySelector('.customize-content');
+    
+    modalTitle.textContent = `Personnaliser - ${pate.name}`;
+    
+    customizeContent.innerHTML = `
+        <!-- Base de pâtes -->
+        <div class="customize-section">
+            <h3>Choisissez votre base</h3>
+            <div class="customize-options">
+                ${pate.bases.map(base => {
+                    const baseKey = base.toLowerCase().replace(/[éè]/g, 'e').replace(/\s+/g, '');
+                    const basePrice = EXTRAS.patesBases[baseKey] || 0;
+                    return `
+                        <label class="customize-option">
+                            <input type="radio" name="pateBase" value="${baseKey}" ${base === 'Classique' ? 'checked' : ''}>
+                            <span>${base} ${basePrice > 0 ? `(+${basePrice.toFixed(2)}€)` : ''}</span>
+                        </label>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+        
+        <!-- Taille -->
+        <div class="customize-section">
+            <h3>Choisissez votre taille</h3>
+            <div class="customize-options">
+                <label class="customize-option">
+                    <input type="radio" name="pateSize" value="L" checked>
+                    <span>L (${pate.priceL.toFixed(2)}€)</span>
+                </label>
+                <label class="customize-option">
+                    <input type="radio" name="pateSize" value="XL">
+                    <span>XL (+${EXTRAS.patesSizes.XL.price.toFixed(2)}€ = ${pate.priceXL.toFixed(2)}€)</span>
+                </label>
+            </div>
+        </div>
+        
+        <!-- Suppléments -->
+        <div class="customize-section">
+            <h3>Suppléments (optionnel)</h3>
+            <div id="patesSupplementsContainer"></div>
+        </div>
+        
+        <div class="customize-footer">
+            <button class="btn-secondary" onclick="cancelPatesCustomization()">Annuler</button>
+            <button class="btn-primary" onclick="confirmPatesCustomization()">Confirmer</button>
+        </div>
+    `;
+    
+    // Générer les suppléments
+    generatePatesSupplementsList();
+    
+    // Observer les changements de taille pour mettre à jour les prix des suppléments
+    const sizeInputs = customizeContent.querySelectorAll('input[name="pateSize"]');
+    sizeInputs.forEach(input => {
+        input.addEventListener('change', () => {
+            generatePatesSupplementsList();
+        });
+    });
+    
+    modal.classList.add('active');
+}
+
+function generatePatesSupplementsList() {
+    const container = document.getElementById('patesSupplementsContainer');
+    if (!container) return;
+    
+    const selectedSize = document.querySelector('input[name="pateSize"]:checked')?.value || 'L';
+    const supplementPrice = EXTRAS.patesSupplements[selectedSize];
+    
+    const toppingsHTML = Object.entries(EXTRAS.toppings)
+        .filter(([key]) => !['base-creme', 'base-tomate'].includes(key))
+        .map(([key, topping]) => `
+            <label class="customize-option">
+                <input type="checkbox" name="patesSupplement" value="${key}">
+                <span>${topping.name} (+${supplementPrice.toFixed(2)}€)</span>
+            </label>
+        `).join('');
+    
+    container.innerHTML = `<div class="customize-options">${toppingsHTML}</div>`;
+}
+
+function confirmPatesCustomization() {
+    const pateId = window.pendingMenuPatesSalade.itemId;
+    const pate = PATES_DATA.find(p => p.id === pateId);
+    
+    const selectedBase = document.querySelector('input[name="pateBase"]:checked')?.value || 'classique';
+    const selectedSize = document.querySelector('input[name="pateSize"]:checked')?.value || 'L';
+    const selectedSupplements = Array.from(document.querySelectorAll('input[name="patesSupplement"]:checked'))
+        .map(cb => cb.value);
+    
+    // Calculer le prix
+    let price = selectedSize === 'L' ? pate.priceL : pate.priceXL;
+    const supplementPrice = EXTRAS.patesSupplements[selectedSize];
+    price += selectedSupplements.length * supplementPrice;
+    
+    // Stocker la personnalisation
+    window.pendingMenuPatesSalade.customization = {
+        base: selectedBase,
+        size: selectedSize,
+        supplements: selectedSupplements
+    };
+    window.pendingMenuPatesSalade.calculatedPrice = price;
+    
+    console.log('✅ Personnalisation pâte confirmée:', window.pendingMenuPatesSalade);
+    
+    // Fermer le modal de personnalisation
+    document.getElementById('customizeModal').classList.remove('active');
+    
+    // Rouvrir le modal menu pour choisir boisson et dessert
+    openMenuPatesSaladeModalForBoissonDessert();
+}
+
+function cancelPatesCustomization() {
+    document.getElementById('customizeModal').classList.remove('active');
+    window.pendingMenuPatesSalade = null;
+    
+    // Rouvrir le modal menu
+    openMenuPatesSaladeModal();
+}
+
+// === Personnalisation Salades ===
+function openSaladesCustomizeModal(saladeId) {
+    const salade = SALADES_DATA.find(s => s.id === saladeId);
+    if (!salade) {
+        console.error('Salade non trouvée:', saladeId);
+        return;
+    }
+    
+    const modal = document.getElementById('customizeModal');
+    const modalTitle = document.getElementById('customizeModalTitle');
+    const customizeContent = document.querySelector('.customize-content');
+    
+    modalTitle.textContent = `Personnaliser - ${salade.name}`;
+    
+    customizeContent.innerHTML = `
+        <!-- Base de salade -->
+        <div class="customize-section">
+            <h3>Choisissez votre base</h3>
+            <div class="customize-options">
+                ${salade.bases.map(base => `
+                    <label class="customize-option">
+                        <input type="radio" name="saladeBase" value="${base.toLowerCase().replace(/\s+/g, '')}" ${base === 'Salade verte' ? 'checked' : ''}>
+                        <span>${base}</span>
+                    </label>
+                `).join('')}
+            </div>
+        </div>
+        
+        <!-- Suppléments (même prix que pâtes L) -->
+        <div class="customize-section">
+            <h3>Suppléments (optionnel)</h3>
+            <div class="customize-options">
+                ${Object.entries(EXTRAS.toppings)
+                    .filter(([key]) => !['base-creme', 'base-tomate'].includes(key))
+                    .map(([key, topping]) => `
+                        <label class="customize-option">
+                            <input type="checkbox" name="saladeSupplement" value="${key}">
+                            <span>${topping.name} (+${EXTRAS.patesSupplements.L.toFixed(2)}€)</span>
+                        </label>
+                    `).join('')}
+            </div>
+        </div>
+        
+        <div class="customize-footer">
+            <button class="btn-secondary" onclick="cancelSaladesCustomization()">Annuler</button>
+            <button class="btn-primary" onclick="confirmSaladesCustomization()">Confirmer</button>
+        </div>
+    `;
+    
+    modal.classList.add('active');
+}
+
+function confirmSaladesCustomization() {
+    const saladeId = window.pendingMenuPatesSalade.itemId;
+    const salade = SALADES_DATA.find(s => s.id === saladeId);
+    
+    const selectedBase = document.querySelector('input[name="saladeBase"]:checked')?.value || 'saladeverte';
+    const selectedSupplements = Array.from(document.querySelectorAll('input[name="saladeSupplement"]:checked'))
+        .map(cb => cb.value);
+    
+    // Calculer le prix
+    let price = salade.price;
+    const supplementPrice = EXTRAS.patesSupplements.L;
+    price += selectedSupplements.length * supplementPrice;
+    
+    // Stocker la personnalisation
+    window.pendingMenuPatesSalade.customization = {
+        base: selectedBase,
+        supplements: selectedSupplements
+    };
+    window.pendingMenuPatesSalade.calculatedPrice = price;
+    
+    console.log('✅ Personnalisation salade confirmée:', window.pendingMenuPatesSalade);
+    
+    // Fermer le modal de personnalisation
+    document.getElementById('customizeModal').classList.remove('active');
+    
+    // Rouvrir le modal menu pour choisir boisson et dessert
+    openMenuPatesSaladeModalForBoissonDessert();
+}
+
+function cancelSaladesCustomization() {
+    document.getElementById('customizeModal').classList.remove('active');
+    window.pendingMenuPatesSalade = null;
+    
+    // Rouvrir le modal menu
+    openMenuPatesSaladeModal();
+}
+
+// === Modal pour choisir Boisson et Dessert ===
+function openMenuPatesSaladeModalForBoissonDessert() {
+    const modal = document.getElementById('menuPatesSaladeModal');
+    const pending = window.pendingMenuPatesSalade;
+    
+    // Récupérer l'item personnalisé
+    const itemName = pending.type === 'pate' 
+        ? PATES_DATA.find(p => p.id === pending.itemId)?.name 
+        : SALADES_DATA.find(s => s.id === pending.itemId)?.name;
+    
+    // Masquer les sections de sélection pâtes/salades
+    document.getElementById('menuPatesSelection').style.display = 'none';
+    document.getElementById('menuSaladesSelection').style.display = 'none';
+    const typeSection = modal.querySelector('.customize-section:has(input[name="menuType"])');
+    if (typeSection) typeSection.style.display = 'none';
+    
+    // Créer ou afficher un résumé de la sélection
+    let summaryDiv = document.getElementById('menuItemSummary');
+    if (!summaryDiv) {
+        summaryDiv = document.createElement('div');
+        summaryDiv.id = 'menuItemSummary';
+        summaryDiv.style.cssText = 'background: #f0f0f0; padding: 15px; border-radius: 8px; margin-bottom: 20px;';
+        
+        const firstSection = modal.querySelector('.customize-section');
+        if (firstSection) {
+            firstSection.parentNode.insertBefore(summaryDiv, firstSection);
+        }
+    }
+    
+    // Construire le résumé
+    let summaryHTML = `<h4>✓ ${itemName}</h4>`;
+    if (pending.type === 'pate') {
+        const baseLabel = pending.customization.base !== 'classique' ? ` - Base ${pending.customization.base}` : '';
+        summaryHTML += `<p>Taille: ${pending.customization.size}${baseLabel}</p>`;
+        if (pending.customization.supplements.length > 0) {
+            const suppNames = pending.customization.supplements.map(key => EXTRAS.toppings[key]?.name).join(', ');
+            summaryHTML += `<p>Suppléments: ${suppNames}</p>`;
+        }
+    } else {
+        const baseLabel = pending.customization.base !== 'saladeverte' ? ` - Base ${pending.customization.base}` : '';
+        summaryHTML += `<p>${baseLabel}</p>`;
+        if (pending.customization.supplements.length > 0) {
+            const suppNames = pending.customization.supplements.map(key => EXTRAS.toppings[key]?.name).join(', ');
+            summaryHTML += `<p>Suppléments: ${suppNames}</p>`;
+        }
+    }
+    summaryHTML += `<p><strong>Prix: ${pending.calculatedPrice.toFixed(2)}€</strong></p>`;
+    summaryDiv.innerHTML = summaryHTML;
+    summaryDiv.style.display = 'block';
+    
+    // Mettre à jour le prix total affiché
+    document.getElementById('menuPatesSaladePrice').textContent = `${pending.calculatedPrice.toFixed(2)}€`;
+    
+    // Rouvrir le modal
+    modal.classList.add('active');
+}
+
+function confirmMenuPatesSaladeWithBoissonDessert() {
+    const pending = window.pendingMenuPatesSalade;
+    if (!pending) {
+        console.error('Aucune sélection en attente');
+        return;
+    }
+    
+    const selectedBoissonInput = document.querySelector('input[name="menuBoisson"]:checked');
+    const selectedDessertInput = document.querySelector('input[name="menuDessert"]:checked');
+    
+    if (!selectedDessertInput) {
+        showNotification('Veuillez sélectionner un dessert', 'error');
+        return;
+    }
+    
+    const boisson = selectedBoissonInput ? selectedBoissonInput.value : 'Coca-Cola';
+    const dessert = DESSERTS_DATA.find(d => d.id === parseInt(selectedDessertInput.value));
+    
+    // Construire le nom de l'item principal
+    let mainItemName;
+    let mainItemDetails = [];
+    
+    if (pending.type === 'pate') {
+        const pate = PATES_DATA.find(p => p.id === pending.itemId);
+        const baseLabel = pending.customization.base === 'classique' ? '' : ` (${pending.customization.base})`;
+        mainItemName = `${pate.name}${baseLabel} - ${pending.customization.size}`;
+        
+        if (pending.customization.supplements.length > 0) {
+            mainItemDetails = pending.customization.supplements.map(key => EXTRAS.toppings[key]?.name).filter(Boolean);
+        }
+    } else {
+        const salade = SALADES_DATA.find(s => s.id === pending.itemId);
+        const baseLabel = pending.customization.base === 'saladeverte' ? '' : ` (${pending.customization.base})`;
+        mainItemName = `${salade.name}${baseLabel}`;
+        
+        if (pending.customization.supplements.length > 0) {
+            mainItemDetails = pending.customization.supplements.map(key => EXTRAS.toppings[key]?.name).filter(Boolean);
+        }
+    }
+    
+    // Ajouter au panier
+    const cartItem = {
+        id: Date.now(),
+        type: 'formule',
+        formuleType: 'patesSalade',
+        name: 'Menu Pâtes/Salade',
+        basePrice: pending.calculatedPrice,
+        quantity: 1,
+        totalPrice: pending.calculatedPrice,
+        customization: {
+            mainItem: mainItemName,
+            mainItemDetails: mainItemDetails.length > 0 ? mainItemDetails : undefined,
+            dessert: dessert.name,
+            boisson: boisson
+        }
+    };
+    
+    addToCart(cartItem);
+    showNotification('Menu ajouté au panier', 'success');
+    
+    // Réinitialiser
+    window.pendingMenuPatesSalade = null;
+    closeMenuPatesSaladeModal();
+}
+
+// Ancienne fonction conservée pour compatibilité si besoin
+
 
 function generateMenuPatesList() {
     const patesList = document.getElementById('menuPatesList');
     patesList.innerHTML = '';
     
     PATES_DATA.forEach(pate => {
-        const div = document.createElement('label');
+        const div = document.createElement('div');
         div.className = 'formule-item-option';
+        div.style.cursor = 'pointer';
         div.innerHTML = `
-            <input type="radio" name="menuPate" value="${pate.id}">
             <div class="formule-item-content">
                 <div class="formule-item-name">${pate.name}</div>
             </div>
         `;
+        
+        // Au clic, stocker les infos et ouvrir la personnalisation
+        div.onclick = () => {
+            window.pendingMenuPatesSalade = {
+                type: 'pate',
+                itemId: pate.id,
+                basePrice: FORMULES_DATA.patesSalade.price,
+                boissonChosen: false,
+                dessertChosen: false
+            };
+            
+            console.log('🍝 Pâte sélectionnée:', pate.name);
+            closeMenuPatesSaladeModal();
+            
+            // Ouvrir modal personnalisation pâtes (à créer)
+            openPatesCustomizeModal(pate.id);
+        };
+        
         patesList.appendChild(div);
     });
-    
-    // Sélectionner le premier par défaut
-    const firstRadio = patesList.querySelector('input[type="radio"]');
-    if (firstRadio) firstRadio.checked = true;
 }
 
 function generateMenuSaladesList() {
@@ -2290,20 +2664,34 @@ function generateMenuSaladesList() {
     saladesList.innerHTML = '';
     
     SALADES_DATA.forEach(salade => {
-        const div = document.createElement('label');
+        const div = document.createElement('div');
         div.className = 'formule-item-option';
+        div.style.cursor = 'pointer';
         div.innerHTML = `
-            <input type="radio" name="menuSalade" value="${salade.id}">
             <div class="formule-item-content">
                 <div class="formule-item-name">${salade.name}</div>
             </div>
         `;
+        
+        // Au clic, stocker les infos et ouvrir la personnalisation
+        div.onclick = () => {
+            window.pendingMenuPatesSalade = {
+                type: 'salade',
+                itemId: salade.id,
+                basePrice: FORMULES_DATA.patesSalade.price,
+                boissonChosen: false,
+                dessertChosen: false
+            };
+            
+            console.log('🥗 Salade sélectionnée:', salade.name);
+            closeMenuPatesSaladeModal();
+            
+            // Ouvrir modal personnalisation salades (à créer)
+            openSaladesCustomizeModal(salade.id);
+        };
+        
         saladesList.appendChild(div);
     });
-    
-    // Sélectionner le premier par défaut
-    const firstRadio = saladesList.querySelector('input[type="radio"]');
-    if (firstRadio) firstRadio.checked = true;
 }
 
 function generateMenuDessertsList() {
