@@ -36,6 +36,13 @@ function openModal(modalElement) {
 // INITIALISATION
 // ========================================
 document.addEventListener('DOMContentLoaded', () => {
+    // Forcer le scroll en haut au chargement de la page (avant toute autre action)
+    // Ceci empêche le navigateur de scroller automatiquement vers un hash dans l'URL
+    if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+    
     loadCartFromStorage(); // Charger le panier EN PREMIER
     initApp(); // Puis initialiser avec les préférences
     
