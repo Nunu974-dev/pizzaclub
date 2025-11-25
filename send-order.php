@@ -161,63 +161,64 @@ try {
         $whatsappNumber = $whatsappConfig['recipient_number'];
         $whatsappApiVersion = $whatsappConfig['api_version'];
 
-// Construire le message WhatsApp
-$whatsappMessage = "🍕 *NOUVELLE COMMANDE {$orderData['orderNumber']}*\n\n";
-$whatsappMessage .= "👤 *CLIENT*\n";
-$whatsappMessage .= "{$orderData['customer']['firstName']} {$orderData['customer']['lastName']}\n";
-$whatsappMessage .= "📞 {$orderData['customer']['phone']}\n";
-$whatsappMessage .= "📧 " . ($orderData['customer']['email'] ?: 'Non renseigné') . "\n\n";
-$whatsappMessage .= "🚚 *MODE:* " . ($orderData['customer']['deliveryMode'] === 'livraison' ? '🛵 LIVRAISON' : '🏃 À EMPORTER') . "\n";
-if ($orderData['customer']['deliveryMode'] === 'livraison') {
-    $whatsappMessage .= "📍 {$orderData['customer']['address']}, {$orderData['customer']['postalCode']} {$orderData['customer']['city']}\n\n";
-} else {
-    $whatsappMessage .= "\n";
-}
-$whatsappMessage .= "📦 *COMMANDE:*\n";
-foreach ($orderData['items'] as $item) {
-    $whatsappMessage .= "• {$item['name']} x{$item['quantity']} - " . number_format($item['totalPrice'], 2) . "€\n";
-}
-$whatsappMessage .= "\n💰 Sous-total: " . number_format($orderData['subtotal'], 2) . "€\n";
-$whatsappMessage .= "🚚 Livraison: " . number_format($orderData['deliveryFee'], 2) . "€\n";
-$whatsappMessage .= "*💵 TOTAL: " . number_format($orderData['total'], 2) . "€*\n\n";
-$whatsappMessage .= "⏱️ Temps estimé: {$orderData['estimatedTime']}";
-if (!empty($orderData['customer']['comments'])) {
-    $whatsappMessage .= "\n\n💬 {$orderData['customer']['comments']}";
-}
+        // Construire le message WhatsApp
+        $whatsappMessage = "🍕 *NOUVELLE COMMANDE {$orderData['orderNumber']}*\n\n";
+        $whatsappMessage .= "👤 *CLIENT*\n";
+        $whatsappMessage .= "{$orderData['customer']['firstName']} {$orderData['customer']['lastName']}\n";
+        $whatsappMessage .= "📞 {$orderData['customer']['phone']}\n";
+        $whatsappMessage .= "📧 " . ($orderData['customer']['email'] ?: 'Non renseigné') . "\n\n";
+        $whatsappMessage .= "🚚 *MODE:* " . ($orderData['customer']['deliveryMode'] === 'livraison' ? '🛵 LIVRAISON' : '🏃 À EMPORTER') . "\n";
+        if ($orderData['customer']['deliveryMode'] === 'livraison') {
+            $whatsappMessage .= "📍 {$orderData['customer']['address']}, {$orderData['customer']['postalCode']} {$orderData['customer']['city']}\n\n";
+        } else {
+            $whatsappMessage .= "\n";
+        }
+        $whatsappMessage .= "📦 *COMMANDE:*\n";
+        foreach ($orderData['items'] as $item) {
+            $whatsappMessage .= "• {$item['name']} x{$item['quantity']} - " . number_format($item['totalPrice'], 2) . "€\n";
+        }
+        $whatsappMessage .= "\n💰 Sous-total: " . number_format($orderData['subtotal'], 2) . "€\n";
+        $whatsappMessage .= "🚚 Livraison: " . number_format($orderData['deliveryFee'], 2) . "€\n";
+        $whatsappMessage .= "*💵 TOTAL: " . number_format($orderData['total'], 2) . "€*\n\n";
+        $whatsappMessage .= "⏱️ Temps estimé: {$orderData['estimatedTime']}";
+        if (!empty($orderData['customer']['comments'])) {
+            $whatsappMessage .= "\n\n💬 {$orderData['customer']['comments']}";
+        }
 
-// Configuration API URL
-$whatsappApiUrl = "https://graph.facebook.com/{$whatsappApiVersion}/{$whatsappPhoneNumberId}/messages";
+        // Configuration API URL
+        $whatsappApiUrl = "https://graph.facebook.com/{$whatsappApiVersion}/{$whatsappPhoneNumberId}/messages";
 
-// Tenter l'envoi uniquement si le token est configuré
-if ($whatsappToken !== 'VOTRE_ACCESS_TOKEN_ICI') {
-    $whatsappData = [
-        'messaging_product' => 'whatsapp',
-        'to' => $whatsappNumber,
-        'type' => 'text',
-        'text' => ['body' => $whatsappMessage]
-    ];
-    
-    $ch = curl_init($whatsappApiUrl);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($whatsappData));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Authorization: Bearer ' . $whatsappToken,
-        'Content-Type: application/json'
-    ]);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    $whatsappResponse = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    
-    $whatsappSent = ($httpCode === 200);
-    
-    // Log pour debug
-    error_log("WhatsApp - To: $whatsappNumber, HTTP Code: $httpCode, Sent: " . ($whatsappSent ? 'YES' : 'NO'));
-    if (!$whatsappSent) {
-        error_log("WhatsApp Error Response: " . $whatsappResponse);
-    }
-    } else {
-        error_log("WhatsApp non configuré - Token manquant");
+        // Tenter l'envoi uniquement si le token est configuré
+        if ($whatsappToken !== 'VOTRE_ACCESS_TOKEN_ICI') {
+            $whatsappData = [
+                'messaging_product' => 'whatsapp',
+                'to' => $whatsappNumber,
+                'type' => 'text',
+                'text' => ['body' => $whatsappMessage]
+            ];
+            
+            $ch = curl_init($whatsappApiUrl);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($whatsappData));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Authorization: Bearer ' . $whatsappToken,
+                'Content-Type: application/json'
+            ]);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            $whatsappResponse = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            
+            $whatsappSent = ($httpCode === 200);
+            
+            // Log pour debug
+            error_log("WhatsApp - To: $whatsappNumber, HTTP Code: $httpCode, Sent: " . ($whatsappSent ? 'YES' : 'NO'));
+            if (!$whatsappSent) {
+                error_log("WhatsApp Error Response: " . $whatsappResponse);
+            }
+        } else {
+            error_log("WhatsApp non configuré - Token manquant");
+        }
     }
 } catch (Exception $e) {
     error_log("ERREUR WhatsApp: " . $e->getMessage());
