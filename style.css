@@ -1665,6 +1665,24 @@ label:has(input[type="radio"]:checked) {
    RESPONSIVE
    ======================================== */
 @media (max-width: 768px) {
+    /* Conteneur des catégories avec effet de scroll visible */
+    .main-categories {
+        position: relative; /* Pour le pseudo-élément gradient */
+    }
+    
+    /* Gradient à droite pour montrer qu'on peut scroller */
+    .main-categories::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 60px;
+        height: 100%;
+        background: linear-gradient(to left, rgba(255, 255, 255, 0.95), transparent);
+        pointer-events: none;
+        z-index: 2;
+    }
+    
     /* Barre de catégories sticky sur mobile - commence à partir de la section pizzas */
     .main-categories {
         position: sticky;
@@ -1672,7 +1690,7 @@ label:has(input[type="radio"]:checked) {
         z-index: 50;
         background: var(--bg-white);
         padding: 0.75rem 0.5rem;
-        padding-right: 0; /* Pas d'espace à droite pour couper le dernier bouton */
+        padding-right: 60px; /* Espace pour le gradient */
         margin-bottom: 1rem;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         gap: 0.5rem;
@@ -1705,7 +1723,7 @@ label:has(input[type="radio"]:checked) {
     .main-categories::after {
         content: '';
         display: block;
-        min-width: 0.5rem; /* Petit espace final une fois scrollé */
+        min-width: 1rem; /* Espace final après dernier bouton */
         flex-shrink: 0;
     }
     
@@ -1723,11 +1741,15 @@ label:has(input[type="radio"]:checked) {
         top: 80px;
         left: -100%;
         width: 100%;
+        height: calc(100vh - 80px); /* Hauteur complète moins le header */
         background: var(--secondary-color);
         flex-direction: column;
         padding: 2rem;
+        padding-bottom: 4rem; /* Espace en bas pour scroll complet */
         box-shadow: var(--shadow-md);
         transition: var(--transition);
+        overflow-y: auto; /* Permettre le scroll vertical */
+        -webkit-overflow-scrolling: touch; /* Smooth scroll iOS */
     }
 
     .nav-menu.active {

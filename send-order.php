@@ -37,11 +37,38 @@ if ($orderData['customer']['deliveryMode'] === 'livraison') {
 // Formater les articles avec détails complets
 $itemsList = '';
 foreach ($orderData['items'] as $item) {
-    $itemsList .= $item['name'];
+    // Déterminer le type de produit
+    $productType = '';
+    if (isset($item['type'])) {
+        switch($item['type']) {
+            case 'pizza': $productType = '[PIZZA] '; break;
+            case 'pate': $productType = '[PÂTE] '; break;
+            case 'salade': $productType = '[SALADE] '; break;
+            case 'bun': $productType = '[BUN] '; break;
+            case 'roll': $productType = '[ROLL] '; break;
+            case 'dessert': $productType = '[DESSERT] '; break;
+            case 'formule': $productType = '[FORMULE] '; break;
+            case 'promo2pizzas': $productType = '[PROMO] '; break;
+        }
+    } elseif (isset($item['pizzaId'])) {
+        $productType = '[PIZZA] ';
+    }
     
-    // Ajouter la taille si présente
-    if (!empty($item['size'])) {
-        $itemsList .= " (" . $item['size'] . ")";
+    $itemsList .= $productType . $item['name'];
+    
+    // Ajouter la taille si présente (pour pizzas et pâtes)
+    if (!empty($item['customization']['size'])) {
+        $sizeLabel = '';
+        switch($item['customization']['size']) {
+            case 'moyenne': $sizeLabel = '33cm'; break;
+            case 'grande': $sizeLabel = '40cm'; break;
+            case 'L': $sizeLabel = 'Large'; break;
+            case 'XL': $sizeLabel = 'XL'; break;
+            default: $sizeLabel = $item['customization']['size'];
+        }
+        $itemsList .= " - Taille: " . $sizeLabel;
+    } elseif (!empty($item['size'])) {
+        $itemsList .= " - Taille: " . $item['size'];
     }
     
     // Ajouter les suppléments si présents
@@ -189,7 +216,7 @@ try {
         $whatsappApiUrl = "https://graph.facebook.com/{$whatsappApiVersion}/{$whatsappPhoneNumberId}/messages";
 
         // Tenter l'envoi uniquement si le token est configuré
-        if ($whatsappToken !== 'VOTRE_ACCESS_TOKEN_ICI') {
+        if (!empty($whatsappToken) && $whatsappToken !== 'VOTRE_ACCESS_TOKEN_ICI') {
             $whatsappData = [
                 'messaging_product' => 'whatsapp',
                 'to' => $whatsappNumber,
