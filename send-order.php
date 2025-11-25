@@ -122,9 +122,15 @@ if (!empty($orderData['customer']['email'])) {
 
 // Envoi WhatsApp via API (nécessite un compte WhatsApp Business API)
 $whatsappSent = false;
-$whatsappNumber = '262692620062';
 
-// Message WhatsApp
+// Charger la configuration WhatsApp
+$whatsappConfig = require_once __DIR__ . '/whatsapp-config.php';
+$whatsappPhoneNumberId = $whatsappConfig['phone_number_id'];
+$whatsappToken = $whatsappConfig['access_token'];
+$whatsappNumber = $whatsappConfig['recipient_number'];
+$whatsappApiVersion = $whatsappConfig['api_version'];
+
+// Construire le message WhatsApp
 $whatsappMessage = "🍕 *NOUVELLE COMMANDE {$orderData['orderNumber']}*\n\n";
 $whatsappMessage .= "👤 *CLIENT*\n";
 $whatsappMessage .= "{$orderData['customer']['firstName']} {$orderData['customer']['lastName']}\n";
@@ -148,50 +154,39 @@ if (!empty($orderData['customer']['comments'])) {
     $whatsappMessage .= "\n\n💬 {$orderData['customer']['comments']}";
 }
 
-// Option 1: Utiliser l'API WhatsApp Business (nécessite configuration)
-// Décommentez et configurez si vous avez un compte WhatsApp Business API
-/*
-$whatsappApiUrl = 'https://graph.facebook.com/v17.0/YOUR_PHONE_NUMBER_ID/messages';
-$whatsappToken = 'YOUR_WHATSAPP_TOKEN';
+// Configuration API URL
+$whatsappApiUrl = "https://graph.facebook.com/{$whatsappApiVersion}/{$whatsappPhoneNumberId}/messages";
 
-$whatsappData = [
-    'messaging_product' => 'whatsapp',
-    'to' => $whatsappNumber,
-    'type' => 'text',
-    'text' => ['body' => $whatsappMessage]
-];
-
-$ch = curl_init($whatsappApiUrl);
-curl_setopt($ch, CURLOPT_POST, 1);
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($whatsappData));
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'Authorization: Bearer ' . $whatsappToken,
-    'Content-Type: application/json'
-]);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-$whatsappResponse = curl_exec($ch);
-curl_close($ch);
-
-$whatsappSent = !empty($whatsappResponse);
-*/
-
-// Option 2: Utiliser CallMeBot (gratuit, simple, pas besoin d'API)
-// Inscription sur https://www.callmebot.com/blog/free-api-whatsapp-messages/
-$callmebotApiKey = 'YOUR_CALLMEBOT_API_KEY'; // À obtenir via CallMeBot
-
-if ($callmebotApiKey !== 'YOUR_CALLMEBOT_API_KEY') {
-    $callmebotUrl = 'https://api.callmebot.com/whatsapp.php?' . http_build_query([
-        'phone' => $whatsappNumber,
-        'text' => $whatsappMessage,
-        'apikey' => $callmebotApiKey
-    ]);
+// Tenter l'envoi uniquement si le token est configuré
+if ($whatsappToken !== 'VOTRE_ACCESS_TOKEN_ICI') {
+    $whatsappData = [
+        'messaging_product' => 'whatsapp',
+        'to' => $whatsappNumber,
+        'type' => 'text',
+        'text' => ['body' => $whatsappMessage]
+    ];
     
-    $ch = curl_init($callmebotUrl);
+    $ch = curl_init($whatsappApiUrl);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($whatsappData));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $whatsappToken,
+        'Content-Type: application/json'
+    ]);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    $response = curl_exec($ch);
+    $whatsappResponse = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
     
-    $whatsappSent = strpos($response, 'Message queued') !== false;
+    $whatsappSent = ($httpCode === 200);
+    
+    // Log pour debug
+    error_log("WhatsApp - To: $whatsappNumber, HTTP Code: $httpCode, Sent: " . ($whatsappSent ? 'YES' : 'NO'));
+    if (!$whatsappSent) {
+        error_log("WhatsApp Error Response: " . $whatsappResponse);
+    }
+} else {
+    error_log("WhatsApp non configuré - Token manquant");
 }
 
 // Sauvegarder la commande dans un fichier log
