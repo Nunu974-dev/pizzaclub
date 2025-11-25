@@ -1650,7 +1650,7 @@ label:has(input[type="radio"]:checked) {
     /* Barre de catégories sticky sur mobile */
     .main-categories {
         position: sticky;
-        top: 0;
+        top: 80px;
         z-index: 100;
         background: var(--bg-white);
         padding: 0.75rem 0.5rem;
