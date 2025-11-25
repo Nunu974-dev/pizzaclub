@@ -2701,18 +2701,130 @@ function openSaladesCustomizeModal(saladeId) {
             </div>
         </div>
         
-        <!-- Suppléments (même prix que pâtes L) -->
+        <!-- Options spéciales salade -->
         <div class="customize-section">
-            <h4>Suppléments (optionnel)</h4>
+            <h4>Options</h4>
             <div class="ingredients-add">
-                ${Object.entries(EXTRAS.toppings)
-                    .filter(([key]) => !['base-creme', 'base-tomate'].includes(key))
-                    .map(([key, topping]) => `
-                        <label class="ingredient-checkbox">
-                            <input type="checkbox" name="saladeSupplement" value="${key}" onchange="updateSaladesCustomizePrice()">
-                            <span>+ ${topping.name} <small>(+${EXTRAS.patesSupplements.L.price.toFixed(2)}€)</small></span>
-                        </label>
-                    `).join('')}
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeOption" value="pain" data-price="0.5" onchange="updateSaladesCustomizePrice()">
+                    <span>🥖 Pain <small>(+0.50€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeOption" value="vinaigrette-sup" data-price="0.5" onchange="updateSaladesCustomizePrice()">
+                    <span>🥗 Vinaigrette supplémentaire <small>(+0.50€)</small></span>
+                </label>
+            </div>
+        </div>
+        
+        <!-- Ingrédients à ajouter -->
+        <div class="customize-section">
+            <h4>Ajouter des ingrédients</h4>
+            <div class="ingredients-add">
+                <div style="margin-top: 0; font-weight: 600; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px;">Légumes</div>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="champignons" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Champignons frais <small>(+1.50€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="olives" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Olives <small>(+1.00€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="poivrons" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Poivrons <small>(+1.50€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="oignons" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Oignons <small>(+1.00€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="tomates" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Tomates fraîches <small>(+1.00€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="pommesDeTerre" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Pommes de terre <small>(+1.50€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="mais" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Maïs <small>(+1.00€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="grosPiment" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Gros piment 🌶️ <small>(+0.50€)</small></span>
+                </label>
+                
+                <div style="margin-top: 15px; font-weight: 600; color: #333; border-top: 1px solid #ddd; padding-top: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px;">Fromages</div>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="fromage" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Fromage <small>(+1.50€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="chevre" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Chèvre <small>(+2.00€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="gorgonzola" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Gorgonzola <small>(+2.00€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="parmesan" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Parmesan <small>(+2.00€)</small></span>
+                </label>
+                
+                <div style="margin-top: 15px; font-weight: 600; color: #333; border-top: 1px solid #ddd; padding-top: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px;">Viandes</div>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="jambon" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Jambon <small>(+2.00€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="poulet" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Poulet <small>(+2.50€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="merguez" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Merguez <small>(+2.50€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="chorizo" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Chorizo <small>(+2.50€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="boeuf" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Bœuf haché <small>(+2.00€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="lardons" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Lardons <small>(+2.00€)</small></span>
+                </label>
+                
+                <div style="margin-top: 15px; font-weight: 600; color: #333; border-top: 1px solid #ddd; padding-top: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px;">Produits de la mer</div>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="thon" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Thon <small>(+2.50€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="anchois" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Anchois <small>(+2.00€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="crevettes" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Crevettes <small>(+3.00€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="saumon" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Saumon fumé <small>(+3.00€)</small></span>
+                </label>
+                
+                <div style="margin-top: 15px; font-weight: 600; color: #333; border-top: 1px solid #ddd; padding-top: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px;">Autres</div>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="oeuf" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Œuf <small>(+1.00€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="miel" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Miel <small>(+0.50€)</small></span>
+                </label>
             </div>
         </div>
     `;
@@ -2745,13 +2857,22 @@ function updateSaladesCustomizePrice() {
     if (!salade) return;
     
     const selectedSupplements = Array.from(document.querySelectorAll('input[name="saladeSupplement"]:checked'));
+    const selectedOptions = Array.from(document.querySelectorAll('input[name="saladeOption"]:checked'));
     
     // Prix de base
     let price = salade.price;
     
-    // Ajouter le prix des suppléments
-    const supplementPrice = EXTRAS.patesSupplements.L.price;
-    price += selectedSupplements.length * supplementPrice;
+    // Ajouter le prix des options (pain, vinaigrette sup)
+    selectedOptions.forEach(option => {
+        const optionPrice = parseFloat(option.getAttribute('data-price')) || 0;
+        price += optionPrice;
+    });
+    
+    // Ajouter le prix des suppléments (utiliser les vrais prix des ingrédients)
+    selectedSupplements.forEach(supplement => {
+        const ingredientPrice = EXTRAS.toppings[supplement.value]?.price || 0;
+        price += ingredientPrice;
+    });
     
     // Afficher le prix
     const priceElement = document.getElementById('customizePrice');
@@ -2773,16 +2894,28 @@ function confirmSaladesCustomization() {
     const selectedBase = document.querySelector('input[name="saladeBase"]:checked')?.value || 'saladeverte';
     const selectedSupplements = Array.from(document.querySelectorAll('input[name="saladeSupplement"]:checked'))
         .map(cb => cb.value);
+    const selectedOptions = Array.from(document.querySelectorAll('input[name="saladeOption"]:checked'))
+        .map(cb => ({ type: cb.value, price: parseFloat(cb.getAttribute('data-price')) || 0 }));
     
     // Calculer le prix
     let price = salade.price;
-    const supplementPrice = EXTRAS.patesSupplements.L.price;
-    price += selectedSupplements.length * supplementPrice;
+    
+    // Ajouter prix des options
+    selectedOptions.forEach(option => {
+        price += option.price;
+    });
+    
+    // Ajouter prix des suppléments
+    selectedSupplements.forEach(supplementKey => {
+        const ingredientPrice = EXTRAS.toppings[supplementKey]?.price || 0;
+        price += ingredientPrice;
+    });
     
     // Stocker la personnalisation
     window.pendingMenuPatesSalade.customization = {
         base: selectedBase,
-        supplements: selectedSupplements
+        supplements: selectedSupplements,
+        options: selectedOptions.map(o => o.type)
     };
     window.pendingMenuPatesSalade.calculatedPrice = price;
     
@@ -2839,9 +2972,25 @@ function addStandaloneSaladeToCart() {
     
     const customization = pending.customization;
     const baseLabel = customization.base !== 'saladeverte' ? ` (${customization.base})` : '';
-    const supplementNames = customization.supplements.length > 0
-        ? customization.supplements.map(key => EXTRAS.toppings[key]?.name).join(', ')
-        : '';
+    
+    // Construire le texte de notification
+    let notificationText = salade.name + baseLabel;
+    
+    // Ajouter les options
+    if (customization.options && customization.options.length > 0) {
+        const optionsText = customization.options.map(opt => {
+            if (opt === 'pain') return 'Pain';
+            if (opt === 'vinaigrette-sup') return 'Vinaigrette sup.';
+            return opt;
+        }).join(', ');
+        notificationText += ` [${optionsText}]`;
+    }
+    
+    // Ajouter les suppléments
+    if (customization.supplements.length > 0) {
+        const supplementNames = customization.supplements.map(key => EXTRAS.toppings[key]?.name).join(', ');
+        notificationText += ` + ${supplementNames}`;
+    }
     
     const cartItem = {
         id: Date.now(),
@@ -2852,7 +3001,8 @@ function addStandaloneSaladeToCart() {
         totalPrice: pending.calculatedPrice,
         customization: {
             base: customization.base,
-            supplements: customization.supplements
+            supplements: customization.supplements,
+            options: customization.options || []
         }
     };
     
@@ -2860,8 +3010,7 @@ function addStandaloneSaladeToCart() {
     saveCartToStorage();
     updateCartUI();
     
-    const suppText = supplementNames ? ` + ${supplementNames}` : '';
-    showNotification(`${salade.name}${baseLabel}${suppText} ajouté au panier`);
+    showNotification(`${notificationText} ajouté au panier`);
     
     // Nettoyer
     window.pendingMenuPatesSalade = null;
@@ -3517,6 +3666,14 @@ function formatOrderForEmail(orderData) {
         else if (item.type === 'salade' && item.customization) {
             const c = item.customization;
             if (c.base && c.base !== 'saladeverte') itemText += ` - Base ${c.base}`;
+            if (c.options && c.options.length > 0) {
+                const optionsText = c.options.map(opt => {
+                    if (opt === 'pain') return 'Pain';
+                    if (opt === 'vinaigrette-sup') return 'Vinaigrette sup.';
+                    return opt;
+                }).join(', ');
+                itemText += `\n  [${optionsText}]`;
+            }
             if (c.supplements && c.supplements.length > 0) {
                 itemText += `\n  + Suppléments: ${c.supplements.map(id => EXTRAS.toppings[id]?.name || id).join(', ')}`;
             }

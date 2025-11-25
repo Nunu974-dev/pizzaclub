@@ -94,6 +94,18 @@ function getClientEmailTemplate($orderData) {
                                     <?php if (isset($custom['base']) && $custom['base'] !== 'saladeverte'): ?>
                                         - Base <?= htmlspecialchars($custom['base']) ?>
                                     <?php endif; ?>
+                                    <?php if (!empty($custom['options'])): ?>
+                                        <br><small style="color: #0066cc;">[
+                                        <?php 
+                                        $optionLabels = array_map(function($opt) {
+                                            if ($opt === 'pain') return 'Pain';
+                                            if ($opt === 'vinaigrette-sup') return 'Vinaigrette sup.';
+                                            return $opt;
+                                        }, $custom['options']);
+                                        echo htmlspecialchars(implode(', ', $optionLabels));
+                                        ?>
+                                        ]</small>
+                                    <?php endif; ?>
                                     <?php if (!empty($custom['supplements'])): ?>
                                         <br><small style="color: #28a745;">+ Suppléments: <?= count($custom['supplements']) ?> ingrédient(s)</small>
                                     <?php endif; ?>
