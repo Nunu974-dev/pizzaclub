@@ -29,7 +29,7 @@ function updateLogo() {
     const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     
     // Changer le logo en fonction du mode
-    logo.src = isDarkMode ? 'img/New logo blanc 2022.png' : 'img/New logo noir 2022.png';
+    logo.src = isDarkMode ? 'img/New_logo_blanc_2022.png' : 'img/New_logo_noir_2022.png';
 }
 
 // ========================================
