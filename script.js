@@ -19,6 +19,20 @@ let promoCodeApplied = null; // Code promo actuellement appliqué
 let promoDiscount = 0; // Montant de la réduction
 
 // ========================================
+// UTILITAIRES MODALS
+// ========================================
+// Fonction helper pour ouvrir un modal avec scroll en haut
+function openModal(modalElement) {
+    if (!modalElement) return;
+    modalElement.classList.add('active');
+    // Scroll en haut du modal
+    const modalContent = modalElement.querySelector('.modal-content');
+    if (modalContent) {
+        setTimeout(() => modalContent.scrollTop = 0, 10);
+    }
+}
+
+// ========================================
 // INITIALISATION
 // ========================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -1265,7 +1279,7 @@ function openCustomizeModal(pizzaId) {
     document.getElementById('customizeQty').value = 1;
 
     updateCustomizePrice();
-    modal.classList.add('active');
+    openModal(modal);
 
     // Add event listeners for price updates
     document.querySelectorAll('#customizeModal input[type="radio"], #customizeModal input[type="checkbox"]').forEach(input => {
@@ -1495,7 +1509,7 @@ function openAmericaineCustomizeModal(pizzaId) {
     });
 
     updateAmericainePrice();
-    modal.classList.add('active');
+    openModal(modal);
 }
 
 function closeAmericaineCustomizeModal() {
@@ -1684,7 +1698,7 @@ function openPatesCustomizeModal(pateId) {
     document.getElementById('patesQty').value = 1;
 
     updatePatesPrice();
-    modal.classList.add('active');
+    openModal(modal);
 
     // Add event listeners for price updates
     document.querySelectorAll('#patesCustomizeModal input[type="radio"], #patesCustomizeModal input[type="checkbox"]').forEach(input => {
@@ -1824,7 +1838,7 @@ function openSaladeCustomizeModal(saladeId) {
     document.getElementById('saladeQty').value = 1;
 
     updateSaladePrice();
-    modal.classList.add('active');
+    openModal(modal);
 
     // Add event listeners for price updates
     document.querySelectorAll('#saladeCustomizeModal input[type="radio"], #saladeCustomizeModal input[type="checkbox"]').forEach(input => {
@@ -1945,7 +1959,7 @@ function openBunsCustomizeModal(bunId) {
     });
 
     updateBunsPrice();
-    modal.classList.add('active');
+    openModal(modal);
 
     // Add event listeners for price updates
     document.querySelectorAll('#bunsCustomizeModal input[type="radio"]').forEach(input => {
@@ -2068,7 +2082,7 @@ function openRollsCustomizeModal(rollId) {
     document.getElementById('rollsQty').value = 1;
 
     updateRollsPrice();
-    modal.classList.add('active');
+    openModal(modal);
 
     // Add event listeners
     document.querySelectorAll('#rollsCustomizeModal input').forEach(input => {
@@ -2245,7 +2259,7 @@ function openFormuleMidiModal() {
         pizzasList.appendChild(div);
     });
     
-    modal.classList.add('active');
+    openModal(modal);
 }
 
 function closeFormuleMidiModal() {
@@ -2310,7 +2324,7 @@ function openFormuleMidiModalForBoisson() {
     }
     
     console.log('🔵 Ajout classe active au modal');
-    modal.classList.add('active');
+    openModal(modal);
     console.log('🔵 Modal devrait être visible maintenant');
 }
 
@@ -2390,7 +2404,7 @@ function openMenuPatesSaladeModal() {
     updateMenuPatesSaladeSelection();
     updateMenuPatesSaladePrice();
     
-    modal.classList.add('active');
+    openModal(modal);
 }
 
 function closeMenuPatesSaladeModal() {
@@ -2505,7 +2519,7 @@ function openPatesCustomizeModal(pateId) {
     // Mettre à jour le prix initial
     updatePatesCustomizePrice();
     
-    modal.classList.add('active');
+    openModal(modal);
 }
 
 function generatePatesSupplementsList() {
@@ -2846,7 +2860,7 @@ function openSaladesCustomizeModal(saladeId) {
     // Mettre à jour le prix initial
     updateSaladesCustomizePrice();
     
-    modal.classList.add('active');
+    openModal(modal);
 }
 
 function updateSaladesCustomizePrice() {
@@ -3073,7 +3087,7 @@ function openMenuPatesSaladeModalForBoissonDessert() {
     document.getElementById('menuPatesSaladePrice').textContent = `${pending.calculatedPrice.toFixed(2)}€`;
     
     // Rouvrir le modal
-    modal.classList.add('active');
+    openModal(modal);
 }
 
 function confirmMenuPatesSaladeWithBoissonDessert() {
@@ -3347,7 +3361,7 @@ function openCheckoutModal() {
     displayDeliveryTimeInfo();
 
     const modal = document.getElementById('checkoutModal');
-    modal.classList.add('active');
+    openModal(modal);
     goToStep(1);
     closeCart();
 }
@@ -3448,12 +3462,33 @@ function validateCustomerForm() {
         return false;
     }
 
+    // Récupérer les valeurs
+    const phone = document.getElementById('phone').value.trim();
+    const email = document.getElementById('email').value.trim();
+
+    // Validation téléphone Réunion
+    // Formats acceptés: 0692XXXXXX, 0262XXXXXX, +262692XXXXXX, +262262XXXXXX
+    const phoneRegex = /^(\+262|0)(692|693|639|262)\d{6}$/;
+    if (!phoneRegex.test(phone)) {
+        showNotification('Numéro de téléphone invalide. Format attendu : 0692XXXXXX, 0262XXXXXX ou +262692XXXXXX', 'error');
+        document.getElementById('phone').focus();
+        return false;
+    }
+
+    // Validation email stricte
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+        showNotification('Adresse email invalide', 'error');
+        document.getElementById('email').focus();
+        return false;
+    }
+
     // Stocker les données client
     customerData = {
         lastName: document.getElementById('lastName').value,
         firstName: document.getElementById('firstName').value,
-        phone: document.getElementById('phone').value,
-        email: document.getElementById('email').value,
+        phone: phone,
+        email: email,
         deliveryMode: mode,
         birthdate: document.getElementById('birthdate').value,
         comments: document.getElementById('comments').value
@@ -3886,7 +3921,7 @@ function showOrderConfirmation(orderData) {
     orderNumberEl.textContent = orderData.orderNumber;
     estimatedTimeEl.textContent = orderData.estimatedTime;
 
-    modal.classList.add('active');
+    openModal(modal);
 }
 
 function closeConfirmationModal() {
@@ -3910,7 +3945,11 @@ function openCart(forceOpen = false) {
     console.log('cartSidebar element:', cartSidebar); // Debug
     if (cartSidebar) {
         console.log('Classes avant:', cartSidebar.className); // Debug
+        
+        // Empêcher le scroll de la page principale
+        const scrollY = window.scrollY;
         cartSidebar.classList.add('active');
+        window.scrollTo(0, scrollY);
         console.log('Classes après:', cartSidebar.className); // Debug
         
         // Vérifier après 100ms si le panier est toujours ouvert
@@ -4128,7 +4167,7 @@ function checkPromo2Pizzas() {
 function openPromoModal() {
     const modal = document.getElementById('promoModal');
     if (modal) {
-        modal.classList.add('active');
+        openModal(modal);
         promoApplied = true; // Marquer comme affiché pour cette session panier
     }
 }
@@ -4519,7 +4558,7 @@ function openDeliveryTimeModal() {
         console.log('Hour initialized to 19:00');
     }
     
-    modal.classList.add('active');
+    openModal(modal);
     console.log('Modal class active added');
 }
 
@@ -4639,7 +4678,7 @@ function showDeliveryConfirmation(mode, date = null, time = null) {
     
     if (confirmModal && confirmMessage) {
         confirmMessage.innerHTML = message;
-        confirmModal.classList.add('active');
+        openModal(confirmModal);
     }
 }
 
