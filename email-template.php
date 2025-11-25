@@ -62,12 +62,94 @@ function getClientEmailTemplate($orderData) {
                     <?php foreach ($orderData['items'] as $item): ?>
                         <div class="order-item">
                             <strong><?= htmlspecialchars($item['name']) ?></strong>
-                            <?php if (!empty($item['size'])): ?>
+                            
+                            <?php if (!empty($item['customization'])): ?>
+                                <?php $custom = $item['customization']; ?>
+                                
+                                <?php // PIZZAS ?>
+                                <?php if ($item['type'] === 'pizza'): ?>
+                                    (<?= htmlspecialchars($custom['size']) ?>)
+                                    <?php if (isset($custom['base']) && $custom['base'] !== 'tomate'): ?>
+                                        - Base <?= htmlspecialchars($custom['base']) ?>
+                                    <?php endif; ?>
+                                    <?php if (!empty($custom['ingredients']['added'])): ?>
+                                        <br><small style="color: #28a745;">✓ Ajouts: <?= htmlspecialchars(implode(', ', $custom['ingredients']['added'])) ?></small>
+                                    <?php endif; ?>
+                                    <?php if (!empty($custom['ingredients']['removed'])): ?>
+                                        <br><small style="color: #dc3545;">✗ Retraits: <?= htmlspecialchars(implode(', ', $custom['ingredients']['removed'])) ?></small>
+                                    <?php endif; ?>
+                                
+                                <?php // PÂTES ?>
+                                <?php elseif ($item['type'] === 'pate'): ?>
+                                    (<?= htmlspecialchars($custom['size']) ?>)
+                                    <?php if (isset($custom['base']) && $custom['base'] !== 'classique'): ?>
+                                        - Base <?= htmlspecialchars($custom['base']) ?>
+                                    <?php endif; ?>
+                                    <?php if (!empty($custom['supplements'])): ?>
+                                        <br><small style="color: #28a745;">+ Suppléments: <?= count($custom['supplements']) ?> ingrédient(s)</small>
+                                    <?php endif; ?>
+                                
+                                <?php // SALADES ?>
+                                <?php elseif ($item['type'] === 'salade'): ?>
+                                    <?php if (isset($custom['base']) && $custom['base'] !== 'saladeverte'): ?>
+                                        - Base <?= htmlspecialchars($custom['base']) ?>
+                                    <?php endif; ?>
+                                    <?php if (!empty($custom['supplements'])): ?>
+                                        <br><small style="color: #28a745;">+ Suppléments: <?= count($custom['supplements']) ?> ingrédient(s)</small>
+                                    <?php endif; ?>
+                                
+                                <?php // BUNS ?>
+                                <?php elseif ($item['type'] === 'bun'): ?>
+                                    <?php if (isset($custom['size'])): ?>
+                                        (<?= htmlspecialchars($custom['size']) ?>)
+                                    <?php endif; ?>
+                                    <?php if (!empty($custom['ingredients']['added'])): ?>
+                                        <br><small style="color: #28a745;">✓ Ajouts: <?= htmlspecialchars(implode(', ', $custom['ingredients']['added'])) ?></small>
+                                    <?php endif; ?>
+                                    <?php if (!empty($custom['ingredients']['removed'])): ?>
+                                        <br><small style="color: #dc3545;">✗ Retraits: <?= htmlspecialchars(implode(', ', $custom['ingredients']['removed'])) ?></small>
+                                    <?php endif; ?>
+                                
+                                <?php // FORMULE MIDI ?>
+                                <?php elseif ($item['type'] === 'formule' && isset($custom['pizza'])): ?>
+                                    <br><small>🍕 <?= htmlspecialchars($custom['pizza']) ?>
+                                    <?php if (!empty($custom['pizzaCustomization'])): ?>
+                                        (<?= htmlspecialchars($custom['pizzaCustomization']['size']) ?>)
+                                        <?php if (isset($custom['pizzaCustomization']['base']) && $custom['pizzaCustomization']['base'] !== 'tomate'): ?>
+                                            - Base <?= htmlspecialchars($custom['pizzaCustomization']['base']) ?>
+                                        <?php endif; ?>
+                                        <?php if (!empty($custom['pizzaCustomization']['ingredients']['added'])): ?>
+                                            <br>&nbsp;&nbsp;✓ Ajouts: <?= htmlspecialchars(implode(', ', $custom['pizzaCustomization']['ingredients']['added'])) ?>
+                                        <?php endif; ?>
+                                        <?php if (!empty($custom['pizzaCustomization']['ingredients']['removed'])): ?>
+                                            <br>&nbsp;&nbsp;✗ Retraits: <?= htmlspecialchars(implode(', ', $custom['pizzaCustomization']['ingredients']['removed'])) ?>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                    <br>🥤 <?= htmlspecialchars($custom['boisson']) ?> 33cl</small>
+                                
+                                <?php // FORMULE PÂTES/SALADE ?>
+                                <?php elseif ($item['type'] === 'formule' && isset($custom['mainItem'])): ?>
+                                    <br><small>
+                                    <?php if ($custom['mainItem']['type'] === 'pate'): ?>
+                                        🍝 <?= htmlspecialchars($custom['mainItem']['name']) ?>
+                                        <?php if (!empty($custom['mainItem']['customization']['size'])): ?>
+                                            (<?= htmlspecialchars($custom['mainItem']['customization']['size']) ?>)
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        🥗 <?= htmlspecialchars($custom['mainItem']['name']) ?>
+                                    <?php endif; ?>
+                                    <?php if (!empty($custom['mainItem']['customization']['supplements'])): ?>
+                                        <br>&nbsp;&nbsp;+ <?= count($custom['mainItem']['customization']['supplements']) ?> supplément(s)
+                                    <?php endif; ?>
+                                    <br>🥤 <?= htmlspecialchars($custom['boisson']) ?>
+                                    <br>🍰 <?= htmlspecialchars($custom['dessert']) ?></small>
+                                <?php endif; ?>
+                            
+                            <?php // Items sans personnalisation ?>
+                            <?php elseif (!empty($item['size'])): ?>
                                 (<?= htmlspecialchars($item['size']) ?>)
                             <?php endif; ?>
-                            <?php if (!empty($item['supplements']) && is_array($item['supplements']) && count($item['supplements']) > 0): ?>
-                                <br><small>+ <?= htmlspecialchars(implode(', ', $item['supplements'])) ?></small>
-                            <?php endif; ?>
+                            
                             <br>Quantité : x<?= $item['quantity'] ?> - <?= number_format($item['totalPrice'], 2) ?>€
                         </div>
                     <?php endforeach; ?>

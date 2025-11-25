@@ -3325,9 +3325,112 @@ async function sendOrderBySMS(orderData) {
 }
 
 function formatOrderForEmail(orderData) {
-    const items = orderData.items.map(item => 
-        `${item.name} x${item.quantity} - ${item.totalPrice.toFixed(2)}€`
-    ).join('\n');
+    // Formater chaque item avec tous les détails de personnalisation
+    const items = orderData.items.map(item => {
+        let itemText = `${item.name}`;
+        
+        // PIZZAS
+        if (item.type === 'pizza' && item.customization) {
+            const c = item.customization;
+            itemText += ` (${c.size})`;
+            if (c.base !== 'tomate') itemText += ` - Base ${c.base}`;
+            if (c.ingredients) {
+                if (c.ingredients.added && c.ingredients.added.length > 0) {
+                    itemText += `\n  + Ajouts: ${c.ingredients.added.map(id => EXTRAS.toppings[id]?.name || id).join(', ')}`;
+                }
+                if (c.ingredients.removed && c.ingredients.removed.length > 0) {
+                    itemText += `\n  - Retraits: ${c.ingredients.removed.join(', ')}`;
+                }
+            }
+        }
+        
+        // PÂTES
+        else if (item.type === 'pate' && item.customization) {
+            const c = item.customization;
+            itemText += ` (${c.size})`;
+            if (c.base && c.base !== 'classique') itemText += ` - Base ${c.base}`;
+            if (c.supplements && c.supplements.length > 0) {
+                itemText += `\n  + Suppléments: ${c.supplements.map(id => EXTRAS.toppings[id]?.name || id).join(', ')}`;
+            }
+        }
+        
+        // SALADES
+        else if (item.type === 'salade' && item.customization) {
+            const c = item.customization;
+            if (c.base && c.base !== 'saladeverte') itemText += ` - Base ${c.base}`;
+            if (c.supplements && c.supplements.length > 0) {
+                itemText += `\n  + Suppléments: ${c.supplements.map(id => EXTRAS.toppings[id]?.name || id).join(', ')}`;
+            }
+        }
+        
+        // BUNS
+        else if (item.type === 'bun' && item.customization) {
+            const c = item.customization;
+            if (c.size) itemText += ` (${c.size})`;
+            if (c.ingredients) {
+                if (c.ingredients.added && c.ingredients.added.length > 0) {
+                    itemText += `\n  + Ajouts: ${c.ingredients.added.map(id => EXTRAS.toppings[id]?.name || id).join(', ')}`;
+                }
+                if (c.ingredients.removed && c.ingredients.removed.length > 0) {
+                    itemText += `\n  - Retraits: ${c.ingredients.removed.join(', ')}`;
+                }
+            }
+        }
+        
+        // ROLLS
+        else if (item.type === 'roll' && item.customization) {
+            const c = item.customization;
+            if (c.isBox) {
+                itemText = `Box ${item.name}`;
+                if (c.rolls) {
+                    itemText += `\n  Rolls: ${c.rolls.map(r => `${r.name} x${r.quantity}`).join(', ')}`;
+                }
+            }
+        }
+        
+        // FORMULES
+        else if (item.type === 'formule') {
+            if (item.formuleType === 'midi' && item.customization) {
+                const c = item.customization;
+                itemText = `Formule Midi - ${c.pizza}`;
+                if (c.pizzaCustomization) {
+                    const pc = c.pizzaCustomization;
+                    itemText += ` (${pc.size})`;
+                    if (pc.base !== 'tomate') itemText += ` - Base ${pc.base}`;
+                    if (pc.ingredients) {
+                        if (pc.ingredients.added && pc.ingredients.added.length > 0) {
+                            itemText += `\n  + Ajouts: ${pc.ingredients.added.map(id => EXTRAS.toppings[id]?.name || id).join(', ')}`;
+                        }
+                        if (pc.ingredients.removed && pc.ingredients.removed.length > 0) {
+                            itemText += `\n  - Retraits: ${pc.ingredients.removed.join(', ')}`;
+                        }
+                    }
+                }
+                itemText += `\n  Boisson: ${c.boisson} 33cl`;
+            } else if (item.formuleType === 'patesSalade' && item.customization) {
+                const c = item.customization;
+                itemText = `Formule Pâtes/Salade`;
+                itemText += `\n  ${c.mainItem.type === 'pate' ? 'Pâte' : 'Salade'}: ${c.mainItem.name}`;
+                if (c.mainItem.customization) {
+                    const mc = c.mainItem.customization;
+                    if (mc.size) itemText += ` (${mc.size})`;
+                    if (mc.base && mc.base !== 'classique' && mc.base !== 'saladeverte') {
+                        itemText += ` - Base ${mc.base}`;
+                    }
+                    if (mc.supplements && mc.supplements.length > 0) {
+                        itemText += `\n    + Suppléments: ${mc.supplements.map(id => EXTRAS.toppings[id]?.name || id).join(', ')}`;
+                    }
+                }
+                itemText += `\n  Boisson: ${c.boisson}`;
+                itemText += `\n  Dessert: ${c.dessert}`;
+            }
+        }
+        
+        // Ajouter quantité et prix
+        itemText += `\n  x${item.quantity} - ${item.basePrice.toFixed(2)}€ = ${item.totalPrice.toFixed(2)}€`;
+        
+        return itemText;
+    }).join('\n\n');
 
     const text = `
 NOUVELLE COMMANDE - ${orderData.orderNumber}
@@ -3349,7 +3452,7 @@ ${items}
 
 Sous-total: ${orderData.subtotal.toFixed(2)}€
 Frais de livraison: ${orderData.deliveryFee.toFixed(2)}€
-TOTAL: ${orderData.total.toFixed(2)}€
+${orderData.discount > 0 ? `Réduction: -${orderData.discount.toFixed(2)}€\n` : ''}TOTAL: ${orderData.total.toFixed(2)}€
 
 Temps estimé: ${orderData.estimatedTime}
 
