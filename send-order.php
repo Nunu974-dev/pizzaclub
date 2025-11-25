@@ -122,32 +122,44 @@ if (!$emailSent) {
 // Envoi de l'email de confirmation au client
 $clientEmailSent = false;
 if (!empty($orderData['customer']['email'])) {
-    $clientSubject = 'Confirmation de commande ' . $orderData['orderNumber'] . ' - Pizza Club';
-    
-    // Utiliser le template HTML
-    require_once __DIR__ . '/email-template.php';
-    $clientMessage = getClientEmailTemplate($orderData);
-    
-    $clientHeaders = "From: Pizza Club <commande@pizzaclub.re>\r\n";
-    $clientHeaders .= "Reply-To: commande@pizzaclub.re\r\n";
-    $clientHeaders .= "Return-Path: commande@pizzaclub.re\r\n";
-    $clientHeaders .= "X-Mailer: PHP/" . phpversion() . "\r\n";
-    $clientHeaders .= "MIME-Version: 1.0\r\n";
-    $clientHeaders .= "Content-Type: text/html; charset=UTF-8\r\n";
-    
-    $clientEmailSent = mail($orderData['customer']['email'], $clientSubject, $clientMessage, $clientHeaders);
-    error_log("Email client - To: {$orderData['customer']['email']}, Sent: " . ($clientEmailSent ? 'YES' : 'NO'));
+    try {
+        $clientSubject = 'Confirmation de commande ' . $orderData['orderNumber'] . ' - Pizza Club';
+        
+        // Utiliser le template HTML
+        if (!file_exists(__DIR__ . '/email-template.php')) {
+            error_log("ERREUR: email-template.php introuvable");
+        } else {
+            require_once __DIR__ . '/email-template.php';
+            $clientMessage = getClientEmailTemplate($orderData);
+        }
+        
+        $clientHeaders = "From: Pizza Club <commande@pizzaclub.re>\r\n";
+        $clientHeaders .= "Reply-To: commande@pizzaclub.re\r\n";
+        $clientHeaders .= "Return-Path: commande@pizzaclub.re\r\n";
+        $clientHeaders .= "X-Mailer: PHP/" . phpversion() . "\r\n";
+        $clientHeaders .= "MIME-Version: 1.0\r\n";
+        $clientHeaders .= "Content-Type: text/html; charset=UTF-8\r\n";
+        
+        $clientEmailSent = mail($orderData['customer']['email'], $clientSubject, $clientMessage, $clientHeaders);
+        error_log("Email client - To: {$orderData['customer']['email']}, Sent: " . ($clientEmailSent ? 'YES' : 'NO'));
+    } catch (Exception $e) {
+        error_log("ERREUR email client: " . $e->getMessage());
+    }
 }
 
 // Envoi WhatsApp via API (nécessite un compte WhatsApp Business API)
 $whatsappSent = false;
 
-// Charger la configuration WhatsApp
-$whatsappConfig = require_once __DIR__ . '/whatsapp-config.php';
-$whatsappPhoneNumberId = $whatsappConfig['phone_number_id'];
-$whatsappToken = $whatsappConfig['access_token'];
-$whatsappNumber = $whatsappConfig['recipient_number'];
-$whatsappApiVersion = $whatsappConfig['api_version'];
+try {
+    // Charger la configuration WhatsApp
+    if (!file_exists(__DIR__ . '/whatsapp-config.php')) {
+        error_log("ERREUR: whatsapp-config.php introuvable");
+    } else {
+        $whatsappConfig = require __DIR__ . '/whatsapp-config.php';
+        $whatsappPhoneNumberId = $whatsappConfig['phone_number_id'];
+        $whatsappToken = $whatsappConfig['access_token'];
+        $whatsappNumber = $whatsappConfig['recipient_number'];
+        $whatsappApiVersion = $whatsappConfig['api_version'];
 
 // Construire le message WhatsApp
 $whatsappMessage = "🍕 *NOUVELLE COMMANDE {$orderData['orderNumber']}*\n\n";
@@ -204,8 +216,11 @@ if ($whatsappToken !== 'VOTRE_ACCESS_TOKEN_ICI') {
     if (!$whatsappSent) {
         error_log("WhatsApp Error Response: " . $whatsappResponse);
     }
-} else {
-    error_log("WhatsApp non configuré - Token manquant");
+    } else {
+        error_log("WhatsApp non configuré - Token manquant");
+    }
+} catch (Exception $e) {
+    error_log("ERREUR WhatsApp: " . $e->getMessage());
 }
 
 // Sauvegarder la commande dans un fichier log
