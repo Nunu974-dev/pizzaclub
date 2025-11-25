@@ -1002,7 +1002,7 @@ function updateCartTotals() {
     const total = subtotal + deliveryFee - discount;
 
     document.getElementById('cartSubtotal').textContent = `${subtotal.toFixed(2)}€`;
-    document.getElementById('cartDeliveryFee').textContent = `${deliveryFee.toFixed(2)}€`;
+    document.getElementById('cartDeliveryFee').textContent = deliveryFee === 0 ? 'Offert' : `${deliveryFee.toFixed(2)}€`;
     document.getElementById('cartTotal').textContent = `${total.toFixed(2)}€`;
 }
 
@@ -1026,7 +1026,6 @@ function getDeliveryFee(subtotal) {
 function applyPromoCode() {
     const input = document.getElementById('promoCodeInput');
     const code = input.value.trim().toUpperCase();
-    const messageDiv = document.getElementById('promoMessage');
     
     if (!code) {
         showPromoMessage('Veuillez entrer un code promo.', 'error');
@@ -1045,11 +1044,20 @@ function applyPromoCode() {
         promoCodeApplied = 'LIV10';
         promoDiscount = 2;
         localStorage.setItem('promoCodeApplied', promoCodeApplied);
-        showPromoMessage('Code promo appliqué ! -2€ sur votre commande', 'success');
+        localStorage.setItem('promoDiscount', promoDiscount);
+        
         input.value = '';
         input.disabled = true;
-        document.getElementById('btnApplyPromo').disabled = true;
+        
+        const btnApply = document.getElementById('btnApplyPromo');
+        if (btnApply) {
+            btnApply.disabled = true;
+        }
+        
+        showPromoMessage('Code promo appliqué ! -2€ sur votre commande', 'success');
         updateCartTotals();
+        
+        console.log('Code promo appliqué:', promoCodeApplied, 'Réduction:', promoDiscount);
     } else {
         showPromoMessage('Code promo invalide.', 'error');
     }
@@ -1072,9 +1080,17 @@ function removePromoCode() {
     promoCodeApplied = null;
     promoDiscount = 0;
     localStorage.removeItem('promoCodeApplied');
-    document.getElementById('promoCodeInput').disabled = false;
-    document.getElementById('btnApplyPromo').disabled = false;
-    document.getElementById('promoMessage').style.display = 'none';
+    localStorage.removeItem('promoDiscount');
+    
+    const input = document.getElementById('promoCodeInput');
+    const btnApply = document.getElementById('btnApplyPromo');
+    
+    if (input) input.disabled = false;
+    if (btnApply) btnApply.disabled = false;
+    
+    const messageDiv = document.getElementById('promoMessage');
+    if (messageDiv) messageDiv.style.display = 'none';
+    
     updateCartTotals();
 }
 
@@ -1230,6 +1246,37 @@ function addCustomizedToCart() {
         removedIngredients,
         addedIngredients
     };
+
+    // Vérifier si c'est dans le cadre d'une formule midi
+    if (window.pendingFormuleMidi) {
+        const formuleInfo = window.pendingFormuleMidi;
+        
+        const cartItem = {
+            id: Date.now(),
+            type: 'formule',
+            formuleType: 'midi',
+            name: 'Formule Midi',
+            basePrice: formuleInfo.basePrice,
+            quantity: 1,
+            totalPrice: formuleInfo.basePrice,
+            customization: {
+                pizza: currentPizza.name,
+                pizzaCustomization: customization,
+                boisson: formuleInfo.boisson
+            }
+        };
+        
+        // Nettoyer la variable temporaire
+        window.pendingFormuleMidi = null;
+        
+        cart.push(cartItem);
+        saveCartToStorage();
+        updateCartUI();
+        closeCustomizeModal();
+        showNotification('Formule Midi ajoutée au panier');
+        setTimeout(() => openCart(), 100);
+        return;
+    }
 
     const cartItem = {
         id: Date.now(),
@@ -2059,6 +2106,8 @@ function addFormuleMidiToCart() {
     
     const pizzaId = parseInt(selectedPizzaInput.value);
     const pizza = PIZZAS_DATA.find(p => p.id === pizzaId);
+    
+    // Stocker les informations de la formule pour les utiliser après personnalisation
     const boisson = selectedBoissonInput ? selectedBoissonInput.value : 'Coca-Cola';
     
     const excludedIds = FORMULES_DATA.midi.excludedPizzas || [];
@@ -2069,26 +2118,16 @@ function addFormuleMidiToCart() {
         price += FORMULES_DATA.midi.priceExtra;
     }
     
-    const cartItem = {
-        id: Date.now(),
-        type: 'formule',
-        formuleType: 'midi',
-        name: 'Formule Midi',
+    // Stocker les infos de la formule dans une variable temporaire
+    window.pendingFormuleMidi = {
+        boisson: boisson,
         basePrice: price,
-        quantity: 1,
-        totalPrice: price,
-        customization: {
-            pizza: pizza.name,
-            boisson: boisson
-        }
+        isPremium: isPremium
     };
     
-    cart.push(cartItem);
-    saveCartToStorage();
-    updateCartUI();
+    // Fermer le modal de formule et ouvrir la personnalisation pizza
     closeFormuleMidiModal();
-    showNotification('Formule Midi ajoutée au panier');
-    setTimeout(() => openCart(), 100);
+    addToCart(pizzaId);
 }
 
 // ========================================
@@ -2449,7 +2488,7 @@ function displayOrderSummary() {
     const total = subtotal + deliveryFee - discount;
 
     document.getElementById('summarySubtotal').textContent = `${subtotal.toFixed(2)}€`;
-    document.getElementById('summaryDelivery').textContent = `${deliveryFee.toFixed(2)}€`;
+    document.getElementById('summaryDelivery').textContent = deliveryFee === 0 ? 'Offert' : `${deliveryFee.toFixed(2)}€`;
     document.getElementById('summaryTotal').textContent = `${total.toFixed(2)}€`;
 }
 
@@ -2669,16 +2708,24 @@ function loadCartFromStorage() {
     
     // Charger le code promo
     const savedPromoCode = localStorage.getItem('promoCodeApplied');
+    const savedPromoDiscount = localStorage.getItem('promoDiscount');
+    
     if (savedPromoCode) {
         promoCodeApplied = savedPromoCode;
+        promoDiscount = savedPromoDiscount ? parseFloat(savedPromoDiscount) : 2;
+        
         const input = document.getElementById('promoCodeInput');
         const btn = document.getElementById('btnApplyPromo');
+        
         if (input && btn) {
             input.value = '';
             input.disabled = true;
             btn.disabled = true;
             showPromoMessage('Code promo appliqué ! -2€ sur votre commande', 'success');
         }
+        
+        // Mettre à jour les totaux pour afficher la réduction
+        updateCartTotals();
     }
 }
 
