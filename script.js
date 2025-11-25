@@ -2175,20 +2175,26 @@ function closeFormuleMidiModal() {
 }
 
 function openFormuleMidiModalForBoisson() {
+    console.log('🔵 openFormuleMidiModalForBoisson appelée');
     const modal = document.getElementById('formuleMidiModal');
+    console.log('🔵 Modal trouvé:', modal);
     
     // Masquer la section pizzas
     const pizzasSection = modal.querySelector('.formule-pizzas-section');
+    console.log('🔵 Pizzas section:', pizzasSection);
     if (pizzasSection) pizzasSection.style.display = 'none';
     
     // Afficher la section boissons
     const boissonSection = modal.querySelector('.formule-boissons-section');
+    console.log('🔵 Boisson section:', boissonSection);
     if (boissonSection) {
         boissonSection.style.display = 'block';
         
         // Générer la liste des boissons si pas déjà fait
         const boissonsList = document.getElementById('formuleMidiBoissonsList');
-        if (!boissonsList.innerHTML) {
+        console.log('🔵 Boissons list:', boissonsList, 'innerHTML empty?', !boissonsList?.innerHTML);
+        if (boissonsList && !boissonsList.innerHTML) {
+            console.log('🔵 Génération liste boissons');
             const boissons = ['Coca-Cola', 'Coca-Cola Zero', 'Fanta', 'Sprite', 'Ice Tea', 'Eau'];
             boissons.forEach((boisson, index) => {
                 const label = document.createElement('label');
@@ -2201,17 +2207,22 @@ function openFormuleMidiModalForBoisson() {
                 `;
                 boissonsList.appendChild(label);
             });
+            console.log('🔵 Boissons ajoutées');
         }
     }
     
     // Changer le texte du bouton confirmer
     const confirmBtn = modal.querySelector('.btn-confirm-formule');
+    console.log('🔵 Bouton confirmer trouvé:', confirmBtn);
     if (confirmBtn) {
         confirmBtn.textContent = 'Ajouter au panier';
         confirmBtn.onclick = confirmFormuleMidiWithBoisson;
+        console.log('🔵 Bouton configuré');
     }
     
+    console.log('🔵 Ajout classe active au modal');
     modal.classList.add('active');
+    console.log('🔵 Modal devrait être visible maintenant');
 }
 
 function confirmFormuleMidiWithBoisson() {

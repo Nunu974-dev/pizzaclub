@@ -1596,42 +1596,23 @@
                     </p>
                 </div>
 
-                <!-- Sélection Pizza -->
-                <div class="customize-section">
-                    <h4>Choisir votre pizza 26cm</h4>
-                    <div id="formuleMidiPizzasList" class="formule-items-grid">
-                        <!-- Généré dynamiquement -->
+                <!-- SECTION 1: Sélection Pizza -->
+                <div class="formule-pizzas-section">
+                    <div class="customize-section">
+                        <h4>Choisir votre pizza 26cm</h4>
+                        <div id="formuleMidiPizzasList" class="formule-items-grid">
+                            <!-- Généré dynamiquement -->
+                        </div>
                     </div>
                 </div>
 
-                <!-- Sélection Boisson -->
-                <div class="customize-section">
-                    <h4>Choisir votre boisson 33cl (offerte)</h4>
-                    <div class="boissons-grid">
-                        <label class="ingredient-checkbox">
-                            <input type="radio" name="formuleMidiBoisson" value="Coca-Cola" checked>
-                            <span>Coca-Cola</span>
-                        </label>
-                        <label class="ingredient-checkbox">
-                            <input type="radio" name="formuleMidiBoisson" value="Sambo">
-                            <span>Sambo</span>
-                        </label>
-                        <label class="ingredient-checkbox">
-                            <input type="radio" name="formuleMidiBoisson" value="Thé Pêche">
-                            <span>Thé Pêche</span>
-                        </label>
-                        <label class="ingredient-checkbox">
-                            <input type="radio" name="formuleMidiBoisson" value="Thé Melon">
-                            <span>Thé Melon</span>
-                        </label>
-                        <label class="ingredient-checkbox">
-                            <input type="radio" name="formuleMidiBoisson" value="Edena">
-                            <span>Edena</span>
-                        </label>
-                        <label class="ingredient-checkbox">
-                            <input type="radio" name="formuleMidiBoisson" value="Cilaos">
-                            <span>Cilaos</span>
-                        </label>
+                <!-- SECTION 2: Sélection Boisson (masquée au départ) -->
+                <div class="formule-boissons-section" style="display: none;">
+                    <div class="customize-section">
+                        <h4>Choisir votre boisson 33cl (offerte)</h4>
+                        <div id="formuleMidiBoissonsList" class="boissons-grid">
+                            <!-- Généré dynamiquement par JavaScript -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1641,7 +1622,7 @@
                     <span>Prix total:</span>
                     <span id="formuleMidiPrice">10.90€</span>
                 </div>
-                <button class="btn btn-primary" onclick="addFormuleMidiToCart()">
+                <button class="btn btn-primary btn-confirm-formule" onclick="addFormuleMidiToCart()">
                     <i class="fas fa-cart-plus"></i> Ajouter au panier
                 </button>
             </div>
@@ -1951,7 +1932,7 @@
     <script src="config.js?v=20251125"></script>
     <script src="data.js?v=20251125b"></script>
     <script src="emailjs-config.js?v=20251125"></script>
-    <script src="script.js?v=20251125j"></script>
+    <script src="script.js?v=20251125k"></script>
     <!-- Widget WhatsApp -->
     <a href="https://wa.me/262692620062?text=Bonjour%20Pizza%20Club%20!%20" 
        class="whatsapp-float" 
