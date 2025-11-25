@@ -80,45 +80,49 @@ document.addEventListener('DOMContentLoaded', () => {
     updateFormuleMidiAvailability();
 });
 
-// Fonction pour gérer les catégories sticky/fixed sur mobile
+// Fonction pour gérer la visibilité des filtres sur mobile
 function setupMobileCategoriesSticky() {
     if (window.innerWidth > 768) return; // Seulement sur mobile
     
     const categories = document.querySelector('.main-categories');
-    const pizzasSection = document.getElementById('pizzas');
+    const menuSection = document.getElementById('menu');
+    const dessertsSection = document.getElementById('desserts');
     
-    if (!categories || !pizzasSection) return;
+    if (!categories || !menuSection) return;
     
-    let isFixed = false;
-    const headerHeight = 80;
-    const categoriesHeight = categories.offsetHeight;
+    // Cacher les filtres par défaut au chargement
+    categories.style.display = 'none';
     
     window.addEventListener('scroll', () => {
-        const pizzasTop = pizzasSection.getBoundingClientRect().top;
-        const scrollY = window.scrollY;
+        const menuTop = menuSection.getBoundingClientRect().top;
+        const menuBottom = menuSection.getBoundingClientRect().bottom;
+        const windowHeight = window.innerHeight;
         
-        // Quand on atteint la section pizzas
-        if (pizzasTop <= headerHeight && !isFixed) {
-            isFixed = true;
-            categories.style.position = 'fixed';
-            categories.style.top = headerHeight + 'px';
-            categories.style.left = '0';
-            categories.style.right = '0';
-            categories.style.width = '100%';
-            // Ajouter un padding sur pizzas pour compenser
-            pizzasSection.style.paddingTop = (categoriesHeight + 20) + 'px';
+        // Afficher les filtres si on est dans la zone menu -> desserts
+        if (menuTop < windowHeight && menuBottom > 0) {
+            categories.style.display = 'flex';
+        } else if (dessertsSection) {
+            const dessertsBottom = dessertsSection.getBoundingClientRect().bottom;
+            // Cacher si on a dépassé les desserts
+            if (dessertsBottom < 0) {
+                categories.style.display = 'none';
+            }
         }
-        // Quand on remonte au-dessus de la section pizzas
-        else if (scrollY + headerHeight < pizzasSection.offsetTop && isFixed) {
-            isFixed = false;
-            categories.style.position = 'sticky';
-            categories.style.top = headerHeight + 'px';
-            categories.style.left = 'auto';
-            categories.style.right = 'auto';
-            categories.style.width = '';
-            pizzasSection.style.paddingTop = '';
+        
+        // Cacher si on est encore dans le hero (avant le menu)
+        if (menuTop > windowHeight / 2) {
+            categories.style.display = 'none';
         }
     });
+    
+    // Vérifier au chargement
+    setTimeout(() => {
+        const menuTop = menuSection.getBoundingClientRect().top;
+        const windowHeight = window.innerHeight;
+        if (menuTop < windowHeight) {
+            categories.style.display = 'flex';
+        }
+    }, 100);
 }
 
 // Fonction pour bloquer le scroll du body quand un modal est ouvert
