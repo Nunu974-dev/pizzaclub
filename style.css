@@ -1658,10 +1658,13 @@ label:has(input[type="radio"]:checked) {
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         gap: 0.5rem;
         overflow-x: auto;
+        overflow-y: visible;
         flex-wrap: nowrap;
         justify-content: flex-start;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none; /* Firefox */
+        width: 100%;
+        display: flex;
     }
     
     .main-categories::-webkit-scrollbar {
@@ -1670,8 +1673,10 @@ label:has(input[type="radio"]:checked) {
     
     .category-btn {
         flex-shrink: 0;
+        flex-grow: 0;
         padding: 0.75rem 1rem;
-        min-width: auto;
+        min-width: fit-content;
+        white-space: nowrap;
     }
     
     .category-btn i {
@@ -1680,6 +1685,7 @@ label:has(input[type="radio"]:checked) {
     
     .category-btn span {
         font-size: 0.85rem;
+        white-space: nowrap;
     }
 
     .nav-menu {
