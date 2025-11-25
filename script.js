@@ -38,9 +38,53 @@ document.addEventListener('DOMContentLoaded', () => {
     // Gérer le scroll du body quand un modal s'ouvre/ferme
     setupModalScrollLock();
     
+    // Gérer les filtres sticky qui deviennent fixed sur mobile
+    setupMobileCategoriesSticky();
+    
     // Vérifier la disponibilité de la formule midi
     updateFormuleMidiAvailability();
 });
+
+// Fonction pour gérer les catégories sticky/fixed sur mobile
+function setupMobileCategoriesSticky() {
+    if (window.innerWidth > 768) return; // Seulement sur mobile
+    
+    const categories = document.querySelector('.main-categories');
+    const pizzasSection = document.getElementById('pizzas');
+    
+    if (!categories || !pizzasSection) return;
+    
+    let isFixed = false;
+    const headerHeight = 80;
+    const categoriesHeight = categories.offsetHeight;
+    
+    window.addEventListener('scroll', () => {
+        const pizzasTop = pizzasSection.getBoundingClientRect().top;
+        const scrollY = window.scrollY;
+        
+        // Quand on atteint la section pizzas
+        if (pizzasTop <= headerHeight && !isFixed) {
+            isFixed = true;
+            categories.style.position = 'fixed';
+            categories.style.top = headerHeight + 'px';
+            categories.style.left = '0';
+            categories.style.right = '0';
+            categories.style.width = '100%';
+            // Ajouter un padding sur pizzas pour compenser
+            pizzasSection.style.paddingTop = (categoriesHeight + 20) + 'px';
+        }
+        // Quand on remonte au-dessus de la section pizzas
+        else if (scrollY + headerHeight < pizzasSection.offsetTop && isFixed) {
+            isFixed = false;
+            categories.style.position = 'sticky';
+            categories.style.top = headerHeight + 'px';
+            categories.style.left = 'auto';
+            categories.style.right = 'auto';
+            categories.style.width = '';
+            pizzasSection.style.paddingTop = '';
+        }
+    });
+}
 
 // Fonction pour bloquer le scroll du body quand un modal est ouvert
 function setupModalScrollLock() {
@@ -2372,6 +2416,15 @@ function openPatesCustomizeModal(pateId) {
         return;
     }
     
+    // Si pas de pendingMenuPatesSalade, c'est une pâte standalone
+    if (!window.pendingMenuPatesSalade) {
+        window.pendingMenuPatesSalade = {
+            type: 'pate',
+            itemId: pateId,
+            standalone: true // Indique que c'est pas dans un menu
+        };
+    }
+    
     const modal = document.getElementById('customizeModal');
     const modalTitle = document.getElementById('customizeModalTitle');
     const customizeContent = document.getElementById('customizeModalBody');
@@ -2460,6 +2513,12 @@ function confirmPatesCustomization() {
     const pateId = window.pendingMenuPatesSalade.itemId;
     const pate = PATES_DATA.find(p => p.id === pateId);
     
+    if (!pate) {
+        console.error('Pâte non trouvée:', pateId);
+        showNotification('Erreur: Pâte non trouvée', 'error');
+        return;
+    }
+    
     const selectedBase = document.querySelector('input[name="pateBase"]:checked')?.value || 'classique';
     const selectedSize = document.querySelector('input[name="pateSize"]:checked')?.value || 'L';
     const selectedSupplements = Array.from(document.querySelectorAll('input[name="patesSupplement"]:checked'))
@@ -2483,16 +2542,84 @@ function confirmPatesCustomization() {
     // Fermer le modal de personnalisation
     document.getElementById('customizeModal').classList.remove('active');
     
-    // Rouvrir le modal menu pour choisir boisson et dessert
-    openMenuPatesSaladeModalForBoissonDessert();
+    // Si c'est une pâte standalone (pas dans un menu), ajouter direct au panier
+    if (window.pendingMenuPatesSalade.standalone) {
+        addStandalonePateToCart();
+    } else {
+        // Sinon, rouvrir le modal menu pour choisir boisson et dessert
+        openMenuPatesSaladeModalForBoissonDessert();
+    }
 }
 
 function cancelPatesCustomization() {
     document.getElementById('customizeModal').classList.remove('active');
+    
+    // Si c'est standalone, juste nettoyer
+    if (window.pendingMenuPatesSalade?.standalone) {
+        window.pendingMenuPatesSalade = null;
+        return;
+    }
+    
+    // Sinon, remettre le modal menu
     window.pendingMenuPatesSalade = null;
     
     // Rouvrir le modal menu
     openMenuPatesSaladeModal();
+}
+
+function addStandalonePateToCart() {
+    const pending = window.pendingMenuPatesSalade;
+    if (!pending) {
+        console.error('Aucune pâte en attente');
+        return;
+    }
+    
+    const pate = PATES_DATA.find(p => p.id === pending.itemId);
+    if (!pate) {
+        console.error('Pâte non trouvée:', pending.itemId);
+        return;
+    }
+    
+    // Si c'est le premier ajout, s'assurer que l'heure est définie
+    if (cart.length === 0 && !deliveryTimeSet) {
+        console.log('Premier ajout détecté - ouverture modal heure avant ajout au panier');
+        pendingCartAction = () => addStandalonePateToCart();
+        openDeliveryTimeModal();
+        return;
+    }
+    
+    const customization = pending.customization;
+    const baseLabel = customization.base !== 'classique' ? ` (${customization.base})` : '';
+    const supplementNames = customization.supplements.length > 0
+        ? customization.supplements.map(key => EXTRAS.toppings[key]?.name).join(', ')
+        : '';
+    
+    const cartItem = {
+        id: Date.now(),
+        type: 'pate',
+        name: pate.name,
+        basePrice: pending.calculatedPrice,
+        quantity: 1,
+        totalPrice: pending.calculatedPrice,
+        customization: {
+            size: customization.size,
+            base: customization.base,
+            supplements: customization.supplements
+        }
+    };
+    
+    cart.push(cartItem);
+    saveCartToStorage();
+    updateCartUI();
+    
+    const suppText = supplementNames ? ` + ${supplementNames}` : '';
+    showNotification(`${pate.name} (${customization.size}${baseLabel}${suppText}) ajouté au panier`);
+    
+    // Nettoyer
+    window.pendingMenuPatesSalade = null;
+    
+    // Ouvrir le panier
+    setTimeout(() => openCart(), 100);
 }
 
 // === Personnalisation Salades ===
@@ -3084,7 +3211,18 @@ function displayOrderSummary() {
 // SOUMISSION DE LA COMMANDE
 // ========================================
 async function submitOrder() {
+    const submitBtn = document.getElementById('submit-order-btn');
+    
+    // Empêcher les clics multiples
+    if (submitBtn.disabled) return;
+    
     try {
+        // Activer l'état de chargement
+        submitBtn.disabled = true;
+        submitBtn.classList.add('loading');
+        const originalHTML = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi en cours...';
+        
         // Générer un numéro de commande
         orderNumber = generateOrderNumber();
 
@@ -3124,10 +3262,20 @@ async function submitOrder() {
         // Vider le panier
         clearCart();
         closeCheckoutModal();
+        
+        // Réinitialiser le bouton (au cas où le modal est rouvert)
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('loading');
+        submitBtn.innerHTML = originalHTML;
 
     } catch (error) {
         console.error('Erreur lors de la soumission:', error);
         showNotification('Erreur lors de l\'envoi de la commande. Veuillez réessayer.', 'error');
+        
+        // Réactiver le bouton en cas d'erreur
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('loading');
+        submitBtn.innerHTML = '<i class="fas fa-check"></i> Confirmer la commande';
     }
 }
 

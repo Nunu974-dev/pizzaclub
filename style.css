@@ -266,6 +266,16 @@ input, textarea, select {
     color: var(--text-white);
 }
 
+.btn.loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.btn.loading:hover {
+    transform: none;
+}
+
 .btn-block {
     width: 100%;
 }
