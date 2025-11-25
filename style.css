@@ -1674,14 +1674,16 @@ label:has(input[type="radio"]:checked) {
         left: 0;
         right: 0;
         z-index: 50;
-        background: #000000; /* Fond noir opaque à 100% */
-        padding: 0.75rem 1rem;
-        padding-right: 1rem; /* Plus d'espace à droite pour voir le dernier bouton */
+        background: rgba(0, 0, 0, 0.85); /* Fond noir semi-transparent pour voir un peu le contenu derrière */
+        backdrop-filter: blur(8px); /* Flou pour l'effet moderne */
+        padding: 0.5rem 1rem; /* Plus d'espace à gauche ET à droite */
+        padding-left: 1.25rem; /* Encore plus d'espace à gauche pour voir Pizzas */
+        padding-right: 1rem;
         margin-bottom: 0;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-        gap: 0.75rem; /* Plus d'espace entre les boutons */
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        gap: 0.5rem;
         width: 100%;
-        display: flex;
+        display: none; /* Caché par défaut, affiché par JavaScript uniquement après scroll */
         flex-direction: row;
         flex-wrap: nowrap;
         overflow-x: auto;
@@ -1696,43 +1698,59 @@ label:has(input[type="radio"]:checked) {
     
     .category-btn {
         flex-shrink: 0;
-        padding: 0.75rem 1rem;
-        min-width: fit-content;
+        padding: 0.4rem 0.6rem; /* Encore plus petit */
+        min-width: 70px; /* Largeur fixe pour tous les boutons */
+        width: 70px; /* Largeur fixe */
         white-space: nowrap;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 0.5rem;
-        background: rgba(255, 255, 255, 0.1); /* Fond légèrement visible */
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: white; /* Texte blanc sur fond noir */
-        border-radius: 12px;
+        justify-content: center;
+        gap: 0.2rem; /* Moins d'espace entre icône et texte */
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        color: white;
+        border-radius: 6px; /* Plus petit */
+        font-size: 0.75rem; /* Plus petit */
+    }
+    
+    /* Premier bouton avec marge à gauche */
+    .category-btn:first-child {
+        margin-left: 1rem; /* Plus d'espace pour ne pas être coupé par le bord */
     }
     
     .category-btn.active {
-        background: var(--primary-color); /* Rouge pour le bouton actif */
+        background: var(--primary-color);
         border-color: var(--primary-color);
         color: white;
     }
     
     .category-btn:hover {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.25);
     }
     
     /* Espace après le dernier élément pour qu'il ne soit pas coupé */
     .main-categories::after {
         content: '';
         display: block;
-        min-width: 1rem; /* Plus d'espace pour voir le dernier bouton complètement */
+        min-width: 1.5rem; /* Plus d'espace pour voir "Pizzas" complètement */
+        flex-shrink: 0;
+    }
+    
+    /* Espace AVANT le premier élément aussi */
+    .main-categories::before {
+        content: '';
+        display: block;
+        min-width: 4.75rem; /* Plus d'espace à gauche pour ne pas couper "Pizzas" */
         flex-shrink: 0;
     }
     
     .category-btn i {
-        font-size: 1.2rem;
+        font-size: 0.9rem; /* Icône encore plus petite */
     }
     
     .category-btn span {
-        font-size: 0.85rem;
+        font-size: 0.7rem; /* Label encore plus petit */
     }
     
     /* Ajouter du padding-top aux sections menu pour compenser les filtres fixed */

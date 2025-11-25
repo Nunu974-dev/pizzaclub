@@ -321,7 +321,7 @@ const PIZZAS_DATA = [
         id: 26,
         name: "L'Américaine",
         category: 'porc',
-        ingredients: ['Base au choix', 'Frites', 'Emmental', 'Crème', '2 Sauces au choix'],
+        ingredients: ['Base au choix', 'Frites', 'Emmental', 'Crème', '2 Sauces au choix', 'Olive'],
         price33: 16.90,
         price40: 18.90,
         image: 'img/AMERICAIN.png',

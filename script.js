@@ -96,31 +96,34 @@ function setupMobileCategoriesSticky() {
     window.addEventListener('scroll', () => {
         const menuTop = menuSection.getBoundingClientRect().top;
         const menuBottom = menuSection.getBoundingClientRect().bottom;
-        const windowHeight = window.innerHeight;
         
-        // Afficher les filtres si on est dans la zone menu -> desserts
-        if (menuTop < windowHeight && menuBottom > 0) {
-            categories.style.display = 'flex';
-        } else if (dessertsSection) {
-            const dessertsBottom = dessertsSection.getBoundingClientRect().bottom;
-            // Cacher si on a dépassé les desserts
-            if (dessertsBottom < 0) {
-                categories.style.display = 'none';
-            }
+        // Afficher les filtres UNIQUEMENT quand le haut du menu a dépassé le haut de l'écran
+        // (menuTop < 80 signifie que le menu est sous le header, donc on a scrollé le hero)
+        if (menuTop < 80 && menuBottom > 200) {
+            categories.style.setProperty('display', 'flex', 'important');
+        } else {
+            categories.style.setProperty('display', 'none', 'important');
         }
         
-        // Cacher si on est encore dans le hero (avant le menu)
-        if (menuTop > windowHeight / 2) {
-            categories.style.display = 'none';
+        // Vérifier aussi la section desserts
+        if (dessertsSection) {
+            const dessertsBottom = dessertsSection.getBoundingClientRect().bottom;
+            // Cacher si on a dépassé les desserts
+            if (dessertsBottom < 100) {
+                categories.style.setProperty('display', 'none', 'important');
+            }
         }
     });
     
-    // Vérifier au chargement
+    // Vérifier au chargement - ne PAS afficher les filtres par défaut
     setTimeout(() => {
         const menuTop = menuSection.getBoundingClientRect().top;
-        const windowHeight = window.innerHeight;
-        if (menuTop < windowHeight) {
-            categories.style.display = 'flex';
+        const menuBottom = menuSection.getBoundingClientRect().bottom;
+        // Seulement si on a déjà scrollé (menuTop < 80)
+        if (menuTop < 80 && menuBottom > 200) {
+            categories.style.setProperty('display', 'flex', 'important');
+        } else {
+            categories.style.setProperty('display', 'none', 'important'); // Explicitement cacher si on est sur le hero
         }
     }, 100);
 }
