@@ -62,9 +62,6 @@ $unavailabilityData = ['items' => [], 'ingredients' => []];
 if (file_exists(JSON_FILE)) {
     $unavailabilityData = json_decode(file_get_contents(JSON_FILE), true);
 }
-
-// Chargement des produits depuis data.js
-require_once __DIR__ . '/get-products-list.php';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
