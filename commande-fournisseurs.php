@@ -29,7 +29,7 @@ $isLoggedIn = isset($_SESSION['commande_logged_in']) && $_SESSION['commande_logg
 // Données des fournisseurs et produits
 $suppliers = [
     'Aphrodrink' => [
-        'email' => 'commande@aphrodrink.re',
+        'email' => 'aphrodrink@gmail.com',
         'products' => [
             ['name' => 'Coca-Cola 33 cl', 'price' => 0.65],
             ['name' => 'Coca-Cola 50 cl', 'price' => 0.95],
@@ -56,7 +56,7 @@ $suppliers = [
         ]
     ],
     'EDG' => [
-        'email' => 'commande@edg.re',
+        'email' => 'contact@pizzaclub.re',
         'products' => [
             ['name' => 'Escalope jaune VRC (kg)', 'price' => 10.56],
             ['name' => 'Merguez poulet vrac (kg)', 'price' => 9.36],
@@ -64,7 +64,7 @@ $suppliers = [
         ]
     ],
     'Zembal' => [
-        'email' => 'commande@zembal.re',
+        'email' => 'Zembal974@gmail.com',
         'products' => [
             ['name' => 'Boîte pizza 33 (x100)', 'price' => 22],
             ['name' => 'Boîte pizza 40 (x100)', 'price' => 35],
@@ -77,7 +77,7 @@ $suppliers = [
         ]
     ],
     'Topaze' => [
-        'email' => 'commande@topaze.re',
+        'email' => 'contact@pizzaclub.re',
         'products' => [
             ['name' => 'Farine Tipo 0 (10x1kg)', 'price' => 10.9],
             ['name' => 'Farine T55 Moulin Vert (10x1kg)', 'price' => 9.8],
@@ -86,7 +86,7 @@ $suppliers = [
         ]
     ],
     'Frais Import' => [
-        'email' => 'commande@fraisimport.re',
+        'email' => 'commandes@frais-import.com',
         'products' => [
             ['name' => 'Emmental râpé 45% 1kg', 'price' => 7.7],
             ['name' => 'Mozzarella râpée 2kg', 'price' => 7.4],
