@@ -1,25 +1,23 @@
+
 // ========================================
 // GESTION DES INDISPONIBILITÉS
 // ========================================
 const UNAVAILABLE_ITEMS = {
-    // Format: 'type-id': true pour marquer comme indisponible
-    // Exemples (à activer/désactiver selon vos besoins):
-    // 'pizza-17': true,        // Pizza Burger indisponible
-    // 'pate-101': true,        // Pâte Carbonara indisponible
-    // 'salade-201': true,      // Salade César indisponible
-    // 'dessert-401': true,     // Crème Brûlée indisponible
-    // 'bun-301': true,         // Bun indisponible
-    // 'roll-351': true,        // Roll indisponible
+    // Produits actuellement indisponibles
+    'pizza-35': true,
+    'pizza-5': true,
+    'dessert-401': true,
+    'dessert-403': true,
+    'dessert-404': true,
 };
 
 const UNAVAILABLE_INGREDIENTS = {
-    // Ingrédients indisponibles (affecte les suppléments)
-    // Format: 'ingredient-key': true
-    // Exemples:
-    // 'champignons': true,     // Champignons indisponibles
-    // 'saumon': true,          // Saumon indisponible
-    // 'poulet': true,          // Poulet indisponible
+    // Ingrédients actuellement indisponibles
+    'gorgonzola': true,  // Gorgonzola
+    'parmesan': true,  // Parmesan
+    'crevettes': true,  // Crevettes
 };
+
 
 // ========================================
 // CONFIGURATION DES ICÔNES PAR CATÉGORIE
