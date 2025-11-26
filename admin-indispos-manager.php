@@ -34,25 +34,29 @@ $isLoggedIn = isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'
 // ========================================
 // GESTION DE LA SAUVEGARDE
 // ========================================
-if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'save') {
-    header('Content-Type: application/json');
-    
-    $data = json_decode(file_get_contents('php://input'), true);
-    
-    if ($data) {
-        $data['lastUpdate'] = date('c');
+if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Vérifier si c'est une sauvegarde (pas le login)
+    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+    if (strpos($contentType, 'application/json') !== false) {
+        header('Content-Type: application/json');
         
-        if (file_put_contents(JSON_FILE, json_encode($data, JSON_PRETTY_PRINT))) {
-            echo json_encode(['success' => true, 'message' => 'Sauvegarde réussie']);
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        if ($data && isset($data['items']) && isset($data['ingredients'])) {
+            $data['lastUpdate'] = date('c');
+            
+            if (file_put_contents(JSON_FILE, json_encode($data, JSON_PRETTY_PRINT))) {
+                echo json_encode(['success' => true, 'message' => 'Sauvegarde réussie']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Erreur d\'écriture du fichier']);
+            }
         } else {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Erreur d\'écriture du fichier']);
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Données invalides']);
         }
-    } else {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Données invalides']);
+        exit;
     }
-    exit;
 }
 
 // ========================================
