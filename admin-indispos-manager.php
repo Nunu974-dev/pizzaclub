@@ -725,20 +725,58 @@ require_once __DIR__ . '/get-products-list.php';
             grid.innerHTML = '';
             
             const ingredients = [
-                'gorgonzola', 'parmesan', 'crevettes', 'champignons', 'olives', 
-                'poivrons', 'oignons', 'mozzarella', 'chevre', 'chorizo', 
-                'jambon', 'merguez', 'poulet', 'boeuf', 'lardons', 'thon', 
-                'anchois', 'saumon', 'reblochon', 'raclette', 'roquefort'
+                // Fromages
+                'mozzarella', 'chevre', 'emmental', 'roquefort', 'raclette', 'reblochon', 
+                'cheddar', 'gorgonzola', 'parmesan',
+                
+                // Viandes
+                'chorizo', 'jambon', 'merguez', 'poulet', 'poulet-fume', 'sarcive-poulet', 
+                'saucisse-fumee', 'boeuf', 'lardons',
+                
+                // Produits de la mer
+                'thon', 'anchois', 'crevettes', 'saumon',
+                
+                // Légumes
+                'champignons', 'olives', 'poivrons', 'oignons', 'tomates', 
+                'pommes-de-terre', 'mais', 'capres', 'gros-piment', 'salade',
+                
+                // Autres
+                'oeuf', 'miel', 'creme', 'citron', 'ananas'
             ];
+            
+            // Noms d'affichage pour les ingrédients
+            const ingredientNames = {
+                // Fromages
+                'mozzarella': 'Mozzarella', 'chevre': 'Chèvre', 'emmental': 'Emmental', 
+                'roquefort': 'Roquefort', 'raclette': 'Raclette', 'reblochon': 'Reblochon',
+                'cheddar': 'Cheddar', 'gorgonzola': 'Gorgonzola', 'parmesan': 'Parmesan',
+                
+                // Viandes
+                'chorizo': 'Chorizo', 'jambon': 'Jambon/Épaule', 'merguez': 'Merguez poulet',
+                'poulet': 'Poulet', 'poulet-fume': 'Poulet fumé', 'sarcive-poulet': 'Sarcive poulet',
+                'saucisse-fumee': 'Saucisse fumée poulet', 'boeuf': 'Bœuf haché', 'lardons': 'Lardons',
+                
+                // Produits de la mer
+                'thon': 'Thon', 'anchois': 'Anchois', 'crevettes': 'Crevettes', 'saumon': 'Saumon fumé',
+                
+                // Légumes
+                'champignons': 'Champignons frais', 'olives': 'Olives', 'poivrons': 'Poivrons',
+                'oignons': 'Oignons', 'tomates': 'Tomates fraîches', 'pommes-de-terre': 'Pommes de terre',
+                'mais': 'Maïs', 'capres': 'Câpres', 'gros-piment': 'Gros piment', 'salade': 'Salade',
+                
+                // Autres
+                'oeuf': 'Œuf', 'miel': 'Miel', 'creme': 'Crème fraîche', 'citron': 'Citron', 'ananas': 'Ananas Victoria'
+            };
             
             ingredients.forEach(ingredient => {
                 const isUnavailable = unavailability.ingredients[ingredient] || false;
+                const displayName = ingredientNames[ingredient] || ingredient.charAt(0).toUpperCase() + ingredient.slice(1);
                 
                 grid.innerHTML += `
                     <div class="product-card ${isUnavailable ? 'unavailable' : ''}">
                         <div class="product-header">
                             <div class="product-info">
-                                <h3>${ingredient.charAt(0).toUpperCase() + ingredient.slice(1)}</h3>
+                                <h3>${displayName}</h3>
                                 <p>Ingrédient</p>
                             </div>
                             <label class="toggle-switch">
