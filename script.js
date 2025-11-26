@@ -54,8 +54,11 @@ function openModal(modalElement) {
 // ========================================
 // INITIALISATION
 // ========================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Le scroll en haut est déjà géré dans le <head> du HTML pour être plus rapide
+    
+    // Charger les indisponibilités depuis le serveur
+    await loadUnavailability();
     
     loadCartFromStorage(); // Charger le panier EN PREMIER
     initApp(); // Puis initialiser avec les préférences
@@ -225,17 +228,36 @@ function initApp() {
 // ========================================
 // GESTION DES INDISPONIBILITÉS
 // ========================================
+// Chargement dynamique des indisponibilités depuis le serveur
+let DYNAMIC_UNAVAILABLE_ITEMS = {};
+let DYNAMIC_UNAVAILABLE_INGREDIENTS = {};
+
+// Chargement au démarrage
+async function loadUnavailability() {
+    try {
+        const response = await fetch('get-unavailability.php');
+        const data = await response.json();
+        DYNAMIC_UNAVAILABLE_ITEMS = data.items || {};
+        DYNAMIC_UNAVAILABLE_INGREDIENTS = data.ingredients || {};
+        console.log('✅ Indisponibilités chargées:', data);
+    } catch (error) {
+        console.error('❌ Erreur chargement indisponibilités:', error);
+        // Fallback sur data.js si l'API échoue
+        DYNAMIC_UNAVAILABLE_ITEMS = UNAVAILABLE_ITEMS || {};
+        DYNAMIC_UNAVAILABLE_INGREDIENTS = UNAVAILABLE_INGREDIENTS || {};
+    }
+}
+
 function isItemUnavailable(id, type) {
     const key = `${type}-${id}`;
-    return UNAVAILABLE_ITEMS && UNAVAILABLE_ITEMS[key] === true;
+    return DYNAMIC_UNAVAILABLE_ITEMS[key] === true;
 }
 
 function isIngredientUnavailable(ingredientKey) {
-    return UNAVAILABLE_INGREDIENTS && UNAVAILABLE_INGREDIENTS[ingredientKey] === true;
+    return DYNAMIC_UNAVAILABLE_INGREDIENTS[ingredientKey] === true;
 }
 
 function getAvailableIngredients(ingredientsList) {
-    if (!UNAVAILABLE_INGREDIENTS) return ingredientsList;
     return Object.keys(ingredientsList).filter(key => !isIngredientUnavailable(key));
 }
 

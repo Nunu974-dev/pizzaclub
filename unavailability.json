@@ -1,0 +1,15 @@
+{
+  "items": {
+    "pizza-35": true,
+    "pizza-5": true,
+    "dessert-401": true,
+    "dessert-403": true,
+    "dessert-404": true
+  },
+  "ingredients": {
+    "gorgonzola": true,
+    "parmesan": true,
+    "crevettes": true
+  },
+  "lastUpdate": "2025-11-26T00:00:00Z"
+}
