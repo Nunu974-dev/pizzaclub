@@ -431,6 +431,14 @@ input, textarea, select {
     gap: 1rem;
     flex-wrap: wrap;
     margin-bottom: 2rem;
+    margin-top: 3rem; /* Espacement avec le hero sur desktop */
+}
+
+/* Sur mobile, pas de marge supérieure */
+@media (max-width: 768px) {
+    .main-categories {
+        margin-top: 1.5rem;
+    }
 }
 
 .category-btn {
