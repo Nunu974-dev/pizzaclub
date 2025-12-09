@@ -431,13 +431,15 @@ input, textarea, select {
     gap: 1rem;
     flex-wrap: wrap;
     margin-bottom: 2rem;
-    margin-top: 3rem; /* Espacement avec le hero sur desktop */
+    margin-top: 4rem !important; /* Espacement avec le hero sur desktop - !important pour forcer */
+    padding-top: 2rem; /* Padding supplémentaire pour être sûr */
 }
 
 /* Sur mobile, pas de marge supérieure */
 @media (max-width: 768px) {
     .main-categories {
-        margin-top: 1.5rem;
+        margin-top: 1.5rem !important;
+        padding-top: 0;
     }
 }
 
