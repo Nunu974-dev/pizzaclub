@@ -3703,6 +3703,39 @@ function validateCustomerForm() {
 function displayOrderSummary() {
     // Informations client
     const summaryCustomer = document.getElementById('summaryCustomer');
+    
+    // Message d'avertissement pour les livraisons
+    let deliveryWarning = '';
+    if (customerData.deliveryMode === 'livraison') {
+        const deliveredAreas = CONFIG.delivery.deliveredAreas['97410'] || [];
+        deliveryWarning = `
+            <div style="
+                background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+                border-left: 4px solid #FF9800;
+                padding: 15px;
+                margin: 15px 0;
+                border-radius: 8px;
+                font-size: 13px;
+            ">
+                <p style="margin: 0 0 10px 0; font-weight: 600; color: #E65100;">
+                    📍 ZONES DE LIVRAISON - IMPORTANT
+                </p>
+                <p style="margin: 0 0 8px 0; color: #555;">
+                    <strong>✅ Secteurs desservis à Saint-Pierre :</strong>
+                </p>
+                <p style="margin: 0 0 8px 0; font-size: 12px; color: #666; line-height: 1.5;">
+                    ${deliveredAreas.join(' • ')}
+                </p>
+                <p style="margin: 0; font-size: 12px; color: #d32f2f; font-weight: 600;">
+                    ❌ Non desservis : Mont-Vert-les-Bas, Mont-Vert-les-Hauts, Grand Bois
+                </p>
+                <p style="margin: 10px 0 0 0; font-size: 11px; color: #666;">
+                    ℹ️ Si vous avez un doute, nous vous contacterons pour confirmer.
+                </p>
+            </div>
+        `;
+    }
+    
     summaryCustomer.innerHTML = `
         <p><strong>${customerData.firstName} ${customerData.lastName}</strong></p>
         <p>${customerData.phone}</p>
@@ -3712,6 +3745,7 @@ function displayOrderSummary() {
             <p>${customerData.postalCode} ${customerData.city}</p>
         ` : '<p><strong>À emporter</strong></p>'}
         ${customerData.comments ? `<p><em>${customerData.comments}</em></p>` : ''}
+        ${deliveryWarning}
     `;
 
     // Articles de la commande
