@@ -1231,6 +1231,58 @@ function getDeliveryFee(subtotal) {
 }
 
 // ========================================
+// VALIDATION ZONE DE LIVRAISON
+// ========================================
+function isInDeliveryZone(postalCode, address = '', city = '') {
+    // Si pas de zones définies, accepter tout
+    if (!CONFIG.delivery.deliveryZones || CONFIG.delivery.deliveryZones.length === 0) {
+        return { isValid: true };
+    }
+    
+    // Nettoyer le code postal (enlever espaces)
+    const cleanPostalCode = postalCode.trim();
+    
+    // Vérifier si le code postal est dans la liste
+    if (!CONFIG.delivery.deliveryZones.includes(cleanPostalCode)) {
+        return { 
+            isValid: false, 
+            message: CONFIG.delivery.outOfZoneMessage + '\n\nZones desservies : ' + CONFIG.delivery.deliveryZones.join(', ')
+        };
+    }
+    
+    // Si le code postal est accepté, vérifier les exclusions de quartiers
+    if (CONFIG.delivery.excludedAreas && CONFIG.delivery.excludedAreas[cleanPostalCode]) {
+        const exclusions = CONFIG.delivery.excludedAreas[cleanPostalCode];
+        const fullAddress = (address + ' ' + city).toLowerCase();
+        
+        // Vérifier les mots-clés exclus dans l'adresse
+        if (exclusions.excludedKeywords) {
+            for (const keyword of exclusions.excludedKeywords) {
+                if (fullAddress.includes(keyword.toLowerCase())) {
+                    const message = exclusions.message || 
+                        `🚫 Nous ne livrons pas dans ce quartier.\n\n✅ Quartiers desservis :\n${(CONFIG.delivery.deliveredAreas[cleanPostalCode] || []).join('\n')}`;
+                    return { isValid: false, message };
+                }
+            }
+        }
+        
+        // Vérifier les noms de quartiers exclus
+        if (exclusions.excludedDistricts) {
+            for (const district of exclusions.excludedDistricts) {
+                if (fullAddress.includes(district.toLowerCase())) {
+                    const message = exclusions.message || 
+                        `🚫 Nous ne livrons pas dans ce quartier.\n\n✅ Quartiers desservis :\n${(CONFIG.delivery.deliveredAreas[cleanPostalCode] || []).join('\n')}`;
+                    return { isValid: false, message };
+                }
+            }
+        }
+    }
+    
+    // Tout est OK
+    return { isValid: true };
+}
+
+// ========================================
 // CODE PROMO
 // ========================================
 function applyPromoCode() {
@@ -3627,6 +3679,19 @@ function validateCustomerForm() {
         customerData.address = document.getElementById('address').value;
         customerData.postalCode = document.getElementById('postalCode').value;
         customerData.city = document.getElementById('city').value;
+        
+        // Vérifier si le code postal et l'adresse sont dans la zone de livraison
+        const zoneCheck = isInDeliveryZone(
+            customerData.postalCode, 
+            customerData.address, 
+            customerData.city
+        );
+        
+        if (!zoneCheck.isValid) {
+            showNotification(zoneCheck.message, 'error');
+            document.getElementById('address').focus();
+            return false;
+        }
     }
 
     // Sauvegarder dans localStorage (base client simulée)

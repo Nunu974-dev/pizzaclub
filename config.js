@@ -24,7 +24,62 @@ const CONFIG = {
         estimatedTime: {
             livraison: '45-60 min',
             emporter: '15-20 min'
-        }
+        },
+        // Zones de livraison (codes postaux acceptés)
+        deliveryZones: [
+            '97410', // Saint-Pierre (avec restrictions de quartiers)
+        ],
+        
+        // ========================================
+        // QUARTIERS EXCLUS PAR CODE POSTAL
+        // ========================================
+        // Pour Saint-Pierre (97410), certains quartiers ne sont PAS livrés
+        excludedAreas: {
+            '97410': {
+                // Quartiers NON desservis
+                excludedDistricts: [
+                    'Mont-Vert-les-Bas',
+                    'Mont Vert les Bas',
+                    'Mont-Vert-les-Hauts', 
+                    'Mont Vert les Hauts',
+                    'Grand Bois',
+                    'Grand-Bois',
+                    'Montvert',
+                    'Mont Vert'
+                ],
+                // Mots-clés dans l'adresse qui indiquent une zone non desservie
+                excludedKeywords: [
+                    'mont vert',
+                    'montvert',
+                    'mont-vert',
+                    'grand bois',
+                    'grand-bois'
+                ],
+                // Message personnalisé
+                message: '🚫 Nous ne livrons pas à Mont-Vert et Grand Bois. Secteurs desservis : Terre-Sainte, Ravine Blanche, Casabona, Centre-Ville, Ligne Paradis (bas), Cité Jasmin, Chemin Badamier, etc.'
+            }
+        },
+        
+        // ZONES DESSERVIES À SAINT-PIERRE (97410)
+        // Pour information/affichage client
+        deliveredAreas: {
+            '97410': [
+                'Centre-Ville Saint-Pierre',
+                'Terre-Sainte',
+                'Ravine Blanche',
+                'Casabona (partie 97410)',
+                'Centre Ouest',
+                'Ligne Paradis (bas, côté Saint-Pierre)',
+                'Cité Jasmin',
+                'Chemin Badamier',
+                'Bois d\'Olives (limite)',
+                'Pierrefonds (proche centre)',
+                'Ravine des Cabris (limite 97410)'
+            ]
+        },
+        
+        // Message affiché si hors zone (code postal pas dans deliveryZones)
+        outOfZoneMessage: '😔 Désolé, nous ne livrons pas encore dans votre secteur. Vous pouvez commander en mode "À emporter".'
     },
     
     // Restaurant info
