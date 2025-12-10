@@ -285,7 +285,9 @@ foreach ($orderData['items'] as $item) {
     }
     
     // Ajouter les ingrédients ajoutés (pizzas, buns, rolls)
-    if (!empty($custom['added']) && is_array($custom['added']) && count($custom['added']) > 0) {
+    // Support des deux formats: 'added' et 'addedIngredients'
+    $addedList = $custom['added'] ?? $custom['addedIngredients'] ?? [];
+    if (!empty($addedList) && is_array($addedList) && count($addedList) > 0) {
         $names = [
             'champignons' => 'Champignons', 'olives' => 'Olives', 'poivrons' => 'Poivrons',
             'oignons' => 'Oignons', 'tomates' => 'Tomates', 'pommesDeTerre' => 'Pommes de terre',
@@ -294,16 +296,24 @@ foreach ($orderData['items'] as $item) {
             'jambon' => 'Jambon', 'poulet' => 'Poulet', 'merguez' => 'Merguez',
             'chorizo' => 'Chorizo', 'boeuf' => 'Bœuf', 'lardons' => 'Lardons',
             'thon' => 'Thon', 'anchois' => 'Anchois', 'crevettes' => 'Crevettes',
-            'saumon' => 'Saumon', 'oeuf' => 'Œuf', 'miel' => 'Miel'
+            'saumon' => 'Saumon', 'oeuf' => 'Œuf', 'miel' => 'Miel',
+            'maxiGarniture' => 'MAXI GARNITURE (+50%)'
         ];
         $addedNames = array_map(function($key) use ($names) {
-            return $names[$key] ?? $key;
-        }, $custom['added']);
+            // Si c'est déjà un texte formaté (ex: "Pomme de terre"), le garder tel quel
+            if (strpos($key, ' ') !== false || strpos($key, 'é') !== false || strpos($key, 'è') !== false) {
+                return $key;
+            }
+            // Sinon chercher dans le tableau de correspondance
+            return $names[$key] ?? ucfirst($key);
+        }, $addedList);
         $itemsList .= "\n  ➕ AJOUTS: " . implode(', ', $addedNames);
     }
     
     // Ajouter les ingrédients retirés (pizzas, buns, rolls)
-    if (!empty($custom['removed']) && is_array($custom['removed']) && count($custom['removed']) > 0) {
+    // Support des deux formats: 'removed' et 'removedIngredients'
+    $removedList = $custom['removed'] ?? $custom['removedIngredients'] ?? [];
+    if (!empty($removedList) && is_array($removedList) && count($removedList) > 0) {
         $names = [
             'champignons' => 'Champignons', 'olives' => 'Olives', 'poivrons' => 'Poivrons',
             'oignons' => 'Oignons', 'tomates' => 'Tomates', 'pommesDeTerre' => 'Pommes de terre',
@@ -315,8 +325,13 @@ foreach ($orderData['items'] as $item) {
             'saumon' => 'Saumon', 'oeuf' => 'Œuf', 'miel' => 'Miel'
         ];
         $removedNames = array_map(function($key) use ($names) {
-            return $names[$key] ?? $key;
-        }, $custom['removed']);
+            // Si c'est déjà un texte formaté (ex: "Pomme de terre"), le garder tel quel
+            if (strpos($key, ' ') !== false || strpos($key, 'é') !== false || strpos($key, 'è') !== false) {
+                return $key;
+            }
+            // Sinon chercher dans le tableau de correspondance
+            return $names[$key] ?? ucfirst($key);
+        }, $removedList);
         $itemsList .= "\n  ➖ RETRAITS: " . implode(', ', $removedNames);
     }
     
