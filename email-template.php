@@ -142,26 +142,25 @@ function getClientEmailTemplate($orderData) {
                                     echo htmlspecialchars(implode(', ', $optionLabels));
                                     ?></small>
                                 <?php endif; ?>
-                                        ]</small>
-                                    <?php endif; ?>
-                                    <?php if (!empty($custom['supplements'])): ?>
-                                        <br><small style="color: #28a745;">+ Suppléments: <?php
-                                        $names = [
-                                            'champignons' => 'Champignons', 'olives' => 'Olives', 'poivrons' => 'Poivrons',
-                                            'oignons' => 'Oignons', 'tomates' => 'Tomates', 'pommesDeTerre' => 'Pommes de terre',
-                                            'mais' => 'Maïs', 'grosPiment' => 'Gros piment', 'fromage' => 'Fromage',
-                                            'chevre' => 'Chèvre', 'gorgonzola' => 'Gorgonzola', 'parmesan' => 'Parmesan',
-                                            'jambon' => 'Jambon', 'poulet' => 'Poulet', 'merguez' => 'Merguez',
-                                            'chorizo' => 'Chorizo', 'boeuf' => 'Bœuf', 'lardons' => 'Lardons',
-                                            'thon' => 'Thon', 'anchois' => 'Anchois', 'crevettes' => 'Crevettes',
-                                            'saumon' => 'Saumon', 'oeuf' => 'Œuf', 'miel' => 'Miel'
-                                        ];
-                                        $suppNames = array_map(function($key) use ($names) {
-                                            return $names[$key] ?? $key;
-                                        }, $custom['supplements']);
-                                        echo htmlspecialchars(implode(', ', $suppNames));
-                                        ?></small>
-                                    <?php endif; ?>
+                                
+                                <?php if (!empty($custom['supplements'])): ?>
+                                    <br><small style="color: #28a745;"><strong>➕ SUPPLÉMENTS:</strong> <?php
+                                    $names = [
+                                        'champignons' => 'Champignons', 'olives' => 'Olives', 'poivrons' => 'Poivrons',
+                                        'oignons' => 'Oignons', 'tomates' => 'Tomates', 'pommesDeTerre' => 'Pommes de terre',
+                                        'mais' => 'Maïs', 'grosPiment' => 'Gros piment', 'fromage' => 'Fromage',
+                                        'chevre' => 'Chèvre', 'gorgonzola' => 'Gorgonzola', 'parmesan' => 'Parmesan',
+                                        'jambon' => 'Jambon', 'poulet' => 'Poulet', 'merguez' => 'Merguez',
+                                        'chorizo' => 'Chorizo', 'boeuf' => 'Bœuf', 'lardons' => 'Lardons',
+                                        'thon' => 'Thon', 'anchois' => 'Anchois', 'crevettes' => 'Crevettes',
+                                        'saumon' => 'Saumon', 'oeuf' => 'Œuf', 'miel' => 'Miel'
+                                    ];
+                                    $suppNames = array_map(function($key) use ($names) {
+                                        return $names[$key] ?? $key;
+                                    }, $custom['supplements']);
+                                    echo htmlspecialchars(implode(', ', $suppNames));
+                                    ?></small>
+                                <?php endif; ?>
                                 
                                 <?php // BUNS ?>
                                 <?php elseif ($item['type'] === 'bun'): ?>
