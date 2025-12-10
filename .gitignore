@@ -6,3 +6,4 @@ config/*.php
 twilio-config.php
 whatsapp-config.php
 brevo-config.php
+.env

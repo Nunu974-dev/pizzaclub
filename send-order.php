@@ -511,28 +511,64 @@ $smsSent = false;
 try {
     error_log("======= TENTATIVE ENVOI SMS BREVO =======");
     
-    // Chercher le fichier config dans plusieurs emplacements
-    $configPaths = [
-        __DIR__ . '/config/brevo-config.php',  // Dossier config (ignoré par Git)
-        __DIR__ . '/brevo-config.php'          // Racine (fallback)
-    ];
-    
-    $configFound = false;
-    foreach ($configPaths as $configPath) {
-        if (file_exists($configPath)) {
-            error_log("✓ Config trouvé: $configPath");
-            $brevoConfig = require $configPath;
-            $configFound = true;
-            break;
+    // PRIORITÉ 1: Fichier .env
+    $envPath = __DIR__ . '/.env';
+    if (file_exists($envPath)) {
+        error_log("✓ Chargement depuis .env");
+        $envLines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        $brevoApiKey = null;
+        $brevoSender = 'PizzaClub';
+        $brevoRecipient = '+262692630364';
+        
+        foreach ($envLines as $line) {
+            if (strpos($line, '=') !== false && strpos($line, '#') !== 0) {
+                list($key, $value) = explode('=', $line, 2);
+                $key = trim($key);
+                $value = trim($value);
+                if ($key === 'BREVO_API_KEY') $brevoApiKey = $value;
+                if ($key === 'BREVO_SENDER') $brevoSender = $value;
+                if ($key === 'BREVO_RECIPIENT') $brevoRecipient = $value;
+            }
+        }
+    }
+    // PRIORITÉ 2: Variables d'environnement Hostinger
+    elseif (getenv('BREVO_API_KEY')) {
+        error_log("✓ Config depuis variables d'environnement");
+        $brevoApiKey = getenv('BREVO_API_KEY');
+        $brevoSender = getenv('BREVO_SENDER') ?: 'PizzaClub';
+        $brevoRecipient = getenv('BREVO_RECIPIENT') ?: '+262692630364';
+    } 
+    // PRIORITÉ 3: Fichier config (fallback local)
+    else {
+        error_log("Recherche fichier config...");
+        $configPaths = [
+            __DIR__ . '/config/brevo-config.php',
+            __DIR__ . '/brevo-config.php'
+        ];
+        
+        $configFound = false;
+        foreach ($configPaths as $configPath) {
+            if (file_exists($configPath)) {
+                error_log("✓ Config trouvé: $configPath");
+                $brevoConfig = require $configPath;
+                $configFound = true;
+                break;
+            }
+        }
+        
+        if (!$configFound) {
+            error_log("ERREUR: ni .env ni variables d'environnement ni brevo-config.php trouvés");
+            $brevoApiKey = null;
+            $brevoSender = null;
+            $brevoRecipient = null;
+        } else {
+            $brevoApiKey = $brevoConfig['api_key'];
+            $brevoSender = $brevoConfig['sender_name'];
+            $brevoRecipient = $brevoConfig['recipient_number'];
         }
     }
     
-    if (!$configFound) {
-        error_log("ERREUR: brevo-config.php introuvable dans config/ ou racine");
-    } else {
-        $brevoApiKey = $brevoConfig['api_key'];
-        $brevoSender = $brevoConfig['sender_name'];
-        $brevoRecipient = $brevoConfig['recipient_number'];
+    if ($brevoApiKey) {
         
         error_log("Config chargée:");
         error_log("  Sender: $brevoSender");
