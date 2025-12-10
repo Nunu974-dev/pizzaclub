@@ -3645,6 +3645,9 @@ function updateDeliveryMode() {
     
     // Afficher un message informatif sur les délais
     showDeliveryTimeInfo(mode);
+    
+    // Mettre à jour l'affichage de l'heure estimée dans le cadre bleu
+    displayDeliveryTimeInfo();
 
     updateCartTotals();
 }
@@ -3656,6 +3659,9 @@ function showDeliveryTimeInfo(mode) {
     if (existingInfo) {
         existingInfo.remove();
     }
+    
+    // Si pas de mode défini, ne rien afficher
+    if (!mode) return;
     
     // Créer le nouveau message
     const timeInfo = document.createElement('div');
@@ -3685,12 +3691,25 @@ function showDeliveryTimeInfo(mode) {
         </div>
     `;
     
-    // Insérer après les boutons radio de mode de livraison
-    const deliveryModeSection = document.querySelector('.delivery-mode-section') || 
-                               document.querySelector('input[name="deliveryMode"]')?.closest('.form-group');
+    // Chercher plusieurs emplacements possibles pour insérer le message
+    let insertLocation = document.querySelector('.delivery-mode-section');
     
-    if (deliveryModeSection) {
-        deliveryModeSection.insertAdjacentElement('afterend', timeInfo);
+    if (!insertLocation) {
+        // Chercher le conteneur des radios
+        const radioInputs = document.querySelectorAll('input[name="deliveryMode"]');
+        if (radioInputs.length > 0) {
+            // Remonter jusqu'au conteneur parent
+            insertLocation = radioInputs[0].closest('.form-group') || 
+                            radioInputs[0].closest('div') ||
+                            radioInputs[0].parentElement;
+        }
+    }
+    
+    if (insertLocation) {
+        insertLocation.insertAdjacentElement('afterend', timeInfo);
+        console.log('✅ Message de délai affiché:', mode, time);
+    } else {
+        console.error('❌ Impossible de trouver l\'emplacement pour le message de délai');
     }
 }
 
