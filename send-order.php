@@ -497,11 +497,22 @@ if (!empty($orderData['customer']['email'])) {
 $smsSent = false;
 
 try {
-    if (file_exists(__DIR__ . '/brevo-config.php')) {
+    error_log("======= TENTATIVE ENVOI SMS BREVO =======");
+    
+    if (!file_exists(__DIR__ . '/brevo-config.php')) {
+        error_log("ERREUR: brevo-config.php introuvable");
+    } else {
+        error_log("✓ Fichier brevo-config.php trouvé");
+        
         $brevoConfig = require __DIR__ . '/brevo-config.php';
         $brevoApiKey = $brevoConfig['api_key'];
         $brevoSender = $brevoConfig['sender_name'];
         $brevoRecipient = $brevoConfig['recipient_number'];
+        
+        error_log("Config chargée:");
+        error_log("  Sender: $brevoSender");
+        error_log("  Recipient: $brevoRecipient");
+        error_log("  API Key: " . substr($brevoApiKey, 0, 20) . "...");
         
         // Message SMS court (160 caractères max)
         $smsMessage = "COMMANDE {$orderData['orderNumber']}\n";
@@ -509,6 +520,9 @@ try {
         $smsMessage .= "Tel: {$orderData['customer']['phone']}\n";
         $smsMessage .= ($orderData['customer']['deliveryMode'] === 'livraison' ? 'LIVRAISON' : 'A EMPORTER') . "\n";
         $smsMessage .= "TOTAL: " . number_format($orderData['total'], 2) . " EUR";
+        
+        error_log("Message SMS:");
+        error_log($smsMessage);
         
         // API Brevo
         $brevoUrl = "https://api.brevo.com/v3/transactionalSMS/sms";
@@ -520,6 +534,9 @@ try {
             'type' => 'transactional'
         ];
         
+        error_log("Données envoyées à Brevo:");
+        error_log(json_encode($brevoData, JSON_PRETTY_PRINT));
+        
         $ch = curl_init($brevoUrl);
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($brevoData));
@@ -529,6 +546,8 @@ try {
             'Accept: application/json'
         ]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        
+        error_log("Envoi requête CURL vers: $brevoUrl");
         
         $brevoResponse = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -552,13 +571,17 @@ try {
             error_log("✓ SMS ENVOYÉ!");
         } else {
             error_log("✗ SMS ÉCHOUÉ - Code: $httpCode");
+            
+            // Décoder la réponse pour avoir plus de détails
+            $responseData = json_decode($brevoResponse, true);
+            if ($responseData) {
+                error_log("Détails erreur: " . json_encode($responseData, JSON_PRETTY_PRINT));
+            }
         }
-        error_log("======= FIN BREVO SMS =======")
-    } else {
-        error_log("Brevo non configuré - fichier brevo-config.php introuvable");
+        error_log("======= FIN BREVO SMS =======");
     }
 } catch (Exception $e) {
-    error_log("ERREUR Brevo SMS: " . $e->getMessage());
+    error_log("EXCEPTION Brevo SMS: " . $e->getMessage());
 }
 
 // ========================================

@@ -4171,7 +4171,31 @@ function showOrderConfirmation(orderData) {
 }
 
 function closeConfirmationModal() {
-    document.getElementById('confirmationModal').classList.remove('active');
+    const modal = document.getElementById('confirmationModal');
+    modal.classList.remove('active');
+    
+    // Réinitialiser complètement l'état après la confirmation
+    // pour permettre une nouvelle commande sans rafraîchir
+    resetOrderState();
+}
+
+// Fonction pour réinitialiser l'état de commande
+function resetOrderState() {
+    // Réinitialiser les données client dans le localStorage
+    localStorage.removeItem('customerData');
+    
+    // Réinitialiser le formulaire de commande si besoin
+    const checkoutForm = document.getElementById('checkoutForm');
+    if (checkoutForm) {
+        checkoutForm.reset();
+    }
+    
+    // S'assurer que le panier est bien vide
+    if (cart.length > 0) {
+        clearCart();
+    }
+    
+    console.log('État de commande réinitialisé - prêt pour une nouvelle commande');
 }
 
 // ========================================
