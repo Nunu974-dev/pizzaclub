@@ -3545,6 +3545,10 @@ function openCheckoutModal() {
     openModal(modal);
     goToStep(1);
     closeCart();
+    
+    // Afficher le message de délai selon le mode sélectionné
+    const selectedMode = document.querySelector('input[name="deliveryMode"]:checked')?.value || 'livraison';
+    showDeliveryTimeInfo(selectedMode);
 }
 
 function displayDeliveryTimeInfo() {
@@ -3629,8 +3633,56 @@ function updateDeliveryMode() {
             field.querySelectorAll('input').forEach(input => input.required = false);
         }
     });
+    
+    // Afficher un message informatif sur les délais
+    showDeliveryTimeInfo(mode);
 
     updateCartTotals();
+}
+
+// Afficher info délai de préparation/livraison
+function showDeliveryTimeInfo(mode) {
+    // Supprimer l'ancien message s'il existe
+    const existingInfo = document.querySelector('.delivery-time-info');
+    if (existingInfo) {
+        existingInfo.remove();
+    }
+    
+    // Créer le nouveau message
+    const timeInfo = document.createElement('div');
+    timeInfo.className = 'delivery-time-info';
+    timeInfo.style.cssText = `
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin: 12px 0;
+        font-size: 14px;
+        color: #856404;
+        display: flex;
+        align-items: start;
+        gap: 10px;
+    `;
+    
+    const icon = mode === 'livraison' ? '🛵' : '🏃';
+    const time = mode === 'livraison' ? '60 minutes' : '20 minutes';
+    const label = mode === 'livraison' ? 'Livraison' : 'À emporter';
+    
+    timeInfo.innerHTML = `
+        <span style="font-size: 20px;">${icon}</span>
+        <div>
+            <strong>${label} - Environ ${time}</strong><br>
+            <small style="opacity: 0.9;">⏱️ Ce délai est indicatif et peut varier selon l'affluence et les commandes en cours.</small>
+        </div>
+    `;
+    
+    // Insérer après les boutons radio de mode de livraison
+    const deliveryModeSection = document.querySelector('.delivery-mode-section') || 
+                               document.querySelector('input[name="deliveryMode"]')?.closest('.form-group');
+    
+    if (deliveryModeSection) {
+        deliveryModeSection.insertAdjacentElement('afterend', timeInfo);
+    }
 }
 
 function validateCustomerForm() {

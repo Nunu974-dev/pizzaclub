@@ -2,3 +2,6 @@ img/
 .DS_Store
 whatsapp-config.php
 orders/
+brevo-config.php
+twilio-config.php
+whatsapp-config.php

@@ -1,5 +1,7 @@
 <?php
 // Configuration
+date_default_timezone_set('Indian/Reunion'); // Fuseau horaire La Réunion (UTC+4)
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST');
@@ -97,7 +99,9 @@ foreach ($orderData['items'] as $item) {
         $productType = '[PIZZA] ';
     }
     
-    $itemsList .= $productType . $item['name'];
+    $itemsList .= "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+    $itemsList .= $productType . $item['name'] . " x" . $item['quantity'];
+    $itemsList .= "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
     
     // ===== TRAITEMENT SPÉCIAL POUR LES FORMULES =====
     if ($item['type'] === 'formule') {
@@ -247,136 +251,138 @@ foreach ($orderData['items'] as $item) {
     }
     // ===== FIN TRAITEMENT FORMULES =====
     
-    // Ajouter la taille si présente (pour pizzas et pâtes normales, pas formules)
-    elseif (!empty($custom['size'])) {
-        $sizeLabel = '';
-        switch($custom['size']) {
-            case 'moyenne': $sizeLabel = '33cm'; break;
-            case 'grande': $sizeLabel = '40cm'; break;
-            case 'L': $sizeLabel = 'Large'; break;
-            case 'XL': $sizeLabel = 'XL'; break;
-            default: $sizeLabel = $custom['size'];
-        }
-        $itemsList .= " - Taille: " . $sizeLabel;
-    } elseif (!empty($item['size'])) {
-        $itemsList .= " - Taille: " . $item['size'];
-    }
-    
-    // Ajouter la base pour PIZZAS individuelles (non-formules)
-    if ($item['type'] === 'pizza' && !empty($custom['base']) && $item['type'] !== 'formule') {
-        $baseLabel = $custom['base'] === 'creme' ? 'Crème' : 'Tomate';
-        $itemsList .= "\n  Base: " . $baseLabel;
-    }
-    
-    // Ajouter la base pour PÂTES individuelles (non-formules)
-    if ($item['type'] === 'pate' && !empty($custom['base']) && $item['type'] !== 'formule') {
-        $itemsList .= "\n  Base: " . $custom['base'];
-    }
-    
-    // Ajouter les ingrédients des rolls (obligatoire : 2 ingrédients)
-    if (!empty($custom['ingredients']) && is_array($custom['ingredients'])) {
-        $itemsList .= "\n  Ingrédients: " . implode(', ', $custom['ingredients']);
-    }
-    
-    // Ajouter la base pour rolls et buns (crème/tomate)
-    if (($item['type'] === 'roll' || $item['type'] === 'bun') && !empty($custom['base'])) {
-        $baseLabel = $custom['base'] === 'creme' ? 'Crème' : 'Tomate';
-        $itemsList .= "\n  Base: " . $baseLabel;
-    }
-    
-    // Ajouter les ingrédients ajoutés (pizzas, buns, rolls)
-    // Support des deux formats: 'added' et 'addedIngredients'
-    $addedList = $custom['added'] ?? $custom['addedIngredients'] ?? [];
-    if (!empty($addedList) && is_array($addedList) && count($addedList) > 0) {
-        $names = [
-            'champignons' => 'Champignons', 'olives' => 'Olives', 'poivrons' => 'Poivrons',
-            'oignons' => 'Oignons', 'tomates' => 'Tomates', 'pommesDeTerre' => 'Pommes de terre',
-            'mais' => 'Maïs', 'grosPiment' => 'Gros piment', 'fromage' => 'Fromage',
-            'chevre' => 'Chèvre', 'gorgonzola' => 'Gorgonzola', 'parmesan' => 'Parmesan',
-            'jambon' => 'Jambon', 'poulet' => 'Poulet', 'merguez' => 'Merguez',
-            'chorizo' => 'Chorizo', 'boeuf' => 'Bœuf', 'lardons' => 'Lardons',
-            'thon' => 'Thon', 'anchois' => 'Anchois', 'crevettes' => 'Crevettes',
-            'saumon' => 'Saumon', 'oeuf' => 'Œuf', 'miel' => 'Miel',
-            'maxiGarniture' => 'MAXI GARNITURE (+50%)'
-        ];
-        $addedNames = array_map(function($key) use ($names) {
-            // Si c'est déjà un texte formaté (ex: "Pomme de terre"), le garder tel quel
-            if (strpos($key, ' ') !== false || strpos($key, 'é') !== false || strpos($key, 'è') !== false) {
-                return $key;
+    // ===== PIZZAS, PÂTES, SALADES INDIVIDUELLES =====
+    else {
+        // ── TAILLE ──
+        if (!empty($custom['size'])) {
+            $sizeLabel = '';
+            switch($custom['size']) {
+                case 'moyenne': $sizeLabel = '33cm'; break;
+                case 'grande': $sizeLabel = '40cm'; break;
+                case 'L': $sizeLabel = 'Large'; break;
+                case 'XL': $sizeLabel = 'XL'; break;
+                default: $sizeLabel = $custom['size'];
             }
-            // Sinon chercher dans le tableau de correspondance
-            return $names[$key] ?? ucfirst($key);
-        }, $addedList);
-        $itemsList .= "\n  ➕ AJOUTS: " . implode(', ', $addedNames);
-    }
-    
-    // Ajouter les ingrédients retirés (pizzas, buns, rolls)
-    // Support des deux formats: 'removed' et 'removedIngredients'
-    $removedList = $custom['removed'] ?? $custom['removedIngredients'] ?? [];
-    if (!empty($removedList) && is_array($removedList) && count($removedList) > 0) {
-        $names = [
-            'champignons' => 'Champignons', 'olives' => 'Olives', 'poivrons' => 'Poivrons',
-            'oignons' => 'Oignons', 'tomates' => 'Tomates', 'pommesDeTerre' => 'Pommes de terre',
-            'mais' => 'Maïs', 'grosPiment' => 'Gros piment', 'fromage' => 'Fromage',
-            'chevre' => 'Chèvre', 'gorgonzola' => 'Gorgonzola', 'parmesan' => 'Parmesan',
-            'jambon' => 'Jambon', 'poulet' => 'Poulet', 'merguez' => 'Merguez',
-            'chorizo' => 'Chorizo', 'boeuf' => 'Bœuf', 'lardons' => 'Lardons',
-            'thon' => 'Thon', 'anchois' => 'Anchois', 'crevettes' => 'Crevettes',
-            'saumon' => 'Saumon', 'oeuf' => 'Œuf', 'miel' => 'Miel'
-        ];
-        $removedNames = array_map(function($key) use ($names) {
-            // Si c'est déjà un texte formaté (ex: "Pomme de terre"), le garder tel quel
-            if (strpos($key, ' ') !== false || strpos($key, 'é') !== false || strpos($key, 'è') !== false) {
-                return $key;
+            $itemsList .= "📏 TAILLE: " . $sizeLabel . "\n";
+        } elseif (!empty($item['size'])) {
+            $itemsList .= "📏 TAILLE: " . $item['size'] . "\n";
+        }
+        
+        // ── BASE ──
+        $baseDisplayed = false;
+        
+        // Base pour PIZZAS
+        if ($item['type'] === 'pizza' && !empty($custom['base'])) {
+            $baseLabel = $custom['base'] === 'creme' ? 'Crème' : 'Tomate';
+            $itemsList .= "🍕 BASE: " . $baseLabel . "\n";
+            $baseDisplayed = true;
+        }
+        
+        // Base pour PÂTES
+        if ($item['type'] === 'pate' && !empty($custom['base'])) {
+            $itemsList .= "🍝 BASE: " . $custom['base'] . "\n";
+            $baseDisplayed = true;
+        }
+        
+        // Base pour ROLLS et BUNS
+        if (($item['type'] === 'roll' || $item['type'] === 'bun') && !empty($custom['base'])) {
+            $baseLabel = $custom['base'] === 'creme' ? 'Crème' : 'Tomate';
+            $itemsList .= "🌯 BASE: " . $baseLabel . "\n";
+            $baseDisplayed = true;
+        }
+        
+        // ── INGRÉDIENTS RETIRÉS ──
+        $removedList = $custom['removed'] ?? $custom['removedIngredients'] ?? [];
+        if (!empty($removedList) && is_array($removedList) && count($removedList) > 0) {
+            $names = [
+                'champignons' => 'Champignons', 'olives' => 'Olives', 'poivrons' => 'Poivrons',
+                'oignons' => 'Oignons', 'tomates' => 'Tomates', 'pommesDeTerre' => 'Pommes de terre',
+                'mais' => 'Maïs', 'grosPiment' => 'Gros piment', 'fromage' => 'Fromage',
+                'chevre' => 'Chèvre', 'gorgonzola' => 'Gorgonzola', 'parmesan' => 'Parmesan',
+                'jambon' => 'Jambon', 'poulet' => 'Poulet', 'merguez' => 'Merguez',
+                'chorizo' => 'Chorizo', 'boeuf' => 'Bœuf', 'lardons' => 'Lardons',
+                'thon' => 'Thon', 'anchois' => 'Anchois', 'crevettes' => 'Crevettes',
+                'saumon' => 'Saumon', 'oeuf' => 'Œuf', 'miel' => 'Miel',
+                'Base crème' => 'Base crème', 'Base tomate' => 'Base tomate',
+                'Olive' => 'Olives', 'Oignon' => 'Oignons'
+            ];
+            $removedNames = array_map(function($key) use ($names) {
+                // Si c'est déjà un texte formaté, le garder tel quel
+                if (strpos($key, ' ') !== false || strpos($key, 'é') !== false || strpos($key, 'è') !== false) {
+                    return $key;
+                }
+                return $names[$key] ?? ucfirst($key);
+            }, $removedList);
+            $itemsList .= "❌ RETIRER: " . implode(', ', $removedNames) . "\n";
+        }
+        
+        // ── INGRÉDIENTS AJOUTÉS ──
+        $addedList = $custom['added'] ?? $custom['addedIngredients'] ?? [];
+        if (!empty($addedList) && is_array($addedList) && count($addedList) > 0) {
+            $names = [
+                'champignons' => 'Champignons', 'olives' => 'Olives', 'poivrons' => 'Poivrons',
+                'oignons' => 'Oignons', 'tomates' => 'Tomates', 'pommesDeTerre' => 'Pommes de terre',
+                'mais' => 'Maïs', 'grosPiment' => 'Gros piment', 'fromage' => 'Fromage',
+                'chevre' => 'Chèvre', 'gorgonzola' => 'Gorgonzola', 'parmesan' => 'Parmesan',
+                'jambon' => 'Jambon', 'poulet' => 'Poulet', 'merguez' => 'Merguez',
+                'chorizo' => 'Chorizo', 'boeuf' => 'Bœuf', 'lardons' => 'Lardons',
+                'thon' => 'Thon', 'anchois' => 'Anchois', 'crevettes' => 'Crevettes',
+                'saumon' => 'Saumon', 'oeuf' => 'Œuf', 'miel' => 'Miel',
+                'maxiGarniture' => '🌟 MAXI GARNITURE (+50%)',
+                'reblochon' => 'Reblochon'
+            ];
+            $addedNames = array_map(function($key) use ($names) {
+                // Si c'est déjà un texte formaté, le garder tel quel
+                if (strpos($key, ' ') !== false || strpos($key, 'é') !== false || strpos($key, 'è') !== false) {
+                    return $key;
+                }
+                return $names[$key] ?? ucfirst($key);
+            }, $addedList);
+            $itemsList .= "➕ AJOUTER: " . implode(', ', $addedNames) . "\n";
+        }
+        
+        // ── SUPPLÉMENTS (pour pâtes et salades) ──
+        if (!empty($custom['supplements']) && is_array($custom['supplements']) && count($custom['supplements']) > 0) {
+            $names = [
+                'champignons' => 'Champignons', 'olives' => 'Olives', 'poivrons' => 'Poivrons',
+                'oignons' => 'Oignons', 'tomates' => 'Tomates', 'pommesDeTerre' => 'Pommes de terre',
+                'mais' => 'Maïs', 'grosPiment' => 'Gros piment', 'fromage' => 'Fromage',
+                'chevre' => 'Chèvre', 'gorgonzola' => 'Gorgonzola', 'parmesan' => 'Parmesan',
+                'jambon' => 'Jambon', 'poulet' => 'Poulet', 'merguez' => 'Merguez',
+                'chorizo' => 'Chorizo', 'boeuf' => 'Bœuf', 'lardons' => 'Lardons',
+                'thon' => 'Thon', 'anchois' => 'Anchois', 'crevettes' => 'Crevettes',
+                'saumon' => 'Saumon', 'oeuf' => 'Œuf', 'miel' => 'Miel'
+            ];
+            $supplementNames = array_map(function($key) use ($names) {
+                return $names[$key] ?? $key;
+            }, $custom['supplements']);
+            $itemsList .= "➕ SUPPLÉMENTS: " . implode(', ', $supplementNames) . "\n";
+        }
+        // Ancienne structure (compatibilité)
+        elseif (!empty($item['supplements']) && is_array($item['supplements']) && count($item['supplements']) > 0) {
+            $itemsList .= "➕ SUPPLÉMENTS: " . implode(', ', $item['supplements']) . "\n";
+        }
+        
+        // ── OPTIONS (salades) ──
+        if (!empty($custom['options']) && is_array($custom['options']) && count($custom['options']) > 0) {
+            $optionLabels = [];
+            foreach ($custom['options'] as $opt) {
+                if ($opt === 'pain') $optionLabels[] = 'Avec pain';
+                elseif ($opt === 'vinaigrette-sup') $optionLabels[] = 'Vinaigrette supplémentaire';
             }
-            // Sinon chercher dans le tableau de correspondance
-            return $names[$key] ?? ucfirst($key);
-        }, $removedList);
-        $itemsList .= "\n  ➖ RETRAITS: " . implode(', ', $removedNames);
-    }
-    
-    // Ajouter les suppléments si présents (pâtes, salades normales)
-    if (!empty($custom['supplements']) && is_array($custom['supplements']) && count($custom['supplements']) > 0) {
-        $names = [
-            'champignons' => 'Champignons', 'olives' => 'Olives', 'poivrons' => 'Poivrons',
-            'oignons' => 'Oignons', 'tomates' => 'Tomates', 'pommesDeTerre' => 'Pommes de terre',
-            'mais' => 'Maïs', 'grosPiment' => 'Gros piment', 'fromage' => 'Fromage',
-            'chevre' => 'Chèvre', 'gorgonzola' => 'Gorgonzola', 'parmesan' => 'Parmesan',
-            'jambon' => 'Jambon', 'poulet' => 'Poulet', 'merguez' => 'Merguez',
-            'chorizo' => 'Chorizo', 'boeuf' => 'Bœuf', 'lardons' => 'Lardons',
-            'thon' => 'Thon', 'anchois' => 'Anchois', 'crevettes' => 'Crevettes',
-            'saumon' => 'Saumon', 'oeuf' => 'Œuf', 'miel' => 'Miel'
-        ];
-        $supplementNames = array_map(function($key) use ($names) {
-            return $names[$key] ?? $key;
-        }, $custom['supplements']);
-        $itemsList .= "\n  ➕ Suppléments: " . implode(', ', $supplementNames);
-    }
-    // Ancienne structure (compatibilité)
-    elseif (!empty($item['supplements']) && is_array($item['supplements']) && count($item['supplements']) > 0) {
-        $itemsList .= "\n  ➕ Suppléments: " . implode(', ', $item['supplements']);
-    }
-    
-    // Ajouter les options si présentes (salades individuelles)
-    if (!empty($custom['options']) && is_array($custom['options']) && count($custom['options']) > 0) {
-        $optionLabels = [];
-        foreach ($custom['options'] as $opt) {
-            if ($opt === 'pain') $optionLabels[] = 'Avec pain';
-            elseif ($opt === 'vinaigrette-sup') $optionLabels[] = 'Vinaigrette supplémentaire';
+            if (count($optionLabels) > 0) {
+                $itemsList .= "🔧 OPTIONS: " . implode(', ', $optionLabels) . "\n";
+            }
         }
-        if (count($optionLabels) > 0) {
-            $itemsList .= "\n  Options: " . implode(', ', $optionLabels);
+        
+        // ── INGRÉDIENTS ROLLS ──
+        if (!empty($custom['ingredients']) && is_array($custom['ingredients'])) {
+            $itemsList .= "🌯 INGRÉDIENTS: " . implode(', ', $custom['ingredients']) . "\n";
         }
     }
-    // Ancienne structure (compatibilité)
-    elseif (!empty($item['options'])) {
-        $itemsList .= "\n  Options: " . $item['options'];
-    }
     
-    // Ajouter la quantité et le prix
-    $itemsList .= "\n  Quantité: x" . $item['quantity'];
-    $itemsList .= " - Prix unitaire: " . number_format($item['price'], 2) . "€";
-    $itemsList .= " - Total: " . number_format($item['totalPrice'], 2) . "€\n\n";
+    // Prix
+    $itemsList .= "💰 " . number_format($item['totalPrice'], 2) . " €\n\n";
 }
 
 // Corps de l'email - FORMAT CLAIR ET LISIBLE
