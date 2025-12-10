@@ -1,71 +1,68 @@
 <?php
 /**
- * TEST SMS BREVO avec .env
+ * TEST SMS BREVO avec brevo-config.php
  * Upload sur ton serveur et accède à : https://www.pizzaclub.re/test-brevo-env.php
  */
 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-echo "<h1>🧪 Test SMS Brevo (.env)</h1>";
-echo "<p style='color: #666;'>Version test: 20251211c</p>";
+echo "<h1>🧪 Test SMS Brevo (brevo-config.php)</h1>";
+echo "<p style='color: #666;'>Version test: 20251211d</p>";
 echo "<hr>";
 
-// 1. Vérifier fichier .env
-echo "<h2>1️⃣ Vérification fichier .env</h2>";
-$envPath = __DIR__ . '/.env';
-echo "Chemin recherché : <code>" . $envPath . "</code><br>";
+// 1. Vérifier fichier brevo-config.php
+echo "<h2>1️⃣ Vérification fichier brevo-config.php</h2>";
 
-if (!file_exists($envPath)) {
-    echo "❌ <strong>FICHIER .env INTROUVABLE</strong><br>";
-    echo "➡️ Tu dois uploader le fichier .env à la racine du serveur<br>";
-    die();
+$configPaths = [
+    __DIR__ . '/config/brevo-config.php',
+    __DIR__ . '/brevo-config.php'
+];
+
+$configFound = false;
+$configPath = '';
+
+foreach ($configPaths as $path) {
+    echo "Recherche : <code>" . $path . "</code><br>";
+    if (file_exists($path)) {
+        echo "✅ <strong>TROUVÉ !</strong><br>";
+        $brevoConfig = require $path;
+        $configFound = true;
+        $configPath = $path;
+        break;
+    } else {
+        echo "❌ Introuvable<br>";
+    }
 }
 
-echo "✅ Fichier .env trouvé<br>";
-
-// 2. Lire le fichier .env
-echo "<h2>2️⃣ Lecture du fichier .env</h2>";
-$envLines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-echo "Nombre de lignes : " . count($envLines) . "<br><br>";
-
-$brevoApiKey = null;
-$brevoSender = 'PizzaClub';
-$brevoRecipient = '+262692630364';
-
-foreach ($envLines as $line) {
-    if (strpos($line, '=') !== false && strpos($line, '#') !== 0) {
-        list($key, $value) = explode('=', $line, 2);
-        $key = trim($key);
-        $value = trim($value);
-        
-        echo "Clé trouvée : <strong>" . htmlspecialchars($key) . "</strong><br>";
-        
-        if ($key === 'BREVO_API_KEY') $brevoApiKey = $value;
-        if ($key === 'BREVO_SENDER') $brevoSender = $value;
-        if ($key === 'BREVO_RECIPIENT') $brevoRecipient = $value;
-    }
+if (!$configFound) {
+    echo "<br>❌ <strong>FICHIER brevo-config.php INTROUVABLE</strong><br>";
+    echo "➡️ Tu dois uploader brevo-config.php dans le dossier <code>config/</code><br>";
+    die();
 }
 
 echo "<br>";
 
-// 3. Vérifier les valeurs chargées
-echo "<h2>3️⃣ Valeurs chargées</h2>";
+// 2. Lire les valeurs
+echo "<h2>2️⃣ Valeurs du fichier config</h2>";
+
+$brevoApiKey = $brevoConfig['api_key'];
+$brevoSender = $brevoConfig['sender_name'];
+$brevoRecipient = $brevoConfig['recipient_number'];
 
 if (!$brevoApiKey) {
-    echo "❌ <strong>BREVO_API_KEY non trouvée</strong><br>";
-    echo "➡️ Vérifie que le fichier .env contient bien : BREVO_API_KEY=ta_clé<br>";
+    echo "❌ <strong>API Key non trouvée dans le fichier</strong><br>";
     die();
 }
 
-echo "✅ API Key : " . substr($brevoApiKey, 0, 20) . "...  (longueur: " . strlen($brevoApiKey) . ")<br>";
+echo "✅ API Key : " . substr($brevoApiKey, 0, 20) . "... (longueur: " . strlen($brevoApiKey) . ")<br>";
 echo "✅ Sender : " . htmlspecialchars($brevoSender) . "<br>";
 echo "✅ Recipient : " . htmlspecialchars($brevoRecipient) . "<br>";
 
-// 4. Test envoi SMS
-echo "<h2>4️⃣ Test envoi SMS</h2>";
+// 3. Test envoi SMS
+echo "<h2>3️⃣ Test envoi SMS</h2>";
 
-$smsMessage = "TEST Pizza Club\nDate: " . date('d/m/Y H:i') . "\nVersion: 20251211c";
+$smsMessage = "TEST Pizza Club\nDate: " . date('d/m/Y H:i') . "\nVersion: 20251211d\nConfig: brevo-config.php";
 
 echo "Message à envoyer :<br>";
 echo "<pre>" . htmlspecialchars($smsMessage) . "</pre>";
@@ -98,7 +95,7 @@ $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $curlError = curl_error($ch);
 curl_close($ch);
 
-echo "<h2>5️⃣ Résultat</h2>";
+echo "<h2>4️⃣ Résultat</h2>";
 echo "Code HTTP : <strong>" . $httpCode . "</strong><br>";
 
 if ($curlError) {
@@ -121,7 +118,8 @@ if ($httpCode === 201 || $httpCode === 200) {
     }
     
     if ($httpCode === 401) {
-        echo "<strong>➡️ API Key invalide ou expirée</strong>";
+        echo "<strong>➡️ API Key invalide ou expirée</strong><br>";
+        echo "Vérifie ta clé API sur : <a href='https://app.brevo.com/settings/keys/api' target='_blank'>Brevo API Keys</a>";
     } elseif ($httpCode === 403) {
         echo "<strong>➡️ Accès refusé - vérifie ton compte Brevo</strong>";
     }
