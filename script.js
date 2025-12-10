@@ -167,7 +167,7 @@ function setupModalScrollLock() {
 }
 
 function initApp() {
-    console.log('🍕 Pizza Club - Application initialisée | VERSION: 20251211g');
+    console.log('🍕 Pizza Club - Application initialisée | VERSION: 20251211h');
     updateCartUI();
     
     // Charger les préférences de livraison depuis le localStorage
@@ -1424,16 +1424,40 @@ function openCustomizeModal(pizzaId) {
         ingredientsRemove.appendChild(label);
     });
 
-    // Réinitialiser les sélections
+    // Réinitialiser les sélections de base selon la catégorie de la pizza
     document.querySelectorAll('#customizeModal input[type="radio"]').forEach(input => {
-        if (input.name === 'base' && input.value === 'tomate') {
-            input.checked = true;
+        if (input.name === 'base') {
+            // Si pizza base crème, sélectionner crème par défaut
+            if (pizza.category === 'creme') {
+                if (input.value === 'creme') {
+                    input.checked = true;
+                }
+            } else {
+                // Sinon, tomate par défaut
+                if (input.value === 'tomate') {
+                    input.checked = true;
+                }
+            }
         }
     });
     document.querySelectorAll('#customizeModal input[type="checkbox"]').forEach(input => {
         input.checked = false;
     });
     document.getElementById('customizeQty').value = 1;
+
+    // Mettre à jour les labels des bases selon la catégorie de pizza
+    const tomateLabelSpan = document.querySelector('input[name="base"][value="tomate"]').nextElementSibling;
+    const cremeLabelSpan = document.querySelector('input[name="base"][value="creme"]').nextElementSibling;
+    
+    if (pizza.category === 'creme') {
+        // Pizza base crème : crème incluse, tomate gratuit
+        cremeLabelSpan.textContent = 'Crème fraîche (base incluse)';
+        tomateLabelSpan.textContent = 'Sauce Tomate (changement gratuit)';
+    } else {
+        // Pizza base tomate : tomate incluse, crème payant
+        tomateLabelSpan.textContent = 'Sauce Tomate (base incluse)';
+        cremeLabelSpan.textContent = 'Crème fraîche (+1.00€ en 33cm / +1.50€ en 40cm)';
+    }
 
     updateCustomizePrice();
     openModal(modal);
