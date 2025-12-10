@@ -296,3 +296,4 @@ Pour aller plus loin, vous pourriez ajouter :
 Bon succès avec votre site ! 🍕
 # Test deploy
 # Test persistence config/
+# Test: vérifier si .env persiste
