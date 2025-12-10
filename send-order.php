@@ -16,6 +16,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $jsonData = file_get_contents('php://input');
 $orderData = json_decode($jsonData, true);
 
+// DEBUG - Logger TOUTES les données reçues
+error_log("=== DÉBUT COMMANDE ===");
+error_log("Données JSON complètes reçues:");
+error_log(print_r($orderData, true));
+error_log("=== FIN DEBUG ===");
+
 if (!$orderData) {
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'Données invalides']);
@@ -49,7 +55,8 @@ if ($isOrderNow) {
 
 // Configuration email
 $to = 'commande@pizzaclub.re';
-$subject = 'Nouvelle commande ' . $orderData['orderNumber'];
+$smsEmail = '0692630364@orange.fr'; // SMS instantané via Orange (SFR ne marche pas)
+$subject = '🚨 COMMANDE ' . $orderData['orderNumber'] . ' - ' . number_format($orderData['total'], 2) . '€';
 
 // Construction du contenu email
 $deliveryMode = $orderData['customer']['deliveryMode'] === 'livraison' ? 'LIVRAISON' : 'À EMPORTER';
@@ -460,7 +467,43 @@ if (!empty($orderData['customer']['email'])) {
     }
 }
 
-// Envoi WhatsApp via API (nécessite un compte WhatsApp Business API)
+// ========================================
+// ENVOI SMS VIA EMAIL SFR (GRATUIT & INSTANTANÉ)
+// ========================================
+$smsSent = false;
+
+try {
+    // Message SMS court (limité à 160 caractères)
+    $smsMessage = "COMMANDE {$orderData['orderNumber']}\n";
+    $smsMessage .= "{$orderData['customer']['firstName']} {$orderData['customer']['lastName']}\n";
+    $smsMessage .= "Tel: {$orderData['customer']['phone']}\n";
+    $smsMessage .= ($orderData['customer']['deliveryMode'] === 'livraison' ? 'LIVRAISON' : 'A EMPORTER') . "\n";
+    $smsMessage .= "TOTAL: " . number_format($orderData['total'], 2) . " EUR";
+    
+    $smsHeaders = "From: Pizza Club <commande@pizzaclub.re>\r\n";
+    $smsHeaders .= "Content-Type: text/plain; charset=UTF-8\r\n";
+    
+    $smsSent = mail($smsEmail, '', $smsMessage, $smsHeaders);
+    error_log("SMS via email - To: $smsEmail, Sent: " . ($smsSent ? 'YES' : 'NO'));
+} catch (Exception $e) {
+    error_log("ERREUR SMS via email: " . $e->getMessage());
+}
+
+// ========================================
+// ENVOI SMS TWILIO (DÉSACTIVÉ - BLOQUÉ POUR LA RÉUNION)
+// ========================================
+$twilioSmsSent = false;
+
+try {
+    // Twilio désactivé - bloqué pour La Réunion en compte d'essai
+    error_log("Twilio SMS désactivé - utilisation SMS via email à la place");
+} catch (Exception $e) {
+    error_log("ERREUR Twilio SMS: " . $e->getMessage());
+}
+
+// ========================================
+// ENVOI WHATSAPP (DÉSACTIVÉ - TOKEN EXPIRÉ)
+// ========================================
 $whatsappSent = false;
 
 try {
@@ -633,14 +676,15 @@ file_put_contents($logFile, $logEntry, FILE_APPEND);
 $jsonFile = $logDir . '/' . $orderData['orderNumber'] . '.json';
 file_put_contents($jsonFile, $jsonData);
 
-// Réponse - Succès si au moins l'email restaurant OU le WhatsApp est envoyé
+// Réponse - Succès si au moins l'email restaurant OU le SMS est envoyé
 $response = [
     'success' => true, // Toujours true car commande enregistrée
     'emailSent' => $emailSent,
     'clientEmailSent' => $clientEmailSent,
+    'smsSent' => $smsSent,
     'whatsappSent' => $whatsappSent,
     'orderNumber' => $orderData['orderNumber'],
-    'message' => ($emailSent || $whatsappSent) ? 'Commande envoyée avec succès' : 'Commande enregistrée (email en attente)'
+    'message' => ($emailSent || $smsSent) ? 'Commande envoyée avec succès' : 'Commande enregistrée (notifications en attente)'
 ];
 
 echo json_encode($response);
