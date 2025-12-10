@@ -522,20 +522,23 @@ try {
         
         $smsSent = ($httpCode === 201 || $httpCode === 200);
         
-        error_log("Brevo SMS:");
-        error_log("  To: $brevoRecipient");
-        error_log("  HTTP Code: $httpCode");
-        error_log("  Sent: " . ($smsSent ? 'YES' : 'NO'));
+        // Log détaillé SMS
+        error_log("======= BREVO SMS DEBUG =======");
+        error_log("To: $brevoRecipient");
+        error_log("HTTP Code: $httpCode");
+        error_log("Message: $smsMessage");
+        error_log("API Response: " . $brevoResponse);
         
         if ($curlError) {
-            error_log("  CURL Error: $curlError");
+            error_log("CURL Error: $curlError");
         }
         
-        if (!$smsSent) {
-            error_log("  API Response: " . $brevoResponse);
+        if ($smsSent) {
+            error_log("✓ SMS ENVOYÉ!");
         } else {
-            error_log("  ✓ SMS Brevo sent successfully!");
+            error_log("✗ SMS ÉCHOUÉ - Code: $httpCode");
         }
+        error_log("======= FIN BREVO SMS =======")
     } else {
         error_log("Brevo non configuré - fichier brevo-config.php introuvable");
     }
