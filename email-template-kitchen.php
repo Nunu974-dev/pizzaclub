@@ -12,25 +12,26 @@ function getKitchenEmailTemplate($orderData) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Nouvelle commande</title>
         <style>
-            body { margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4; }
-            .container { max-width: 800px; margin: 0 auto; background-color: #ffffff; }
-            .header { background-color: #FF0000; padding: 20px; text-align: center; color: white; }
-            .header h1 { margin: 0; font-size: 24px; }
-            .mode-badge { background-color: #FFC107; color: #000; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; margin: 20px; border-radius: 8px; }
-            .content { padding: 20px; color: #333333; }
-            .section { margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 8px; }
-            .section h3 { margin-top: 0; color: #FF0000; border-bottom: 2px solid #FF0000; padding-bottom: 10px; }
-            .client-info { font-size: 16px; line-height: 1.8; }
-            .client-info strong { color: #FF0000; }
-            .order-item { background-color: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px; margin: 15px 0; }
-            .order-item-header { font-size: 18px; font-weight: bold; color: #FF0000; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 2px solid #FF0000; }
-            .item-detail { margin: 8px 0; padding: 5px 0; }
-            .item-detail-label { display: inline-block; width: 150px; font-weight: bold; color: #666; }
-            .item-detail-value { color: #000; }
-            .price { background-color: #FF0000; color: white; padding: 10px; text-align: center; font-size: 18px; font-weight: bold; border-radius: 5px; margin-top: 10px; }
-            .total-section { background-color: #FF0000; color: white; padding: 20px; text-align: center; margin: 20px; border-radius: 8px; }
-            .total-section h2 { margin: 0; font-size: 28px; }
-            .footer { background-color: #333; color: white; padding: 15px; text-align: center; }
+            body { margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5; }
+            .container { max-width: 900px; margin: 0 auto; background-color: #ffffff; }
+            .header { background-color: #000000; padding: 25px; text-align: center; color: white; }
+            .header h1 { margin: 0; font-size: 28px; }
+            .mode-badge { background-color: #FFC107; color: #000; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; margin: 0; }
+            .content { padding: 30px; color: #333333; }
+            .section { margin: 25px 0; padding: 20px; background-color: #f9f9f9; border-left: 5px solid #000; }
+            .section h3 { margin-top: 0; color: #000; font-size: 20px; }
+            .client-info { font-size: 16px; line-height: 2; }
+            .client-info strong { color: #000; }
+            .order-item { background-color: #ffffff; border: 3px solid #000; padding: 20px; margin: 20px 0; }
+            .order-item-header { font-size: 20px; font-weight: bold; color: #ffffff; background-color: #000; margin: -20px -20px 15px -20px; padding: 15px 20px; }
+            .item-detail { margin: 10px 0; padding: 8px; background-color: #f9f9f9; border-left: 3px solid #ddd; }
+            .item-detail-label { display: inline-block; min-width: 180px; font-weight: bold; color: #000; }
+            .item-detail-value { color: #333; }
+            .empty-value { color: #999; font-style: italic; }
+            .price { background-color: #28a745; color: white; padding: 12px; text-align: center; font-size: 20px; font-weight: bold; margin-top: 15px; }
+            .total-section { background-color: #000; color: white; padding: 25px; text-align: center; margin: 30px 0 0 0; }
+            .total-section h2 { margin: 0; font-size: 32px; }
+            .footer { background-color: #333; color: white; padding: 15px; text-align: center; font-size: 14px; }
         </style>
     </head>
     <body>
@@ -132,7 +133,7 @@ function getKitchenEmailTemplate($orderData) {
                             <?php else: ?>
                                 <!-- PRODUITS INDIVIDUELS (PIZZAS, PÂTES, SALADES, etc.) -->
                                 
-                                <!-- TAILLE -->
+                                <!-- TAILLE - TOUJOURS AFFICHER -->
                                 <div class="item-detail">
                                     <span class="item-detail-label">📏 Taille :</span>
                                     <span class="item-detail-value">
@@ -147,38 +148,41 @@ function getKitchenEmailTemplate($orderData) {
                                                 default: $sizeLabel = $custom['size'];
                                             }
                                         }
-                                        echo !empty($sizeLabel) ? htmlspecialchars($sizeLabel) : '<em style="color: #999;">(non spécifiée)</em>';
+                                        if (!empty($sizeLabel)) {
+                                            echo htmlspecialchars($sizeLabel);
+                                        } else {
+                                            echo '<span class="empty-value">(non spécifiée)</span>';
+                                        }
                                         ?>
                                     </span>
                                 </div>
                                 
-                                <!-- BASE -->
-                                <?php if (in_array($item['type'], ['pizza', 'pate', 'roll', 'bun'])): ?>
-                                    <div class="item-detail">
-                                        <span class="item-detail-label">
-                                            <?php
-                                            if ($item['type'] === 'pizza') echo '🍕 Base pizza :';
-                                            elseif ($item['type'] === 'pate') echo '🍝 Base pâte :';
-                                            else echo '🌯 Base :';
-                                            ?>
-                                        </span>
-                                        <span class="item-detail-value">
-                                            <?php
-                                            if (!empty($custom['base'])) {
-                                                if (in_array($item['type'], ['pizza', 'roll', 'bun'])) {
-                                                    echo $custom['base'] === 'creme' ? 'Crème' : 'Tomate';
-                                                } else {
-                                                    echo htmlspecialchars($custom['base']);
-                                                }
+                                <!-- BASE - TOUJOURS AFFICHER -->
+                                <div class="item-detail">
+                                    <span class="item-detail-label">
+                                        <?php
+                                        if ($item['type'] === 'pizza') echo '🍕 Base pizza :';
+                                        elseif ($item['type'] === 'pate') echo '🍝 Base pâte :';
+                                        elseif ($item['type'] === 'roll' || $item['type'] === 'bun') echo '🌯 Base :';
+                                        else echo '🍴 Base :';
+                                        ?>
+                                    </span>
+                                    <span class="item-detail-value">
+                                        <?php
+                                        if (!empty($custom['base'])) {
+                                            if (in_array($item['type'], ['pizza', 'roll', 'bun'])) {
+                                                echo $custom['base'] === 'creme' ? 'Crème' : 'Tomate';
                                             } else {
-                                                echo '<em style="color: #999;">(non spécifiée)</em>';
+                                                echo htmlspecialchars($custom['base']);
                                             }
-                                            ?>
-                                        </span>
-                                    </div>
-                                <?php endif; ?>
+                                        } else {
+                                            echo '<span class="empty-value">(non spécifiée)</span>';
+                                        }
+                                        ?>
+                                    </span>
+                                </div>
                                 
-                                <!-- RETIRER -->
+                                <!-- RETIRER - TOUJOURS AFFICHER -->
                                 <div class="item-detail">
                                     <span class="item-detail-label">❌ Retirer :</span>
                                     <span class="item-detail-value">
@@ -187,13 +191,13 @@ function getKitchenEmailTemplate($orderData) {
                                         if (!empty($removedList) && is_array($removedList) && count($removedList) > 0) {
                                             echo htmlspecialchars(implode(', ', $removedList));
                                         } else {
-                                            echo '<em style="color: #999;">(aucun)</em>';
+                                            echo '<span class="empty-value">(aucun)</span>';
                                         }
                                         ?>
                                     </span>
                                 </div>
                                 
-                                <!-- AJOUTER -->
+                                <!-- AJOUTER - TOUJOURS AFFICHER -->
                                 <div class="item-detail">
                                     <span class="item-detail-label">➕ Ajouter :</span>
                                     <span class="item-detail-value">
@@ -202,7 +206,7 @@ function getKitchenEmailTemplate($orderData) {
                                         if (!empty($addedList) && is_array($addedList) && count($addedList) > 0) {
                                             echo htmlspecialchars(implode(', ', $addedList));
                                         } else {
-                                            echo '<em style="color: #999;">(aucun)</em>';
+                                            echo '<span class="empty-value">(aucun)</span>';
                                         }
                                         ?>
                                     </span>

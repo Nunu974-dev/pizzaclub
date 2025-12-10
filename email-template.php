@@ -33,7 +33,7 @@ function getClientEmailTemplate($orderData) {
     <body>
         <div class="container">
             <div class="header">
-                <img src="https://www.pizzaclub.re/img/New_logo_blanc_2022.png" alt="Pizza Club Logo">
+                <img src="https://www.pizzaclub.re/img/Logoblanc.png" alt="Pizza Club Logo" style="max-width: 200px;">
             </div>
             
             <div class="content">
