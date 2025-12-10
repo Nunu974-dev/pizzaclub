@@ -3778,12 +3778,73 @@ function displayOrderSummary() {
 
     // Articles de la commande
     const summaryItems = document.getElementById('summaryItems');
-    summaryItems.innerHTML = cart.map(item => `
-        <div class="summary-row">
-            <span>${item.name} x${item.quantity}</span>
-            <span>${item.totalPrice.toFixed(2)}€</span>
-        </div>
-    `).join('');
+    summaryItems.innerHTML = cart.map(item => {
+        let customizationHTML = '';
+        
+        if (item.customization) {
+            const c = item.customization;
+            
+            // PIZZAS
+            if (item.type === 'pizza') {
+                const sizeLabel = c.size === 'moyenne' ? '33cm' : c.size === 'grande' ? '40cm' : c.size;
+                customizationHTML = `<br><small>📏 TAILLE: ${sizeLabel}</small>`;
+                
+                if (c.base) {
+                    customizationHTML += `<br><small>🍕 BASE: ${c.base}</small>`;
+                }
+                
+                if (c.ingredients?.removed?.length > 0) {
+                    customizationHTML += `<br><small style="color: #dc3545;">❌ RETIRER: ${c.ingredients.removed.join(', ')}</small>`;
+                }
+                
+                if (c.ingredients?.added?.length > 0) {
+                    customizationHTML += `<br><small style="color: #28a745;">➕ AJOUTER: ${c.ingredients.added.join(', ')}</small>`;
+                }
+            }
+            
+            // PÂTES
+            else if (item.type === 'pate') {
+                const sizeLabel = c.size === 'L' ? 'Large' : c.size === 'XL' ? 'XL' : c.size;
+                customizationHTML = `<br><small>📏 TAILLE: ${sizeLabel}</small>`;
+                
+                if (c.base) {
+                    customizationHTML += `<br><small>🍝 BASE: ${c.base}</small>`;
+                }
+                
+                if (c.supplements?.length > 0) {
+                    customizationHTML += `<br><small style="color: #28a745;">➕ SUPPLÉMENTS: ${c.supplements.join(', ')}</small>`;
+                }
+            }
+            
+            // SALADES
+            else if (item.type === 'salade') {
+                if (c.size) {
+                    customizationHTML = `<br><small>📏 TAILLE: ${c.size}</small>`;
+                }
+                
+                if (c.supplements?.length > 0) {
+                    customizationHTML += `<br><small style="color: #28a745;">➕ SUPPLÉMENTS: ${c.supplements.join(', ')}</small>`;
+                }
+            }
+            
+            // BUNS & ROLLS
+            else if (item.type === 'bun' || item.type === 'roll') {
+                if (c.supplements?.length > 0) {
+                    customizationHTML = `<br><small style="color: #28a745;">➕ SUPPLÉMENTS: ${c.supplements.join(', ')}</small>`;
+                }
+            }
+        }
+        
+        return `
+            <div class="summary-row" style="align-items: flex-start; padding: 10px 0;">
+                <span style="flex: 1;">
+                    <strong>${item.name}</strong> x${item.quantity}
+                    ${customizationHTML}
+                </span>
+                <span style="white-space: nowrap; font-weight: bold;">${item.totalPrice.toFixed(2)}€</span>
+            </div>
+        `;
+    }).join('');
 
     // Totaux
     const subtotal = cart.reduce((sum, item) => sum + item.totalPrice, 0);

@@ -59,78 +59,89 @@ function getClientEmailTemplate($orderData) {
                 
                 <h3 style="color: #FF0000;">Votre commande</h3>
                 <div class="order-details">
-                    <?php foreach ($orderData['items'] as $item): ?>
-                        <div class="order-item">
-                            <strong><?= htmlspecialchars($item['name']) ?></strong>
+                <?php foreach ($orderData['items'] as $item): ?>
+                    <div class="order-item">
+                        <strong><?= htmlspecialchars($item['name']) ?></strong> x<?= $item['quantity'] ?>
+                        
+                        <?php if (!empty($item['customization'])): ?>
+                            <?php $custom = $item['customization']; ?>
                             
-                            <?php if (!empty($item['customization'])): ?>
-                                <?php $custom = $item['customization']; ?>
+                            <?php // PIZZAS ?>
+                            <?php if ($item['type'] === 'pizza'): ?>
+                                <br>
+                                <?php 
+                                $sizeLabel = $custom['size'];
+                                if ($custom['size'] === 'moyenne') $sizeLabel = '33cm';
+                                if ($custom['size'] === 'grande') $sizeLabel = '40cm';
+                                ?>
+                                <small><strong>📏 TAILLE:</strong> <?= htmlspecialchars($sizeLabel) ?></small>
                                 
-                                <?php // PIZZAS ?>
-                                <?php if ($item['type'] === 'pizza'): ?>
+                                <?php if (isset($custom['base'])): ?>
+                                    <br><small><strong>🍕 BASE:</strong> <?= htmlspecialchars($custom['base']) ?></small>
+                                <?php endif; ?>
+                                
+                                <?php if (!empty($custom['ingredients']['removed'])): ?>
+                                    <br><small style="color: #dc3545;"><strong>❌ RETIRER:</strong> <?= htmlspecialchars(implode(', ', $custom['ingredients']['removed'])) ?></small>
+                                <?php endif; ?>
+                                
+                                <?php if (!empty($custom['ingredients']['added'])): ?>
+                                    <br><small style="color: #28a745;"><strong>➕ AJOUTER:</strong> <?= htmlspecialchars(implode(', ', $custom['ingredients']['added'])) ?></small>
+                                <?php endif; ?>
+                            
+                            <?php // PÂTES ?>
+                            <?php elseif ($item['type'] === 'pate'): ?>
+                                <br>
+                                <?php 
+                                $sizeLabel = $custom['size'];
+                                if ($custom['size'] === 'L') $sizeLabel = 'Large';
+                                if ($custom['size'] === 'XL') $sizeLabel = 'XL';
+                                ?>
+                                <small><strong>📏 TAILLE:</strong> <?= htmlspecialchars($sizeLabel) ?></small>
+                                
+                                <?php if (isset($custom['base'])): ?>
+                                    <br><small><strong>🍝 BASE:</strong> <?= htmlspecialchars($custom['base']) ?></small>
+                                <?php endif; ?>
+                                
+                                <?php if (!empty($custom['supplements'])): ?>
+                                    <br><small style="color: #28a745;"><strong>➕ SUPPLÉMENTS:</strong> <?php
+                                    $names = [
+                                        'champignons' => 'Champignons', 'olives' => 'Olives', 'poivrons' => 'Poivrons',
+                                        'oignons' => 'Oignons', 'tomates' => 'Tomates', 'pommesDeTerre' => 'Pommes de terre',
+                                        'mais' => 'Maïs', 'grosPiment' => 'Gros piment', 'fromage' => 'Fromage',
+                                        'chevre' => 'Chèvre', 'gorgonzola' => 'Gorgonzola', 'parmesan' => 'Parmesan',
+                                        'jambon' => 'Jambon', 'poulet' => 'Poulet', 'merguez' => 'Merguez',
+                                        'chorizo' => 'Chorizo', 'boeuf' => 'Bœuf', 'lardons' => 'Lardons',
+                                        'thon' => 'Thon', 'anchois' => 'Anchois', 'crevettes' => 'Crevettes',
+                                        'saumon' => 'Saumon', 'oeuf' => 'Œuf', 'miel' => 'Miel'
+                                    ];
+                                    $suppNames = array_map(function($key) use ($names) {
+                                        return $names[$key] ?? $key;
+                                    }, $custom['supplements']);
+                                    echo htmlspecialchars(implode(', ', $suppNames));
+                                    ?></small>
+                                <?php endif; ?>
+                            
+                            <?php // SALADES ?>
+                            <?php elseif ($item['type'] === 'salade'): ?>
+                                <?php if (isset($custom['size'])): ?>
+                                    <br><small><strong>📏 TAILLE:</strong> <?= htmlspecialchars($custom['size']) ?></small>
+                                <?php endif; ?>
+                                
+                                <?php if (isset($custom['base'])): ?>
+                                    <br><small><strong>🥗 BASE:</strong> <?= htmlspecialchars($custom['base']) ?></small>
+                                <?php endif; ?>
+                                
+                                <?php if (!empty($custom['options'])): ?>
+                                    <br><small style="color: #0066cc;"><strong>OPTIONS:</strong> 
                                     <?php 
-                                    // Conversion des tailles en dimensions
-                                    $sizeLabel = $custom['size'];
-                                    if ($custom['size'] === 'moyenne') $sizeLabel = '33cm';
-                                    if ($custom['size'] === 'grande') $sizeLabel = '40cm';
-                                    ?>
-                                    (<?= htmlspecialchars($sizeLabel) ?>)
-                                    <?php if (isset($custom['base']) && $custom['base'] !== 'tomate'): ?>
-                                        - Base <?= htmlspecialchars($custom['base']) ?>
-                                    <?php endif; ?>
-                                    <?php if (!empty($custom['ingredients']['added'])): ?>
-                                        <br><small style="color: #28a745;">✓ Ajouts: <?= htmlspecialchars(implode(', ', $custom['ingredients']['added'])) ?></small>
-                                    <?php endif; ?>
-                                    <?php if (!empty($custom['ingredients']['removed'])): ?>
-                                        <br><small style="color: #dc3545;">✗ Retraits: <?= htmlspecialchars(implode(', ', $custom['ingredients']['removed'])) ?></small>
-                                    <?php endif; ?>
-                                
-                                <?php // PÂTES ?>
-                                <?php elseif ($item['type'] === 'pate'): ?>
-                                    <?php 
-                                    // Conversion des tailles en dimensions
-                                    $sizeLabel = $custom['size'];
-                                    if ($custom['size'] === 'L') $sizeLabel = 'Large';
-                                    if ($custom['size'] === 'XL') $sizeLabel = 'XL';
-                                    ?>
-                                    (<?= htmlspecialchars($sizeLabel) ?>)
-                                    <?php if (isset($custom['base']) && $custom['base'] !== 'classique'): ?>
-                                        - Base <?= htmlspecialchars($custom['base']) ?>
-                                    <?php endif; ?>
-                                    <?php if (!empty($custom['supplements'])): ?>
-                                        <br><small style="color: #28a745;">+ Suppléments: <?php
-                                        $names = [
-                                            'champignons' => 'Champignons', 'olives' => 'Olives', 'poivrons' => 'Poivrons',
-                                            'oignons' => 'Oignons', 'tomates' => 'Tomates', 'pommesDeTerre' => 'Pommes de terre',
-                                            'mais' => 'Maïs', 'grosPiment' => 'Gros piment', 'fromage' => 'Fromage',
-                                            'chevre' => 'Chèvre', 'gorgonzola' => 'Gorgonzola', 'parmesan' => 'Parmesan',
-                                            'jambon' => 'Jambon', 'poulet' => 'Poulet', 'merguez' => 'Merguez',
-                                            'chorizo' => 'Chorizo', 'boeuf' => 'Bœuf', 'lardons' => 'Lardons',
-                                            'thon' => 'Thon', 'anchois' => 'Anchois', 'crevettes' => 'Crevettes',
-                                            'saumon' => 'Saumon', 'oeuf' => 'Œuf', 'miel' => 'Miel'
-                                        ];
-                                        $suppNames = array_map(function($key) use ($names) {
-                                            return $names[$key] ?? $key;
-                                        }, $custom['supplements']);
-                                        echo htmlspecialchars(implode(', ', $suppNames));
-                                        ?></small>
-                                    <?php endif; ?>
-                                
-                                <?php // SALADES ?>
-                                <?php elseif ($item['type'] === 'salade'): ?>
-                                    <?php if (isset($custom['base']) && $custom['base'] !== 'saladeverte'): ?>
-                                        - Base <?= htmlspecialchars($custom['base']) ?>
-                                    <?php endif; ?>
-                                    <?php if (!empty($custom['options'])): ?>
-                                        <br><small style="color: #0066cc;">[
-                                        <?php 
-                                        $optionLabels = array_map(function($opt) {
-                                            if ($opt === 'pain') return 'Pain';
-                                            if ($opt === 'vinaigrette-sup') return 'Vinaigrette sup.';
-                                            return $opt;
-                                        }, $custom['options']);
-                                        echo htmlspecialchars(implode(', ', $optionLabels));
-                                        ?>
+                                    $optionLabels = array_map(function($opt) {
+                                        if ($opt === 'pain') return 'Pain';
+                                        if ($opt === 'vinaigrette-sup') return 'Vinaigrette sup.';
+                                        return $opt;
+                                    }, $custom['options']);
+                                    echo htmlspecialchars(implode(', ', $optionLabels));
+                                    ?></small>
+                                <?php endif; ?>
                                         ]</small>
                                     <?php endif; ?>
                                     <?php if (!empty($custom['supplements'])): ?>
