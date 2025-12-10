@@ -3554,6 +3554,11 @@ function openCheckoutModal() {
 function displayDeliveryTimeInfo() {
     const displayDiv = document.getElementById('deliveryTimeDisplay');
     
+    if (!displayDiv) {
+        console.error('❌ Element deliveryTimeDisplay introuvable');
+        return;
+    }
+    
     console.log('displayDeliveryTimeInfo - deliveryTimeMode:', deliveryTimeMode, 'scheduledDeliveryDate:', scheduledDeliveryDate, 'scheduledDeliveryHour:', scheduledDeliveryHour);
     
     if (deliveryTimeMode === 'programmee' && scheduledDeliveryDate && scheduledDeliveryHour !== null) {
@@ -3671,7 +3676,7 @@ function showDeliveryTimeInfo(mode) {
         border: 1px solid #ffc107;
         border-radius: 8px;
         padding: 12px 16px;
-        margin: 12px 0;
+        margin: 20px 0;
         font-size: 14px;
         color: #856404;
         display: flex;
@@ -3691,25 +3696,14 @@ function showDeliveryTimeInfo(mode) {
         </div>
     `;
     
-    // Chercher plusieurs emplacements possibles pour insérer le message
-    let insertLocation = document.querySelector('.delivery-mode-section');
+    // Chercher la div .delivery-options
+    const deliveryOptions = document.querySelector('.delivery-options');
     
-    if (!insertLocation) {
-        // Chercher le conteneur des radios
-        const radioInputs = document.querySelectorAll('input[name="deliveryMode"]');
-        if (radioInputs.length > 0) {
-            // Remonter jusqu'au conteneur parent
-            insertLocation = radioInputs[0].closest('.form-group') || 
-                            radioInputs[0].closest('div') ||
-                            radioInputs[0].parentElement;
-        }
-    }
-    
-    if (insertLocation) {
-        insertLocation.insertAdjacentElement('afterend', timeInfo);
+    if (deliveryOptions) {
+        deliveryOptions.insertAdjacentElement('afterend', timeInfo);
         console.log('✅ Message de délai affiché:', mode, time);
     } else {
-        console.error('❌ Impossible de trouver l\'emplacement pour le message de délai');
+        console.error('❌ Impossible de trouver .delivery-options');
     }
 }
 
