@@ -77,17 +77,35 @@ function getClientEmailTemplate($orderData) {
                                 ?>
                                 <small><strong>📏 TAILLE:</strong> <?= htmlspecialchars($sizeLabel) ?></small>
                                 
-                                <?php if (isset($custom['base'])): ?>
-                                    <br><small><strong>🍕 BASE:</strong> <?= htmlspecialchars($custom['base']) ?></small>
-                                <?php endif; ?>
+                                <?php 
+                                // BASE - toujours afficher
+                                $baseLabel = isset($custom['base']) ? ($custom['base'] === 'creme' ? 'Crème' : ($custom['base'] === 'tomate' ? 'Tomate' : $custom['base'])) : '(non spécifiée)';
+                                ?>
+                                <br><small><strong>🍕 BASE:</strong> <?= htmlspecialchars($baseLabel) ?></small>
                                 
-                                <?php if (!empty($custom['ingredients']['removed'])): ?>
-                                    <br><small style="color: #dc3545;"><strong>❌ RETIRER:</strong> <?= htmlspecialchars(implode(', ', $custom['ingredients']['removed'])) ?></small>
+                                <?php 
+                                // RETIRER - chercher dans toutes les variantes possibles + toujours afficher
+                                $removed = $custom['removedIngredients'] ?? $custom['ingredients']['removed'] ?? $custom['removed'] ?? [];
+                                ?>
+                                <br><small style="color: #dc3545;"><strong>❌ RETIRER:</strong> 
+                                <?php if (!empty($removed)): ?>
+                                    <?= htmlspecialchars(implode(', ', $removed)) ?>
+                                <?php else: ?>
+                                    (aucun)
                                 <?php endif; ?>
+                                </small>
                                 
-                                <?php if (!empty($custom['ingredients']['added'])): ?>
-                                    <br><small style="color: #28a745;"><strong>➕ AJOUTER:</strong> <?= htmlspecialchars(implode(', ', $custom['ingredients']['added'])) ?></small>
+                                <?php 
+                                // AJOUTER - chercher dans toutes les variantes possibles + toujours afficher
+                                $added = $custom['addedIngredients'] ?? $custom['ingredients']['added'] ?? $custom['added'] ?? [];
+                                ?>
+                                <br><small style="color: #28a745;"><strong>➕ AJOUTER:</strong> 
+                                <?php if (!empty($added)): ?>
+                                    <?= htmlspecialchars(implode(', ', $added)) ?>
+                                <?php else: ?>
+                                    (aucun)
                                 <?php endif; ?>
+                                </small>
                             
                             <?php // PÂTES ?>
                             <?php elseif ($item['type'] === 'pate'): ?>
@@ -281,7 +299,8 @@ function getClientEmailTemplate($orderData) {
                 </div>
                 
                 <p style="font-size: 12px; color: #999; margin-top: 20px;">
-                    © 2025 Pizza Club - Tous droits réservés
+                    © 2025 Pizza Club - Tous droits réservés<br>
+                    <span style="font-size: 10px;">📧 Email v20251211c</span>
                 </p>
             </div>
         </div>

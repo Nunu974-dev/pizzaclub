@@ -284,6 +284,7 @@ function getKitchenEmailTemplate($orderData) {
             <!-- Footer -->
             <div class="footer">
                 <p style="margin: 0;">Pizza Club - <?= date('d/m/Y à H:i') ?></p>
+                <p style="margin: 5px 0 0 0; font-size: 10px; color: #666;">📧 Email v20251211c</p>
             </div>
         </div>
     </body>
