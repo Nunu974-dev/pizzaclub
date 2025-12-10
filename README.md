@@ -2,6 +2,8 @@
 
 Site One Page moderne et responsive pour pizzeria avec système de commande complet.
 
+**Dernière mise à jour : 10 décembre 2025**
+
 ## ✨ Fonctionnalités
 
 ### 🎨 Interface
