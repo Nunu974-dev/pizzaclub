@@ -3586,10 +3586,15 @@ function displayDeliveryTimeInfo() {
         const mode = document.querySelector('input[name="deliveryMode"]:checked')?.value || 'livraison';
         const delayMinutes = mode === 'livraison' ? 60 : 20; // 60 min livraison, 20 min emporter
         
+        console.log('🕐 Calcul heure estimée - Mode:', mode, '| Délai:', delayMinutes, 'min');
+        
         // Calculer l'heure estimée
         const estimatedTime = new Date(now.getTime() + delayMinutes * 60000);
         const estimatedHour = estimatedTime.getHours();
         const estimatedMinutes = estimatedTime.getMinutes();
+        
+        console.log('🕐 Heure actuelle:', now.getHours() + 'h' + now.getMinutes());
+        console.log('🕐 Heure estimée:', estimatedHour + 'h' + estimatedMinutes);
         
         const modeLabel = mode === 'livraison' ? 'livrée' : 'prête';
         
@@ -3672,16 +3677,17 @@ function showDeliveryTimeInfo(mode) {
     const timeInfo = document.createElement('div');
     timeInfo.className = 'delivery-time-info';
     timeInfo.style.cssText = `
-        background: #fff3cd;
-        border: 1px solid #ffc107;
+        background: #fff3cd !important;
+        border: 2px solid #ffc107 !important;
         border-radius: 8px;
-        padding: 12px 16px;
+        padding: 15px 20px;
         margin: 20px 0;
-        font-size: 14px;
-        color: #856404;
-        display: flex;
-        align-items: start;
-        gap: 10px;
+        font-size: 15px;
+        color: #856404 !important;
+        display: block !important;
+        position: relative;
+        z-index: 100;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     `;
     
     const icon = mode === 'livraison' ? '🛵' : '🏃';
@@ -3689,10 +3695,12 @@ function showDeliveryTimeInfo(mode) {
     const label = mode === 'livraison' ? 'Livraison' : 'À emporter';
     
     timeInfo.innerHTML = `
-        <span style="font-size: 20px;">${icon}</span>
-        <div>
-            <strong>${label} - Environ ${time}</strong><br>
-            <small style="opacity: 0.9;">⏱️ Ce délai est indicatif et peut varier selon l'affluence et les commandes en cours.</small>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <span style="font-size: 32px;">${icon}</span>
+            <div>
+                <div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">${label} - Environ ${time}</div>
+                <div style="font-size: 13px; opacity: 0.9;">⏱️ Ce délai est indicatif et peut varier selon l'affluence et les commandes en cours.</div>
+            </div>
         </div>
     `;
     
@@ -3702,6 +3710,9 @@ function showDeliveryTimeInfo(mode) {
     if (deliveryOptions) {
         deliveryOptions.insertAdjacentElement('afterend', timeInfo);
         console.log('✅ Message de délai affiché:', mode, time);
+        
+        // Forcer un reflow pour être sûr que c'est visible
+        timeInfo.offsetHeight;
     } else {
         console.error('❌ Impossible de trouver .delivery-options');
     }
