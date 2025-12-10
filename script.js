@@ -167,7 +167,7 @@ function setupModalScrollLock() {
 }
 
 function initApp() {
-    console.log('Pizza Club - Application initialisée');
+    console.log('🍕 Pizza Club - Application initialisée | VERSION: 20251211');
     updateCartUI();
     
     // Charger les préférences de livraison depuis le localStorage
