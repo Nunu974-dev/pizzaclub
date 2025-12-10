@@ -12,22 +12,22 @@ function getKitchenEmailTemplate($orderData) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Nouvelle commande</title>
         <style>
-            body { margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5; }
+            body { margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #ffffff; }
             .container { max-width: 900px; margin: 0 auto; background-color: #ffffff; }
             .header { background-color: #000000; padding: 25px; text-align: center; color: white; }
             .header h1 { margin: 0; font-size: 28px; }
             .mode-badge { background-color: #FFC107; color: #000; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; margin: 0; }
-            .content { padding: 30px; color: #333333; }
-            .section { margin: 25px 0; padding: 20px; background-color: #f9f9f9; border-left: 5px solid #000; }
+            .content { padding: 30px; color: #000000; background-color: #ffffff; }
+            .section { margin: 25px 0; padding: 20px; background-color: #f0f0f0; border-left: 5px solid #000; }
             .section h3 { margin-top: 0; color: #000; font-size: 20px; }
-            .client-info { font-size: 16px; line-height: 2; }
+            .client-info { font-size: 16px; line-height: 2; color: #000; }
             .client-info strong { color: #000; }
             .order-item { background-color: #ffffff; border: 3px solid #000; padding: 20px; margin: 20px 0; }
             .order-item-header { font-size: 20px; font-weight: bold; color: #ffffff; background-color: #000; margin: -20px -20px 15px -20px; padding: 15px 20px; }
-            .item-detail { margin: 10px 0; padding: 8px; background-color: #f9f9f9; border-left: 3px solid #ddd; }
-            .item-detail-label { display: inline-block; min-width: 180px; font-weight: bold; color: #000; }
-            .item-detail-value { color: #333; }
-            .empty-value { color: #999; font-style: italic; }
+            .item-detail { margin: 10px 0; padding: 10px; background-color: #ffffff; border: 1px solid #ddd; }
+            .item-detail-label { display: inline-block; min-width: 180px; font-weight: bold; color: #000; font-size: 15px; }
+            .item-detail-value { color: #000; font-size: 15px; }
+            .empty-value { color: #666; font-style: italic; }
             .price { background-color: #28a745; color: white; padding: 12px; text-align: center; font-size: 20px; font-weight: bold; margin-top: 15px; }
             .total-section { background-color: #000; color: white; padding: 25px; text-align: center; margin: 30px 0 0 0; }
             .total-section h2 { margin: 0; font-size: 32px; }
