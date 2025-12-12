@@ -1924,6 +1924,38 @@ label:has(input[type="radio"]:checked) {
     .checkout-actions {
         flex-direction: column;
     }
+    
+    /* FIX MODAL CHECKOUT SUR MOBILE */
+    .modal-content {
+        max-height: 95vh; /* Plus de hauteur sur mobile */
+        margin: 0; /* Enlever les marges */
+    }
+    
+    .modal-body {
+        overflow-y: auto; /* Force le scroll */
+        -webkit-overflow-scrolling: touch; /* Scroll fluide iOS */
+        padding-bottom: 1rem; /* Espace en bas */
+    }
+    
+    .modal-footer {
+        position: sticky; /* Footer toujours visible en bas */
+        bottom: 0;
+        z-index: 10;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1); /* Ombre pour voir qu'il y a un footer */
+    }
+    
+    /* Option cards plus petites sur mobile */
+    .option-card {
+        padding: 1.5rem 1rem;
+    }
+    
+    .option-card i {
+        font-size: 2rem;
+    }
+    
+    .option-card span {
+        font-size: 1rem;
+    }
 }
 
 /* ========================================
