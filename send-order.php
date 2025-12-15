@@ -44,16 +44,27 @@ file_put_contents(
     FILE_APPEND
 );
 
+// Vérifier si orders.json existe et logger
+if (file_exists($ordersFile)) {
+    file_put_contents($debugFile, "📄 orders.json existe\n", FILE_APPEND);
+} else {
+    file_put_contents($debugFile, "⚠️ orders.json n'existe pas - QUELQUE CHOSE L'A SUPPRIMÉ!\n", FILE_APPEND);
+}
+
 $ordersData = [];
 
-// Lire les commandes existantes
+// Lire les commandes existantes (ou créer fichier vide si inexistant)
 if (file_exists($ordersFile)) {
     $existingJson = file_get_contents($ordersFile);
-    file_put_contents($debugFile, "📄 orders.json existe, taille: " . strlen($existingJson) . " octets\n", FILE_APPEND);
-    $ordersData = json_decode($existingJson, true) ?: [];
-    file_put_contents($debugFile, "✅ Nombre de commandes existantes: " . count($ordersData) . "\n", FILE_APPEND);
+    if (!empty($existingJson)) {
+        file_put_contents($debugFile, "📄 Taille orders.json: " . strlen($existingJson) . " octets\n", FILE_APPEND);
+        $ordersData = json_decode($existingJson, true) ?: [];
+        file_put_contents($debugFile, "✅ Nombre de commandes existantes: " . count($ordersData) . "\n", FILE_APPEND);
+    } else {
+        file_put_contents($debugFile, "⚠️ orders.json existe mais est VIDE\n", FILE_APPEND);
+    }
 } else {
-    file_put_contents($debugFile, "⚠️ orders.json n'existe pas encore\n", FILE_APPEND);
+    file_put_contents($debugFile, "🆕 Création nouveau orders.json\n", FILE_APPEND);
 }
 
 // Ajouter la nouvelle commande avec timestamp
