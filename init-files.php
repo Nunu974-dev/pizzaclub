@@ -81,51 +81,63 @@ if (file_exists($debugFile)) {
 
 echo "<hr>";
 
-// Test d'écriture
+// Test d'écriture (SEULEMENT si fichiers vides ou inexistants)
 echo "<h2>4️⃣ Test d'écriture dans les fichiers</h2>";
+
+// Vérifier si orders.json contient déjà des commandes
+$hasExistingOrders = false;
+if (file_exists($ordersFile)) {
+    $existingContent = file_get_contents($ordersFile);
+    $existingOrders = json_decode($existingContent, true);
+    if (is_array($existingOrders) && count($existingOrders) > 0) {
+        $hasExistingOrders = true;
+    }
+}
 
 // Test orders.json
 echo "<strong>Test orders.json:</strong><br>";
-$testData = [
-    [
-        'orderNumber' => 'TEST-' . date('YmdHis'),
-        'timestamp' => date('Y-m-d H:i:s'),
-        'customer' => [
-            'firstName' => 'Test',
-            'lastName' => 'Initialisation'
-        ],
-        'items' => [],
-        'total' => 0
-    ]
-];
-$writeResult = file_put_contents($ordersFile, json_encode($testData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-if ($writeResult !== false) {
-    echo "✅ Écriture réussie ($writeResult octets)<br>";
-    
-    // Relire pour vérifier
-    $readContent = file_get_contents($ordersFile);
-    $decoded = json_decode($readContent, true);
-    if ($decoded && isset($decoded[0]['orderNumber'])) {
-        echo "✅ Lecture et décodage JSON réussis<br>";
-        
-        // Nettoyer le fichier test
-        file_put_contents($ordersFile, '[]');
-        echo "✅ Fichier remis à zéro<br>";
-    } else {
-        echo "❌ Erreur de décodage JSON<br>";
-    }
+
+if ($hasExistingOrders) {
+    echo "⚠️ <strong>Le fichier contient déjà " . count($existingOrders) . " commande(s)</strong><br>";
+    echo "✅ Test ignoré pour ne pas effacer l'historique<br>";
+    echo "📊 Fichier protégé contre l'écrasement<br>";
 } else {
-    echo "❌ Échec de l'écriture<br>";
+    // Fichier vide ou inexistant, on peut tester
+    $testData = [
+        [
+            'orderNumber' => 'TEST-' . date('YmdHis'),
+            'timestamp' => date('Y-m-d H:i:s'),
+            'customer' => [
+                'firstName' => 'Test',
+                'lastName' => 'Initialisation'
+            ],
+            'items' => [],
+            'total' => 0
+        ]
+    ];
+    $writeResult = file_put_contents($ordersFile, json_encode($testData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    if ($writeResult !== false) {
+        echo "✅ Écriture réussie ($writeResult octets)<br>";
+        
+        // Relire pour vérifier
+        $readContent = file_get_contents($ordersFile);
+        $decoded = json_decode($readContent, true);
+        if ($decoded && isset($decoded[0]['orderNumber'])) {
+            echo "✅ Lecture et décodage JSON réussis<br>";
+            
+            // Nettoyer le fichier test
+            file_put_contents($ordersFile, '[]');
+            echo "✅ Fichier remis à zéro (prêt pour les vraies commandes)<br>";
+        } else {
+            echo "❌ Erreur de décodage JSON<br>";
+        }
+    } else {
+        echo "❌ Échec de l'écriture<br>";
+    }
 }
 
 echo "<br><strong>Test debug-order.txt:</strong><br>";
-$testDebug = "\n=== TEST ÉCRITURE " . date('Y-m-d H:i:s') . " ===\n";
-$appendResult = file_put_contents($debugFile, $testDebug, FILE_APPEND);
-if ($appendResult !== false) {
-    echo "✅ Écriture réussie ($appendResult octets ajoutés)<br>";
-} else {
-    echo "❌ Échec de l'écriture<br>";
-}
+echo "✅ Test ignoré (fichier d'historique, on ne touche pas)<br>";
 
 echo "<hr>";
 
