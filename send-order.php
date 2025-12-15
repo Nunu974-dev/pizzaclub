@@ -31,57 +31,48 @@ error_log(print_r($orderData, true));
 error_log("=== FIN DEBUG ===");
 
 // ========================================
-// SAUVEGARDE JSON DES COMMANDES (AVEC VERROU)
+// SAUVEGARDE JSON DES COMMANDES
 // ========================================
 $ordersFile = __DIR__ . '/orders.json';
 $debugFile = __DIR__ . '/debug-order.txt';
 
-// Ouvrir le fichier avec un verrou exclusif pour éviter les écritures simultanées
-$lockFile = fopen($ordersFile . '.lock', 'w');
-if (flock($lockFile, LOCK_EX)) {
-    error_log("=== SAUVEGARDE JSON (VERROU ACQUIS) ===");
-    
-    $ordersData = [];
-    
-    // Lire les commandes existantes
-    if (file_exists($ordersFile)) {
-        $existingJson = file_get_contents($ordersFile);
-        $ordersData = json_decode($existingJson, true) ?: [];
-        error_log("Nombre de commandes existantes: " . count($ordersData));
-    }
-    
-    // Ajouter la nouvelle commande avec timestamp
-    $orderToSave = $orderData;
-    $orderToSave['timestamp'] = date('Y-m-d H:i:s');
-    $ordersData[] = $orderToSave;
-    error_log("Nombre de commandes après ajout: " . count($ordersData));
-    
-    // Limiter à 100 dernières commandes
-    if (count($ordersData) > 100) {
-        $ordersData = array_slice($ordersData, -100);
-    }
-    
-    // Sauvegarder orders.json
-    $jsonToSave = json_encode($ordersData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-    $bytesWritten = file_put_contents($ordersFile, $jsonToSave);
-    error_log("Octets écrits dans orders.json: " . $bytesWritten);
-    
-    // Sauvegarder debug-order.txt (APRÈS orders.json)
-    file_put_contents(
-        $debugFile,
-        "=== NOUVELLE COMMANDE " . date('Y-m-d H:i:s') . " ===\n" . 
-        print_r($orderData, true) . 
-        "\n\n",
-        FILE_APPEND | LOCK_EX
-    );
-    
-    // Libérer le verrou
-    flock($lockFile, LOCK_UN);
-    error_log("=== FIN SAUVEGARDE JSON (VERROU LIBÉRÉ) ===");
-} else {
-    error_log("ERREUR: Impossible d'acquérir le verrou sur orders.json");
+error_log("=== SAUVEGARDE JSON ===");
+
+$ordersData = [];
+
+// Lire les commandes existantes
+if (file_exists($ordersFile)) {
+    $existingJson = file_get_contents($ordersFile);
+    $ordersData = json_decode($existingJson, true) ?: [];
+    error_log("Nombre de commandes existantes: " . count($ordersData));
 }
-fclose($lockFile);
+
+// Ajouter la nouvelle commande avec timestamp
+$orderToSave = $orderData;
+$orderToSave['timestamp'] = date('Y-m-d H:i:s');
+$ordersData[] = $orderToSave;
+error_log("Nombre de commandes après ajout: " . count($ordersData));
+
+// Limiter à 100 dernières commandes
+if (count($ordersData) > 100) {
+    $ordersData = array_slice($ordersData, -100);
+}
+
+// Sauvegarder orders.json AVEC LOCK_EX directement
+$jsonToSave = json_encode($ordersData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+$bytesWritten = file_put_contents($ordersFile, $jsonToSave, LOCK_EX);
+error_log("Octets écrits dans orders.json: " . $bytesWritten);
+
+// Sauvegarder debug-order.txt
+file_put_contents(
+    $debugFile,
+    "=== NOUVELLE COMMANDE " . date('Y-m-d H:i:s') . " ===\n" . 
+    print_r($orderData, true) . 
+    "\n\n",
+    FILE_APPEND | LOCK_EX
+);
+
+error_log("=== FIN SAUVEGARDE JSON ===");
 // ========================================
 
 // ========================================
