@@ -510,14 +510,18 @@ $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
 $emailSent = mail($to, $subject, $htmlMessage, $headers);
 
 // Log pour debug
-error_log("Email restaurant - To: $to, Subject: $subject, Sent: " . ($emailSent ? 'YES' : 'NO'));
+$emailLog = "📧 Email restaurant - To: $to, Subject: $subject, Sent: " . ($emailSent ? 'YES ✅' : 'NO ❌');
+error_log($emailLog);
+file_put_contents(__DIR__ . '/debug-order.txt', $emailLog . "\n", FILE_APPEND | LOCK_EX);
 
 // Si l'email principal échoue, essayer avec un email de secours
 if (!$emailSent) {
     // Tenter avec un autre domaine email si disponible
     $backupEmail = 'contact@pizzaclub.re'; // ou tout autre email de secours
     $emailSent = mail($backupEmail, $subject, $htmlMessage, $headers);
-    error_log("Email secours - To: $backupEmail, Sent: " . ($emailSent ? 'YES' : 'NO'));
+    $backupLog = "📧 Email secours - To: $backupEmail, Sent: " . ($emailSent ? 'YES ✅' : 'NO ❌');
+    error_log($backupLog);
+    file_put_contents(__DIR__ . '/debug-order.txt', $backupLog . "\n", FILE_APPEND | LOCK_EX);
 }
 
 // Envoi de l'email de confirmation au client
@@ -542,9 +546,13 @@ if (!empty($orderData['customer']['email'])) {
         $clientHeaders .= "Content-Type: text/html; charset=UTF-8\r\n";
         
         $clientEmailSent = mail($orderData['customer']['email'], $clientSubject, $clientHtmlMessage, $clientHeaders);
-        error_log("Email client - To: {$orderData['customer']['email']}, Sent: " . ($clientEmailSent ? 'YES' : 'NO'));
+        $clientLog = "📧 Email client - To: {$orderData['customer']['email']}, Sent: " . ($clientEmailSent ? 'YES ✅' : 'NO ❌');
+        error_log($clientLog);
+        file_put_contents(__DIR__ . '/debug-order.txt', $clientLog . "\n", FILE_APPEND | LOCK_EX);
     } catch (Exception $e) {
-        error_log("ERREUR email client: " . $e->getMessage());
+        $errorLog = "❌ ERREUR email client: " . $e->getMessage();
+        error_log($errorLog);
+        file_put_contents(__DIR__ . '/debug-order.txt', $errorLog . "\n", FILE_APPEND | LOCK_EX);
     }
 }
 

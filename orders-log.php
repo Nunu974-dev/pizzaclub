@@ -359,7 +359,7 @@ $debugFile = __DIR__ . '/debug-order.txt';
                         </div>
                         
                         <div class="total">
-                            TOTAL: <?= number_format($order['totalPrice'], 2, ',', ' ') ?>€
+                            TOTAL: <?= number_format($order['total'], 2, ',', ' ') ?>€
                         </div>
                     </div>
                     <?php
