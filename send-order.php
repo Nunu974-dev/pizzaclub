@@ -37,26 +37,31 @@ error_log("=== FIN DEBUG ===");
 $ordersFile = __DIR__ . '/orders.json';
 $debugFile = __DIR__ . '/debug-order.txt';
 
-error_log("=== SAUVEGARDE JSON (VERSION 20251215-APPEND) ===");
+// Écrire dans debug-order.txt pour tracer le problème
+file_put_contents(
+    $debugFile,
+    "\n=== 📊 SAUVEGARDE JSON (VERSION 20251215-APPEND) ===\n",
+    FILE_APPEND
+);
 
 $ordersData = [];
 
 // Lire les commandes existantes
 if (file_exists($ordersFile)) {
     $existingJson = file_get_contents($ordersFile);
-    error_log("📄 Contenu orders.json AVANT: " . substr($existingJson, 0, 200));
+    file_put_contents($debugFile, "📄 orders.json existe, taille: " . strlen($existingJson) . " octets\n", FILE_APPEND);
     $ordersData = json_decode($existingJson, true) ?: [];
-    error_log("✅ Nombre de commandes existantes: " . count($ordersData));
+    file_put_contents($debugFile, "✅ Nombre de commandes existantes: " . count($ordersData) . "\n", FILE_APPEND);
 } else {
-    error_log("⚠️ orders.json n'existe pas encore");
+    file_put_contents($debugFile, "⚠️ orders.json n'existe pas encore\n", FILE_APPEND);
 }
 
 // Ajouter la nouvelle commande avec timestamp
 $orderToSave = $orderData;
 $orderToSave['timestamp'] = date('Y-m-d H:i:s');
 $ordersData[] = $orderToSave;
-error_log("✅ AJOUT - Nombre de commandes APRÈS ajout: " . count($ordersData));
-error_log("✅ Nouvelle commande: " . ($orderToSave['orderNumber'] ?? 'UNKNOWN'));
+file_put_contents($debugFile, "✅ AJOUT - Nombre de commandes APRÈS ajout: " . count($ordersData) . "\n", FILE_APPEND);
+file_put_contents($debugFile, "✅ Nouvelle commande: " . ($orderToSave['orderNumber'] ?? 'UNKNOWN') . "\n", FILE_APPEND);
 
 // Limiter à 100 dernières commandes
 if (count($ordersData) > 100) {
@@ -66,18 +71,17 @@ if (count($ordersData) > 100) {
 // Sauvegarder orders.json AVEC LOCK_EX directement
 $jsonToSave = json_encode($ordersData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 $bytesWritten = file_put_contents($ordersFile, $jsonToSave, LOCK_EX);
-error_log("Octets écrits dans orders.json: " . $bytesWritten);
+file_put_contents($debugFile, "💾 Octets écrits dans orders.json: " . $bytesWritten . "\n", FILE_APPEND);
+file_put_contents($debugFile, "💾 Commandes dans le fichier: " . count($ordersData) . "\n", FILE_APPEND);
 
 // Sauvegarder debug-order.txt
 file_put_contents(
     $debugFile,
     "=== NOUVELLE COMMANDE " . date('Y-m-d H:i:s') . " ===\n" . 
     print_r($orderData, true) . 
-    "\n\n",
+    "\n=== FIN SAUVEGARDE JSON ===\n\n",
     FILE_APPEND | LOCK_EX
 );
-
-error_log("=== FIN SAUVEGARDE JSON ===");
 // ========================================
 
 // ========================================
