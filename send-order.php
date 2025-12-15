@@ -1,5 +1,6 @@
 <?php
 // Configuration
+// VERSION: 20251215-APPEND (lecture existant + ajout)
 date_default_timezone_set('Indian/Reunion'); // Fuseau horaire La Réunion (UTC+4)
 
 header('Content-Type: application/json');
@@ -36,22 +37,26 @@ error_log("=== FIN DEBUG ===");
 $ordersFile = __DIR__ . '/orders.json';
 $debugFile = __DIR__ . '/debug-order.txt';
 
-error_log("=== SAUVEGARDE JSON ===");
+error_log("=== SAUVEGARDE JSON (VERSION 20251215-APPEND) ===");
 
 $ordersData = [];
 
 // Lire les commandes existantes
 if (file_exists($ordersFile)) {
     $existingJson = file_get_contents($ordersFile);
+    error_log("📄 Contenu orders.json AVANT: " . substr($existingJson, 0, 200));
     $ordersData = json_decode($existingJson, true) ?: [];
-    error_log("Nombre de commandes existantes: " . count($ordersData));
+    error_log("✅ Nombre de commandes existantes: " . count($ordersData));
+} else {
+    error_log("⚠️ orders.json n'existe pas encore");
 }
 
 // Ajouter la nouvelle commande avec timestamp
 $orderToSave = $orderData;
 $orderToSave['timestamp'] = date('Y-m-d H:i:s');
 $ordersData[] = $orderToSave;
-error_log("Nombre de commandes après ajout: " . count($ordersData));
+error_log("✅ AJOUT - Nombre de commandes APRÈS ajout: " . count($ordersData));
+error_log("✅ Nouvelle commande: " . ($orderToSave['orderNumber'] ?? 'UNKNOWN'));
 
 // Limiter à 100 dernières commandes
 if (count($ordersData) > 100) {
