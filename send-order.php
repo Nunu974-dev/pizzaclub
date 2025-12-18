@@ -517,6 +517,11 @@ $headers .= "Importance: High\r\n";
 $headers .= "MIME-Version: 1.0\r\n";
 $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
 
+// ⚠️ IMPORTANT: Utiliser ini_set pour forcer SMTP (Hostinger bloque mail())
+ini_set('SMTP', 'smtp.hostinger.com');
+ini_set('smtp_port', '587');
+ini_set('sendmail_from', 'commande@pizzaclub.re');
+
 // Envoi de l'email au restaurant
 $emailSent = mail($to, $subject, $htmlMessage, $headers);
 

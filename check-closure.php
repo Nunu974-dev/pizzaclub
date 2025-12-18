@@ -95,6 +95,52 @@ function isRestaurantClosed() {
         }
     }
     
+    // ========================================
+    // HORAIRES DE FERMETURE + DÉLAI AVANT FERMETURE
+    // Restaurant ferme à 14h et 21h/22h
+    // Bloquer commandes: 45min avant (livraison), 30min avant (emporter)
+    // ========================================
+    
+    // Récupérer le mode de livraison depuis la requête (si disponible)
+    $deliveryMode = $_GET['deliveryMode'] ?? $_POST['deliveryMode'] ?? 'livraison';
+    $isDelivery = ($deliveryMode === 'livraison');
+    
+    // Délais avant fermeture
+    $cutoffMinutes = $isDelivery ? 45 : 30;
+    
+    // Horaires de fermeture (14h midi, 21h ou 22h soir)
+    $closingTimes = [
+        ['hour' => 14, 'minute' => 0],  // Fermeture midi
+        ['hour' => 21, 'minute' => 0],  // Fermeture soir (à ajuster)
+    ];
+    
+    $currentHour = (int)date('G');
+    $currentMinute = (int)date('i');
+    $currentTotalMinutes = ($currentHour * 60) + $currentMinute;
+    
+    foreach ($closingTimes as $closing) {
+        $closingTotalMinutes = ($closing['hour'] * 60) + $closing['minute'];
+        $cutoffTime = $closingTotalMinutes - $cutoffMinutes;
+        
+        // Si on est dans la période de blocage avant fermeture
+        if ($currentTotalMinutes >= $cutoffTime && $currentTotalMinutes < $closingTotalMinutes) {
+            $closingTimeStr = sprintf("%02dh%02d", $closing['hour'], $closing['minute']);
+            $cutoffTimeHour = floor($cutoffTime / 60);
+            $cutoffTimeMin = $cutoffTime % 60;
+            $cutoffTimeStr = sprintf("%02dh%02d", $cutoffTimeHour, $cutoffTimeMin);
+            
+            return [
+                'isClosed' => true,
+                'reason' => 'Délai avant fermeture',
+                'type' => 'cutoff',
+                'closingTime' => $closingTimeStr,
+                'cutoffTime' => $cutoffTimeStr,
+                'deliveryMode' => $deliveryMode,
+                'message' => "⏰ Commandes " . ($isDelivery ? 'en livraison' : 'à emporter') . " fermées (fermeture à $closingTimeStr). Réouverture prochaine !"
+            ];
+        }
+    }
+    
     return [
         'isClosed' => false,
         'reason' => null

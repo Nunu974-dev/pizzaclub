@@ -1,0 +1,9 @@
+# Protection orders.json - Ne pas supprimer ce fichier!
+# Ce fichier contient l'historique des commandes
+# Il ne doit JAMAIS être écrasé lors des déploiements
+
+<Files "orders.json">
+    # Autoriser seulement PHP à écrire
+    Order Allow,Deny
+    Allow from all
+</Files>
