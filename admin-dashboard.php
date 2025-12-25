@@ -74,26 +74,7 @@ if (file_exists(TEMPERATURE_FILE)) {
     $temperatureData = json_decode(file_get_contents(TEMPERATURE_FILE), true);
 }
 
-// Auto-remplissage températures
-$today = date('Y-m-d');
-if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
-    $temperatureData['temperatures'][$today] = [
-        'midi' => [
-            'frigo_boissons' => round(rand(10, 40) / 10, 1),
-            'frigo_blanc' => round(rand(10, 40) / 10, 1),
-            'congelateur' => round(rand(-250, -180) / 10, 1),
-            'frigo_armoire' => round(rand(10, 40) / 10, 1)
-        ],
-        'soir' => [
-            'frigo_boissons' => round(rand(10, 40) / 10, 1),
-            'frigo_blanc' => round(rand(10, 40) / 10, 1),
-            'congelateur' => round(rand(-250, -180) / 10, 1),
-            'frigo_armoire' => round(rand(10, 40) / 10, 1)
-        ],
-        'auto_filled' => true
-    ];
-    file_put_contents(TEMPERATURE_FILE, json_encode($temperatureData, JSON_PRETTY_PRINT));
-}
+// Pas d'auto-remplissage - l'utilisateur entre les températures manuellement
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -485,6 +466,20 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
             border-bottom: 1px solid #e0e0e0;
         }
 
+        .btn-delete-temp {
+            padding: 3px 8px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-delete-temp:hover {
+            background: #c82333;
+        }
+
         @media (max-width: 768px) {
             .add-item-form {
                 grid-template-columns: 1fr;
@@ -622,14 +617,7 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                                     'midi' => ['frigo_boissons' => '', 'frigo_blanc' => '', 'congelateur' => '', 'frigo_armoire' => ''],
                                     'soir' => ['frigo_boissons' => '', 'frigo_blanc' => '', 'congelateur' => '', 'frigo_armoire' => '']
                                 ];
-                                $isAutoFilled = $todayTemps['auto_filled'] ?? false;
                                 ?>
-                                
-                                <?php if ($isAutoFilled): ?>
-                                    <div class="alert-warning">
-                                        <i class="fas fa-exclamation-triangle"></i> <strong>Attention :</strong> Températures auto-remplies - Veuillez vérifier et mettre à jour les valeurs
-                                    </div>
-                                <?php endif; ?>
 
                                 <div class="temp-grid">
                                     <div class="temp-section">
@@ -666,12 +654,12 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                                         <div class="temp-field">
                                             <label>🧊 Frigo Blanc Principal</label>
                                             <input type="number" step="0.1" id="soir-blanc" value="<?= $todayTemps['soir']['frigo_blanc'] ?>">
-                                            <small>Max: 4°C</small>
+                                            <small>Entre -18°C et -16</small>
                                         </div>
                                         <div class="temp-field">
                                             <label>❄️ Congélateur</label>
                                             <input type="number" step="0.1" id="soir-congelateur" value="<?= $todayTemps['soir']['congelateur'] ?>">
-                                            <small>Min: -18°C</small>
+                                            <small>Entre -18°C et -16°C</small>
                                         </div>
                                         <div class="temp-field">
                                             <label>🚪 Frigo Armoire 4 Portes</label>
@@ -814,8 +802,8 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                     if (midi[k] > 4) errors.push(`MIDI ${k} > 4°C`);
                     if (soir[k] > 4) errors.push(`SOIR ${k} > 4°C`);
                 });
-                if (midi.congelateur > -18) errors.push('MIDI congélateur > -18°C');
-                if (soir.congelateur > -18) errors.push('SOIR congélateur > -18°C');
+                if (midi.congelateur < -18 || midi.congelateur > -16) errors.push('MIDI congélateur hors norme (-18°C à -16°C)');
+                if (soir.congelateur < -18 || soir.congelateur > -16) errors.push('SOIR congélateur hors norme (-18°C à -16°C)');
 
                 if (errors.length && !confirm('⚠️ Températures non conformes:\n' + errors.join('\n') + '\n\nEnregistrer quand même ?')) {
                     return;
@@ -825,7 +813,6 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                 temperatures.temperatures[today] = {
                     midi: midi,
                     soir: soir,
-                    auto_filled: false,
                     savedAt: new Date().toISOString()
                 };
 
@@ -844,22 +831,25 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                     }
                 })
                 .catch(() => alert('❌ Erreur de sauvegarde'));
-            }
-
-            function loadTempHistory() {
-                const container = document.getElementById('temp-history');
-                if (!temperatures.temperatures) return;
-
-                const dates = Object.keys(temperatures.temperatures).sort().reverse().slice(0, 7);
-                if (dates.length === 0) {
-                    container.innerHTML = '<p style="text-align: center; color: #999;">Aucun historique</p>';
-                    return;
-                }
-
-                let html = '<table class="history-table"><thead><tr>';
-                html += '<th>Date</th><th>Moment</th><th>🥤 Boissons</th><th>🧊 Blanc</th><th>❄️ Congel</th><th>🚪 Armoire</th><th>Statut</th>';
+            }Actions</th>';
                 html += '</tr></thead><tbody>';
 
+                dates.forEach(date => {
+                    const d = temperatures.temperatures[date];
+                    const dateStr = new Date(date).toLocaleDateString('fr-FR');
+
+                    html += `<tr>
+                        <td rowspan="2"><strong>${dateStr}</strong></td>
+                        <td><i class="fas fa-sun"></i> Midi</td>
+                        <td>${d.midi.frigo_boissons.toFixed(1)}°C</td>
+                        <td>${d.midi.frigo_blanc.toFixed(1)}°C</td>
+                        <td>${d.midi.congelateur.toFixed(1)}°C</td>
+                        <td>${d.midi.frigo_armoire.toFixed(1)}°C</td>
+                        <td rowspan="2" style="text-align: center;">
+                            <button class="btn-delete-temp" onclick="deleteTemperature('${date}')">
+                                <i class="fas fa-trash"></i> Supprimer
+                            </button>
+                        
                 dates.forEach(date => {
                     const d = temperatures.temperatures[date];
                     const auto = d.auto_filled ? '<span style="color: #856404;">🤖 Auto</span>' : '<span style="color: #28a745;">✅ Manuel</span>';
@@ -870,6 +860,30 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                         <td><i class="fas fa-sun"></i> Midi</td>
                         <td>${d.midi.frigo_boissons.toFixed(1)}°C</td>
                         <td>${d.midi.frigo_blanc.toFixed(1)}°C</td>
+            function deleteTemperature(date) {
+                if (!confirm(`Supprimer les températures du ${new Date(date).toLocaleDateString('fr-FR')} ?`)) {
+                    return;
+                }
+
+                delete temperatures.temperatures[date];
+
+                fetch(window.location.href, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(temperatures)
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('✅ Ligne supprimée !');
+                        loadTempHistory();
+                    } else {
+                        alert('❌ Erreur: ' + data.message);
+                    }
+                })
+                .catch(() => alert('❌ Erreur de suppression'));
+            }
+
                         <td>${d.midi.congelateur.toFixed(1)}°C</td>
                         <td>${d.midi.frigo_armoire.toFixed(1)}°C</td>
                         <td rowspan="2">${auto}</td>
