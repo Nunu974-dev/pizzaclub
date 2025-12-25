@@ -533,16 +533,16 @@ if (file_exists(TEMPERATURE_FILE)) {
             </div>
 
             <div class="tabs-nav">
-                <button class="tab-btn active" onclick="switchTab('suppliers')">
+                <button class="tab-btn active" onclick="switchTab('suppliers', this)">
                     <i class="fas fa-truck"></i> Commandes Fournisseurs
                 </button>
-                <button class="tab-btn" onclick="switchTab('orders')">
+                <button class="tab-btn" onclick="switchTab('orders', this)">
                     <i class="fas fa-shopping-cart"></i> Commandes Clients
                 </button>
-                <button class="tab-btn" onclick="switchTab('unavailability')">
+                <button class="tab-btn" onclick="switchTab('unavailability', this)">
                     <i class="fas fa-ban"></i> Indisponibilités & Fermetures
                 </button>
-                <button class="tab-btn" onclick="switchTab('management')">
+                <button class="tab-btn" onclick="switchTab('management', this)">
                     <i class="fas fa-cogs"></i> Gestion Restaurant
                 </button>
             </div>
@@ -687,11 +687,11 @@ if (file_exists(TEMPERATURE_FILE)) {
             let temperatures = <?= json_encode($temperatureData) ?>;
 
             // Gestion des onglets
-            function switchTab(tabName) {
+            function switchTab(tabName, button) {
                 document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
                 document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
                 
-                event.target.classList.add('active');
+                button.classList.add('active');
                 document.getElementById('tab-' + tabName).classList.add('active');
             }
 
