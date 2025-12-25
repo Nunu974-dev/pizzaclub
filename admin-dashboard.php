@@ -1,25 +1,18 @@
 <?php
 /**
- * TABLEAU DE BORD ADMIN - Pizza Club
- * Interface unifiée pour gérer:
- * - Commandes fournisseurs
- * - Commandes clients
- * - Indisponibilités produits & fermetures
+ * DASHBOARD ADMIN UNIFIÉ - Pizza Club
+ * Point d'entrée unique pour toutes les fonctionnalités admin
  */
 
 session_start();
 date_default_timezone_set('Indian/Reunion');
 
-// ========================================
-// CONFIGURATION
-// ========================================
+// Configuration
 define('ADMIN_PASSWORD', 'pizzaclub2025');
-define('JSON_FILE', __DIR__ . '/unavailability.json');
-define('LOGIN', 'pizzaclub');
+define('INVENTORY_FILE', __DIR__ . '/inventory.json');
+define('TEMPERATURE_FILE', __DIR__ . '/temperatures.json');
 
-// ========================================
-// GESTION DE LA CONNEXION
-// ========================================
+// Gestion de la connexion
 if (isset($_POST['logout'])) {
     session_destroy();
     header('Location: ' . $_SERVER['PHP_SELF']);
@@ -28,237 +21,78 @@ if (isset($_POST['logout'])) {
 
 if (isset($_POST['password'])) {
     if ($_POST['password'] === ADMIN_PASSWORD) {
-        $_SESSION['admin_logged_in'] = true;
+        $_SESSION['admin_dashboard_logged'] = true;
+        $_SESSION['commande_logged_in'] = true; // Pour commande-fournisseurs
+        $_SESSION['logged_orders'] = true; // Pour orders-log
+        $_SESSION['admin_logged_in'] = true; // Pour admin-indispos
     } else {
         $error = "Mot de passe incorrect";
     }
 }
 
-$isLoggedIn = isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true;
+$isLoggedIn = isset($_SESSION['admin_dashboard_logged']) && $_SESSION['admin_dashboard_logged'] === true;
 
-// ========================================
-// GESTION DES ACTIONS AJAX
-// ========================================
+// Gestion AJAX pour inventaire et températures
 if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
     
-    // Sauvegarde des indisponibilités
     if (strpos($contentType, 'application/json') !== false) {
         header('Content-Type: application/json');
         
         $data = json_decode(file_get_contents('php://input'), true);
         
-        if ($data && isset($data['items']) && isset($data['ingredients'])) {
-            $data['lastUpdate'] = date('c');
-            
-            if (!isset($data['closures'])) {
-                $data['closures'] = [
-                    'emergency' => null,
-                    'scheduled' => []
-                ];
-            }
-            
-            if (file_put_contents(JSON_FILE, json_encode($data, JSON_PRETTY_PRINT))) {
-                echo json_encode(['success' => true, 'message' => 'Sauvegarde réussie']);
+        // Sauvegarde inventaire
+        if ($data && isset($data['inventory'])) {
+            if (file_put_contents(INVENTORY_FILE, json_encode($data, JSON_PRETTY_PRINT))) {
+                echo json_encode(['success' => true, 'message' => 'Inventaire sauvegardé']);
             } else {
                 http_response_code(500);
-                echo json_encode(['success' => false, 'message' => 'Erreur d\'écriture du fichier']);
+                echo json_encode(['success' => false, 'message' => 'Erreur sauvegarde']);
             }
-        } else {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Données invalides']);
+        }
+        // Sauvegarde températures
+        elseif ($data && isset($data['temperatures'])) {
+            if (file_put_contents(TEMPERATURE_FILE, json_encode($data, JSON_PRETTY_PRINT))) {
+                echo json_encode(['success' => true, 'message' => 'Températures sauvegardées']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Erreur sauvegarde']);
+            }
         }
         exit;
     }
 }
 
-// ========================================
-// CHARGEMENT DES DONNÉES
-// ========================================
-$unavailabilityData = ['items' => [], 'ingredients' => []];
-if (file_exists(JSON_FILE)) {
-    $unavailabilityData = json_decode(file_get_contents(JSON_FILE), true);
+// Chargement des données
+$inventoryData = ['inventory' => [], 'lastUpdate' => null];
+if (file_exists(INVENTORY_FILE)) {
+    $inventoryData = json_decode(file_get_contents(INVENTORY_FILE), true);
 }
 
-// Données des fournisseurs
-$suppliers = [
-    'Aphrodrink' => [
-        'email' => 'aphrodrink@gmail.com',
-        'products' => [
-            ['name' => 'Capri-Sun 20 cl', 'price' => 14.89],
-            ['name' => 'Cilaos 50 cl', 'price' => 4.32],
-            ['name' => 'Coca-Cola 1,5 L', 'price' => 17.20],
-            ['name' => 'Coca-Cola 33 cl X24', 'price' => 24.70],
-            ['name' => 'Coca-Cola 50 cl X24', 'price' => 26.40],
-            ['name' => 'Desperados boites 33cl X24', 'price' => 44.16],
-            ['name' => 'Desperados boites 50cl X24', 'price' => 52.08],
-            ['name' => 'Dodo 33 cl X24', 'price' => 19.91],
-            ['name' => 'Edena plate 1,5 L X8', 'price' => 5.95],
-            ['name' => 'Edena plate 50 cl X12', 'price' => 5.52],
-            ['name' => 'Fanta Orange 50 cl X24', 'price' => 24.96],
-            ['name' => 'Fischer 33 cl X24', 'price' => 19.92],
-            ['name' => 'HK 33 cl X24', 'price' => 33.18],
-            ['name' => 'HK 50 cl X24', 'price' => 44.59],
-            ['name' => 'Monster 50 cl', 'price' => 44.66],
-            ['name' => 'Oasis Tropical 50 cl', 'price' => 35.52],
-            ['name' => 'Orangina 50 cl', 'price' => 32.13],
-            ['name' => 'Pokka Thé Melon 33cl', 'price' => 24.68],
-            ['name' => 'Pokka Thé Pêche 33cl', 'price' => 24.68],
-            ['name' => 'Pokka Thé Melon 50cl', 'price' => 30.09],
-            ['name' => 'Pokka Thé Pêche 50cl', 'price' => 30.09],
-            ['name' => 'Sambo 33 cl X24', 'price' => 19.91],
-        ]
-    ],
-    'EDG' => [
-        'email' => 'contact@pizzaclub.re',
-        'products' => [
-            ['name' => 'Escalope jaune VRC (kg)', 'price' => 10.56],
-            ['name' => 'Merguez poulet vrac (kg)', 'price' => 9.36],
-            ['name' => 'Saucisse fumée poulet (kg)', 'price' => 9.6],
-        ]
-    ],
-    'Zembal' => [
-        'email' => 'Zembal974@gmail.com',
-        'products' => [
-            ['name' => 'Assiettes S + couvercles (x50)', 'price' => 24],
-            ['name' => 'Assiettes M 1000ml + couvercles (x50)', 'price' => 14],
-            ['name' => 'Bobine blanche 450 (6 rouleaux)', 'price' => 15.9],
-            ['name' => 'Boîte pizza 26 (x100)', 'price' => 19],
-            ['name' => 'Boîte pizza 33 (x100)', 'price' => 22],
-            ['name' => 'Boîte pizza 40 (x100)', 'price' => 35],
-            ['name' => 'Boîte pizza DWK 26H4 (x100)', 'price' => 19],
-            ['name' => 'Farine T55 1kg', 'price' => 0.97],
-            ['name' => 'Farine Tipo 00 1kg', 'price' => 1.00],
-            ['name' => 'Pots sauce 25ml (x100)', 'price' => 4.50],
-            ['name' => 'Sacs bretelles PM (x1000)', 'price' => 48.8],
-            ['name' => 'Sauce pizza aroma GOLD 3', 'price' => 10.50],
-        ]
-    ],
-    'Topaze' => [
-        'email' => 'contact@pizzaclub.re',
-        'products' => [
-            ['name' => 'Boîtes pizza 40 Delicious', 'price' => 35.95],
-            ['name' => 'Boîtes pizza 33 Delicious', 'price' => 23.95],
-            ['name' => 'Boîtes pizza 26 Delicious', 'price' => 18.50],
-            ['name' => 'Boîtes pizza 33 dakri', 'price' => 23.95],
-            ['name' => 'Boîtes pizza 40 semba', 'price' => 43.95],
-            ['name' => 'Farine Tipo 0 (10x1kg)', 'price' => 10.9],
-            ['name' => 'Farine T55 Moulin Vert (10x1kg)', 'price' => 9.8],
-            ['name' => 'Gnocchi Surgital 10kg', 'price' => 59.50],
-            ['name' => 'Huile de grignon 5L', 'price' => 25.00],
-            ['name' => 'Lunettes Surgital 3kg', 'price' => 43.59],
-            ['name' => 'Sauce pizza AROPIZ', 'price' => 27.60],
-        ]
-    ],
-    'Frais Import' => [
-        'email' => 'commandes@frais-import.com',
-        'products' => [
-            ['name' => 'Pâte à pizza 260g', 'price' => 1.20],
-            ['name' => 'Mozzarella râpée 1kg', 'price' => 8.50],
-            ['name' => 'Champignons tranchés 800g', 'price' => 3.90],
-            ['name' => 'Jambon blanc dés 1kg', 'price' => 12.00],
-            ['name' => 'Ananas morceaux 850g', 'price' => 2.80],
-        ]
-    ],
-];
-
-// Fonction d'envoi d'email pour les commandes fournisseurs
-function sendOrderEmail($supplierName, $email, $items, $total) {
-    $date = date('d/m/Y à H:i');
-    
-    $subject = "🛒 Commande Pizza Club - $date";
-    
-    $message = "<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; }
-        .header { background: #FF0000; color: white; padding: 20px; text-align: center; }
-        .content { padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th { background: #f0f0f0; padding: 10px; text-align: left; border-bottom: 2px solid #ddd; }
-        td { padding: 10px; border-bottom: 1px solid #ddd; }
-        .total { font-size: 20px; font-weight: bold; color: #FF0000; text-align: right; margin-top: 20px; }
-        .footer { background: #f9f9f9; padding: 15px; text-align: center; margin-top: 30px; color: #666; }
-    </style>
-</head>
-<body>
-    <div class='header'>
-        <h1>🍕 PIZZA CLUB</h1>
-        <p>Nouvelle commande du $date</p>
-    </div>
-    <div class='content'>
-        <h2>Bonjour $supplierName,</h2>
-        <p>Voici notre commande :</p>
-        <table>
-            <thead>
-                <tr>
-                    <th>Produit</th>
-                    <th>Quantité</th>
-                    <th>Prix unitaire</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody>";
-    
-    foreach ($items as $item) {
-        $itemTotal = $item['quantity'] * $item['price'];
-        $message .= "<tr>
-            <td>{$item['name']}</td>
-            <td>{$item['quantity']}</td>
-            <td>" . number_format($item['price'], 2) . " €</td>
-            <td><strong>" . number_format($itemTotal, 2) . " €</strong></td>
-        </tr>";
-    }
-    
-    $message .= "</tbody>
-        </table>
-        <div class='total'>TOTAL: " . number_format($total, 2) . " €</div>
-    </div>
-    <div class='footer'>
-        <p><strong>Pizza Club</strong><br>
-        📧 contact@pizzaclub.re<br>
-        📱 0692 XX XX XX</p>
-    </div>
-</body>
-</html>";
-    
-    $headers = "From: Pizza Club <contact@pizzaclub.re>\r\n";
-    $headers .= "Reply-To: contact@pizzaclub.re\r\n";
-    $headers .= "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-    
-    return mail($email, $subject, $message, $headers);
+$temperatureData = ['temperatures' => []];
+if (file_exists(TEMPERATURE_FILE)) {
+    $temperatureData = json_decode(file_get_contents(TEMPERATURE_FILE), true);
 }
 
-// Traitement de l'envoi de commande fournisseur
-if ($isLoggedIn && isset($_POST['send_order'])) {
-    $supplierName = $_POST['supplier'] ?? '';
-    
-    if (isset($suppliers[$supplierName])) {
-        $items = [];
-        $total = 0;
-        
-        foreach ($suppliers[$supplierName]['products'] as $index => $product) {
-            $quantity = intval($_POST["quantity_$index"] ?? 0);
-            if ($quantity > 0) {
-                $items[] = [
-                    'name' => $product['name'],
-                    'quantity' => $quantity,
-                    'price' => $product['price']
-                ];
-                $total += $quantity * $product['price'];
-            }
-        }
-        
-        if (!empty($items)) {
-            if (sendOrderEmail($supplierName, $suppliers[$supplierName]['email'], $items, $total)) {
-                $successMessage = "✅ Commande envoyée à $supplierName (" . count($items) . " produits, " . number_format($total, 2) . " €)";
-            } else {
-                $errorMessage = "❌ Erreur lors de l'envoi de la commande";
-            }
-        }
-    }
+// Auto-remplissage températures
+$today = date('Y-m-d');
+if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
+    $temperatureData['temperatures'][$today] = [
+        'midi' => [
+            'frigo_boissons' => round(rand(10, 40) / 10, 1),
+            'frigo_blanc' => round(rand(10, 40) / 10, 1),
+            'congelateur' => round(rand(-250, -180) / 10, 1),
+            'frigo_armoire' => round(rand(10, 40) / 10, 1)
+        ],
+        'soir' => [
+            'frigo_boissons' => round(rand(10, 40) / 10, 1),
+            'frigo_blanc' => round(rand(10, 40) / 10, 1),
+            'congelateur' => round(rand(-250, -180) / 10, 1),
+            'frigo_armoire' => round(rand(10, 40) / 10, 1)
+        ],
+        'auto_filled' => true
+    ];
+    file_put_contents(TEMPERATURE_FILE, json_encode($temperatureData, JSON_PRETTY_PRINT));
 }
 ?>
 <!DOCTYPE html>
@@ -280,6 +114,7 @@ if ($isLoggedIn && isset($_POST['send_order'])) {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            overflow: hidden;
         }
 
         <?php if (!$isLoggedIn): ?>
@@ -293,31 +128,28 @@ if ($isLoggedIn && isset($_POST['send_order'])) {
 
         .login-box {
             background: white;
-            padding: 40px;
+            padding: 50px;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             width: 100%;
-            max-width: 450px;
-        }
-
-        .login-header {
+            max-width: 500px;
             text-align: center;
-            margin-bottom: 30px;
         }
 
-        .login-header h1 {
+        .login-box h1 {
             color: #667eea;
-            font-size: 32px;
+            font-size: 36px;
             margin-bottom: 10px;
         }
 
-        .login-header p {
+        .login-box p {
             color: #666;
-            font-size: 14px;
+            margin-bottom: 30px;
         }
 
         .form-group {
             margin-bottom: 25px;
+            text-align: left;
         }
 
         .form-group label {
@@ -333,7 +165,6 @@ if ($isLoggedIn && isset($_POST['send_order'])) {
             border: 2px solid #e0e0e0;
             border-radius: 10px;
             font-size: 16px;
-            transition: border-color 0.3s;
         }
 
         .form-group input:focus {
@@ -364,23 +195,32 @@ if ($isLoggedIn && isset($_POST['send_order'])) {
             padding: 12px;
             border-radius: 8px;
             margin-bottom: 20px;
-            text-align: center;
         }
         <?php else: ?>
         
-        /* Dashboard Styles */
+        /* Dashboard Layout */
+        .dashboard-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
         .dashboard-header {
             background: white;
-            padding: 20px 30px;
+            padding: 15px 30px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            z-index: 100;
         }
 
         .dashboard-header h1 {
             color: #667eea;
             font-size: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .logout-btn {
@@ -398,262 +238,259 @@ if ($isLoggedIn && isset($_POST['send_order'])) {
             background: #CC0000;
         }
 
-        .tabs-container {
-            margin: 30px;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-
-        .tab {
-            padding: 15px 30px;
+        .tabs-nav {
             background: white;
+            padding: 0 30px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 5px;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            padding: 15px 25px;
+            background: transparent;
             border: none;
-            border-radius: 10px;
+            border-bottom: 3px solid transparent;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             color: #666;
+            white-space: nowrap;
             transition: all 0.3s;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
-        .tab.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        .tab-btn:hover {
+            color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .content-area {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
         }
 
         .tab-content {
             display: none;
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 5px 30px rgba(0,0,0,0.1);
+            width: 100%;
+            height: 100%;
         }
 
         .tab-content.active {
             display: block;
-            animation: fadeIn 0.5s;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .tab-content iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
         }
 
-        /* Styles pour les commandes fournisseurs */
-        .supplier-card {
+        .local-content {
+            height: 100%;
+            overflow-y: auto;
+            padding: 30px;
+            background: white;
+        }
+
+        /* Styles pour Gestion Restaurant */
+        .management-grid {
+            display: grid;
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-card {
             background: #f8f9fa;
             padding: 25px;
-            border-radius: 12px;
-            margin-bottom: 25px;
-            border-left: 5px solid #667eea;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
 
-        .supplier-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .supplier-name {
-            font-size: 24px;
-            font-weight: 700;
-            color: #333;
-        }
-
-        .products-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .product-item {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .product-info {
-            flex: 1;
-        }
-
-        .product-name {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 5px;
-        }
-
-        .product-price {
+        .section-card h2 {
             color: #667eea;
-            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .quantity-input {
-            width: 80px;
-            padding: 8px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            text-align: center;
-            font-size: 16px;
-        }
-
-        .total-section {
-            background: #667eea;
-            color: white;
-            padding: 15px;
-            border-radius: 8px;
+        .section-card h3 {
+            color: #333;
             margin-bottom: 15px;
-            text-align: right;
+            font-size: 18px;
         }
 
-        .total-amount {
-            font-size: 28px;
-            font-weight: 700;
+        .add-item-form {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: end;
         }
 
-        .send-order-btn {
+        .form-field label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-field input,
+        .form-field select {
             width: 100%;
-            padding: 15px;
-            background: #28a745;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .btn-add {
+            padding: 10px 20px;
+            background: #667eea;
             color: white;
             border: none;
             border-radius: 8px;
-            font-size: 18px;
-            font-weight: 600;
             cursor: pointer;
-            transition: background 0.3s;
+            font-weight: 600;
+            white-space: nowrap;
         }
 
-        .send-order-btn:hover {
-            background: #218838;
+        .btn-add:hover {
+            background: #5568d3;
         }
 
-        /* Styles pour les commandes clients */
-        .orders-table {
+        .inventory-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
         }
 
-        .orders-table th,
-        .orders-table td {
+        .inventory-table th {
+            background: #667eea;
+            color: white;
             padding: 12px;
             text-align: left;
+            font-weight: 600;
+        }
+
+        .inventory-table td {
+            padding: 12px;
             border-bottom: 1px solid #e0e0e0;
         }
 
-        .orders-table th {
-            background: #667eea;
-            color: white;
-            font-weight: 600;
-        }
-
-        .orders-table tr:hover {
+        .inventory-table tr:hover {
             background: #f8f9fa;
         }
 
-        .notification {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            animation: slideIn 0.5s;
+        .btn-delete {
+            padding: 5px 10px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
         }
 
-        .notification.success {
-            background: #d4edda;
-            color: #155724;
-            border-left: 5px solid #28a745;
-        }
-
-        .notification.error {
-            background: #f8d7da;
-            color: #721c24;
-            border-left: 5px solid #dc3545;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(-100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        /* Styles pour indisponibilités */
-        .items-grid {
+        .temp-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
             margin-top: 20px;
         }
 
-        .item-card {
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 15px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
+        .temp-section h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .item-card.unavailable {
-            background: #ffebee;
-            border-color: #FF0000;
+        .temp-field {
+            margin-bottom: 15px;
         }
 
-        .item-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        .item-name {
+        .temp-field label {
+            display: block;
+            margin-bottom: 5px;
             font-weight: 600;
-            margin-top: 10px;
             color: #333;
         }
 
-        .save-btn {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            padding: 15px 30px;
+        .temp-field input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        .temp-field small {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .btn-save {
+            width: 100%;
+            padding: 15px;
             background: #28a745;
             color: white;
             border: none;
-            border-radius: 50px;
-            font-size: 18px;
+            border-radius: 8px;
+            font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 5px 20px rgba(40, 167, 69, 0.4);
-            transition: all 0.3s;
-            z-index: 1000;
+            margin-top: 20px;
         }
 
-        .save-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 30px rgba(40, 167, 69, 0.6);
+        .btn-save:hover {
+            background: #218838;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+
+        .history-table th {
+            background: #667eea;
+            color: white;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .history-table td {
+            padding: 8px;
+            border-bottom: 1px solid #e0e0e0;
         }
 
         @media (max-width: 768px) {
-            .tabs {
-                flex-direction: column;
+            .add-item-form {
+                grid-template-columns: 1fr;
             }
             
-            .tab {
-                width: 100%;
-            }
-
-            .products-grid {
+            .temp-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -665,10 +502,8 @@ if ($isLoggedIn && isset($_POST['send_order'])) {
         <!-- PAGE DE CONNEXION -->
         <div class="login-container">
             <div class="login-box">
-                <div class="login-header">
-                    <h1>🎛️ Admin Dashboard</h1>
-                    <p>Pizza Club - Interface d'administration</p>
-                </div>
+                <h1>🎛️ Admin Dashboard</h1>
+                <p>Pizza Club - Interface d'administration unifiée</p>
                 
                 <?php if (isset($error)): ?>
                     <div class="error-message">
@@ -679,7 +514,7 @@ if ($isLoggedIn && isset($_POST['send_order'])) {
                 <form method="POST">
                     <div class="form-group">
                         <label><i class="fas fa-lock"></i> Mot de passe</label>
-                        <input type="password" name="password" required autofocus>
+                        <input type="password" name="password" required autofocus placeholder="Entrez le mot de passe">
                     </div>
                     <button type="submit" class="login-btn">
                         <i class="fas fa-sign-in-alt"></i> Se connecter
@@ -688,376 +523,373 @@ if ($isLoggedIn && isset($_POST['send_order'])) {
             </div>
         </div>
     <?php else: ?>
-        <!-- DASHBOARD ADMIN -->
-        <div class="dashboard-header">
-            <h1><i class="fas fa-chart-line"></i> Dashboard Admin</h1>
-            <form method="POST" style="margin: 0;">
-                <button type="submit" name="logout" class="logout-btn">
-                    <i class="fas fa-sign-out-alt"></i> Déconnexion
-                </button>
-            </form>
-        </div>
+        <!-- DASHBOARD -->
+        <div class="dashboard-container">
+            <div class="dashboard-header">
+                <h1>
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard Admin
+                </h1>
+                <form method="POST" style="margin: 0;">
+                    <button type="submit" name="logout" class="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i> Déconnexion
+                    </button>
+                </form>
+            </div>
 
-        <div class="tabs-container">
-            <!-- ONGLETS -->
-            <div class="tabs">
-                <button class="tab active" onclick="switchTab('suppliers')">
+            <div class="tabs-nav">
+                <button class="tab-btn active" onclick="switchTab('suppliers')">
                     <i class="fas fa-truck"></i> Commandes Fournisseurs
                 </button>
-                <button class="tab" onclick="switchTab('orders')">
+                <button class="tab-btn" onclick="switchTab('orders')">
                     <i class="fas fa-shopping-cart"></i> Commandes Clients
                 </button>
-                <button class="tab" onclick="switchTab('unavailability')">
+                <button class="tab-btn" onclick="switchTab('unavailability')">
                     <i class="fas fa-ban"></i> Indisponibilités & Fermetures
                 </button>
-            </div>
-
-            <!-- NOTIFICATIONS -->
-            <?php if (isset($successMessage)): ?>
-                <div class="notification success">
-                    <?= htmlspecialchars($successMessage) ?>
-                </div>
-            <?php endif; ?>
-            <?php if (isset($errorMessage)): ?>
-                <div class="notification error">
-                    <?= htmlspecialchars($errorMessage) ?>
-                </div>
-            <?php endif; ?>
-
-            <!-- CONTENU ONGLET 1: COMMANDES FOURNISSEURS -->
-            <div id="suppliers-content" class="tab-content active">
-                <h2><i class="fas fa-truck"></i> Gestion des Commandes Fournisseurs</h2>
-                <p style="margin: 10px 0 30px; color: #666;">Gérez vos commandes auprès de vos fournisseurs</p>
-
-                <?php foreach ($suppliers as $supplierName => $supplierData): ?>
-                    <form method="POST" class="supplier-card">
-                        <div class="supplier-header">
-                            <div class="supplier-name">
-                                <i class="fas fa-store"></i> <?= htmlspecialchars($supplierName) ?>
-                            </div>
-                            <div style="color: #666;">
-                                <i class="fas fa-envelope"></i> <?= htmlspecialchars($supplierData['email']) ?>
-                            </div>
-                        </div>
-
-                        <div class="products-grid">
-                            <?php foreach ($supplierData['products'] as $index => $product): ?>
-                                <div class="product-item">
-                                    <div class="product-info">
-                                        <div class="product-name"><?= htmlspecialchars($product['name']) ?></div>
-                                        <div class="product-price"><?= number_format($product['price'], 2) ?> €</div>
-                                    </div>
-                                    <input 
-                                        type="number" 
-                                        name="quantity_<?= $index ?>" 
-                                        class="quantity-input" 
-                                        min="0" 
-                                        value="0"
-                                        data-price="<?= $product['price'] ?>"
-                                        onchange="updateTotal('<?= $supplierName ?>')">
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-
-                        <div id="total-<?= $supplierName ?>" class="total-section">
-                            <div>Total commande:</div>
-                            <div class="total-amount">0.00 €</div>
-                        </div>
-
-                        <input type="hidden" name="supplier" value="<?= htmlspecialchars($supplierName) ?>">
-                        <button type="submit" name="send_order" class="send-order-btn">
-                            <i class="fas fa-paper-plane"></i> Envoyer la commande par email
-                        </button>
-                    </form>
-                <?php endforeach; ?>
-            </div>
-
-            <!-- CONTENU ONGLET 2: COMMANDES CLIENTS -->
-            <div id="orders-content" class="tab-content">
-                <h2><i class="fas fa-shopping-cart"></i> Historique des Commandes Clients</h2>
-                <p style="margin: 10px 0 30px; color: #666;">Consultez toutes les commandes passées sur le site</p>
-
-                <?php
-                // Lecture des commandes
-                $ordersFile = __DIR__ . '/orders.json';
-                $orders = [];
-                
-                if (file_exists($ordersFile)) {
-                    $ordersContent = file_get_contents($ordersFile);
-                    $orders = json_decode($ordersContent, true) ?? [];
-                    
-                    // Trier par date décroissante
-                    usort($orders, function($a, $b) {
-                        return strtotime($b['timestamp']) - strtotime($a['timestamp']);
-                    });
-                }
-
-                if (empty($orders)): ?>
-                    <div style="text-align: center; padding: 50px; color: #999;">
-                        <i class="fas fa-inbox" style="font-size: 64px; margin-bottom: 20px;"></i>
-                        <p>Aucune commande pour le moment</p>
-                    </div>
-                <?php else: ?>
-                    <div style="margin-bottom: 20px; color: #666;">
-                        <strong><?= count($orders) ?></strong> commande(s) au total
-                    </div>
-                    <table class="orders-table">
-                        <thead>
-                            <tr>
-                                <th>Date/Heure</th>
-                                <th>Client</th>
-                                <th>Téléphone</th>
-                                <th>Mode</th>
-                                <th>Total</th>
-                                <th>Détails</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach (array_slice($orders, 0, 50) as $order): ?>
-                                <tr>
-                                    <td><?= date('d/m/Y H:i', strtotime($order['timestamp'])) ?></td>
-                                    <td><strong><?= htmlspecialchars($order['customer']['name']) ?></strong></td>
-                                    <td><?= htmlspecialchars($order['customer']['phone']) ?></td>
-                                    <td>
-                                        <?php if ($order['deliveryMode'] === 'delivery'): ?>
-                                            <span style="color: #667eea;"><i class="fas fa-motorcycle"></i> Livraison</span>
-                                        <?php else: ?>
-                                            <span style="color: #28a745;"><i class="fas fa-walking"></i> À emporter</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td><strong><?= number_format($order['totalPrice'], 2) ?> €</strong></td>
-                                    <td>
-                                        <button onclick="showOrderDetails(<?= htmlspecialchars(json_encode($order)) ?>)" 
-                                                style="padding: 5px 15px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                                            <i class="fas fa-eye"></i> Voir
-                                        </button>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
-            </div>
-
-            <!-- CONTENU ONGLET 3: INDISPONIBILITÉS -->
-            <div id="unavailability-content" class="tab-content">
-                <h2><i class="fas fa-ban"></i> Gestion des Indisponibilités</h2>
-                <p style="margin: 10px 0 30px; color: #666;">Marquez les produits indisponibles et gérez les fermetures</p>
-
-                <div style="margin-bottom: 30px;">
-                    <h3 style="margin-bottom: 15px;"><i class="fas fa-pizza-slice"></i> Pizzas</h3>
-                    <div id="pizzas-grid" class="items-grid"></div>
-                </div>
-
-                <div style="margin-bottom: 30px;">
-                    <h3 style="margin-bottom: 15px;"><i class="fas fa-bread-slice"></i> Pâtes</h3>
-                    <div id="pates-grid" class="items-grid"></div>
-                </div>
-
-                <div style="margin-bottom: 30px;">
-                    <h3 style="margin-bottom: 15px;"><i class="fas fa-leaf"></i> Salades</h3>
-                    <div id="salades-grid" class="items-grid"></div>
-                </div>
-
-                <div style="margin-bottom: 30px;">
-                    <h3 style="margin-bottom: 15px;"><i class="fas fa-ice-cream"></i> Desserts</h3>
-                    <div id="desserts-grid" class="items-grid"></div>
-                </div>
-
-                <button class="save-btn" onclick="saveUnavailability()">
-                    <i class="fas fa-save"></i> Enregistrer
+                <button class="tab-btn" onclick="switchTab('management')">
+                    <i class="fas fa-cogs"></i> Gestion Restaurant
                 </button>
+            </div>
+
+            <div class="content-area">
+                <!-- Onglet 1: Commandes Fournisseurs -->
+                <div id="tab-suppliers" class="tab-content active">
+                    <iframe src="commande-fournisseurs.php"></iframe>
+                </div>
+
+                <!-- Onglet 2: Commandes Clients -->
+                <div id="tab-orders" class="tab-content">
+                    <iframe src="orders-log.php"></iframe>
+                </div>
+
+                <!-- Onglet 3: Indisponibilités -->
+                <div id="tab-unavailability" class="tab-content">
+                    <iframe src="admin-indispos-manager.php"></iframe>
+                </div>
+
+                <!-- Onglet 4: Gestion Restaurant -->
+                <div id="tab-management" class="tab-content">
+                    <div class="local-content">
+                        <div class="management-grid">
+                            <!-- INVENTAIRE ANNUEL -->
+                            <div class="section-card">
+                                <h2><i class="fas fa-boxes"></i> Inventaire Annuel</h2>
+                                <p style="color: #666; margin-bottom: 20px;">Gérez votre inventaire des articles en stock</p>
+                                
+                                <h3>Ajouter un article</h3>
+                                <div class="add-item-form">
+                                    <div class="form-field">
+                                        <label>Nom de l'article</label>
+                                        <input type="text" id="item-name" placeholder="Ex: Farine T55">
+                                    </div>
+                                    <div class="form-field">
+                                        <label>Quantité</label>
+                                        <input type="number" id="item-quantity" value="0" min="0">
+                                    </div>
+                                    <div class="form-field">
+                                        <label>Unité</label>
+                                        <select id="item-unit">
+                                            <option value="pièce(s)">pièce(s)</option>
+                                            <option value="kg">kg</option>
+                                            <option value="L">L</option>
+                                            <option value="carton(s)">carton(s)</option>
+                                            <option value="paquet(s)">paquet(s)</option>
+                                            <option value="sachet(s)">sachet(s)</option>
+                                        </select>
+                                    </div>
+                                    <button class="btn-add" onclick="addItem()">
+                                        <i class="fas fa-plus"></i> Ajouter
+                                    </button>
+                                </div>
+
+                                <div id="inventory-container">
+                                    <p style="text-align: center; color: #999; padding: 40px;">Aucun article dans l'inventaire</p>
+                                </div>
+
+                                <button class="btn-save" onclick="saveInventory()">
+                                    <i class="fas fa-save"></i> Sauvegarder l'inventaire
+                                </button>
+                            </div>
+
+                            <!-- TEMPÉRATURES -->
+                            <div class="section-card">
+                                <h2><i class="fas fa-thermometer-half"></i> Relevé de Température</h2>
+                                <p style="color: #666; margin-bottom: 20px;">Enregistrez les températures matin et soir - Aujourd'hui: <strong><?= date('d/m/Y') ?></strong></p>
+                                
+                                <?php 
+                                $todayTemps = $temperatureData['temperatures'][$today] ?? [
+                                    'midi' => ['frigo_boissons' => '', 'frigo_blanc' => '', 'congelateur' => '', 'frigo_armoire' => ''],
+                                    'soir' => ['frigo_boissons' => '', 'frigo_blanc' => '', 'congelateur' => '', 'frigo_armoire' => '']
+                                ];
+                                $isAutoFilled = $todayTemps['auto_filled'] ?? false;
+                                ?>
+                                
+                                <?php if ($isAutoFilled): ?>
+                                    <div class="alert-warning">
+                                        <i class="fas fa-exclamation-triangle"></i> <strong>Attention :</strong> Températures auto-remplies - Veuillez vérifier et mettre à jour les valeurs
+                                    </div>
+                                <?php endif; ?>
+
+                                <div class="temp-grid">
+                                    <div class="temp-section">
+                                        <h4><i class="fas fa-sun"></i> MIDI</h4>
+                                        <div class="temp-field">
+                                            <label>🥤 Frigo Boissons</label>
+                                            <input type="number" step="0.1" id="midi-boissons" value="<?= $todayTemps['midi']['frigo_boissons'] ?>">
+                                            <small>Max: 4°C</small>
+                                        </div>
+                                        <div class="temp-field">
+                                            <label>🧊 Frigo Blanc Principal</label>
+                                            <input type="number" step="0.1" id="midi-blanc" value="<?= $todayTemps['midi']['frigo_blanc'] ?>">
+                                            <small>Max: 4°C</small>
+                                        </div>
+                                        <div class="temp-field">
+                                            <label>❄️ Congélateur</label>
+                                            <input type="number" step="0.1" id="midi-congelateur" value="<?= $todayTemps['midi']['congelateur'] ?>">
+                                            <small>Min: -18°C</small>
+                                        </div>
+                                        <div class="temp-field">
+                                            <label>🚪 Frigo Armoire 4 Portes</label>
+                                            <input type="number" step="0.1" id="midi-armoire" value="<?= $todayTemps['midi']['frigo_armoire'] ?>">
+                                            <small>Max: 4°C</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="temp-section">
+                                        <h4><i class="fas fa-moon"></i> SOIR</h4>
+                                        <div class="temp-field">
+                                            <label>🥤 Frigo Boissons</label>
+                                            <input type="number" step="0.1" id="soir-boissons" value="<?= $todayTemps['soir']['frigo_boissons'] ?>">
+                                            <small>Max: 4°C</small>
+                                        </div>
+                                        <div class="temp-field">
+                                            <label>🧊 Frigo Blanc Principal</label>
+                                            <input type="number" step="0.1" id="soir-blanc" value="<?= $todayTemps['soir']['frigo_blanc'] ?>">
+                                            <small>Max: 4°C</small>
+                                        </div>
+                                        <div class="temp-field">
+                                            <label>❄️ Congélateur</label>
+                                            <input type="number" step="0.1" id="soir-congelateur" value="<?= $todayTemps['soir']['congelateur'] ?>">
+                                            <small>Min: -18°C</small>
+                                        </div>
+                                        <div class="temp-field">
+                                            <label>🚪 Frigo Armoire 4 Portes</label>
+                                            <input type="number" step="0.1" id="soir-armoire" value="<?= $todayTemps['soir']['frigo_armoire'] ?>">
+                                            <small>Max: 4°C</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button class="btn-save" onclick="saveTemperatures()">
+                                    <i class="fas fa-save"></i> Enregistrer les températures
+                                </button>
+
+                                <h3 style="margin-top: 40px;">📊 Historique des 7 derniers jours</h3>
+                                <div id="temp-history"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <script src="data.js"></script>
         <script>
+            let inventory = <?= json_encode($inventoryData) ?>;
+            let temperatures = <?= json_encode($temperatureData) ?>;
+
             // Gestion des onglets
             function switchTab(tabName) {
-                // Masquer tous les contenus
-                document.querySelectorAll('.tab-content').forEach(content => {
-                    content.classList.remove('active');
-                });
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
                 
-                // Désactiver tous les onglets
-                document.querySelectorAll('.tab').forEach(tab => {
-                    tab.classList.remove('active');
-                });
-                
-                // Activer l'onglet et le contenu sélectionnés
-                document.getElementById(tabName + '-content').classList.add('active');
                 event.target.classList.add('active');
+                document.getElementById('tab-' + tabName).classList.add('active');
             }
 
-            // Calcul des totaux pour commandes fournisseurs
-            function updateTotal(supplier) {
-                const card = document.querySelector(`input[value="${supplier}"]`).closest('.supplier-card');
-                const inputs = card.querySelectorAll('.quantity-input');
-                let total = 0;
-                
-                inputs.forEach(input => {
-                    const quantity = parseInt(input.value) || 0;
-                    const price = parseFloat(input.dataset.price) || 0;
-                    total += quantity * price;
+            // === INVENTAIRE ===
+            function loadInventory() {
+                const container = document.getElementById('inventory-container');
+                if (!inventory.inventory || inventory.inventory.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">Aucun article dans l\'inventaire</p>';
+                    return;
+                }
+
+                let html = '<table class="inventory-table"><thead><tr>';
+                html += '<th>Article</th><th style="text-align: center;">Quantité</th><th style="text-align: center;">Unité</th><th style="text-align: center;">Actions</th>';
+                html += '</tr></thead><tbody>';
+
+                inventory.inventory.forEach((item, index) => {
+                    html += `<tr>
+                        <td><strong>${item.name}</strong></td>
+                        <td style="text-align: center;">
+                            <input type="number" value="${item.quantity}" onchange="updateQuantity(${index}, this.value)"
+                                   style="width: 80px; padding: 5px; text-align: center; border: 1px solid #ddd; border-radius: 4px;">
+                        </td>
+                        <td style="text-align: center;">${item.unit}</td>
+                        <td style="text-align: center;">
+                            <button class="btn-delete" onclick="deleteItem(${index})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
                 });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            }
+
+            function addItem() {
+                const name = document.getElementById('item-name').value.trim();
+                const quantity = parseFloat(document.getElementById('item-quantity').value) || 0;
+                const unit = document.getElementById('item-unit').value;
+
+                if (!name) {
+                    alert('❌ Veuillez entrer un nom d\'article');
+                    return;
+                }
+
+                if (!inventory.inventory) inventory.inventory = [];
                 
-                const totalElement = card.querySelector(`#total-${supplier} .total-amount`);
-                if (totalElement) {
-                    totalElement.textContent = total.toFixed(2) + ' €';
+                inventory.inventory.push({
+                    name: name,
+                    quantity: quantity,
+                    unit: unit,
+                    addedDate: new Date().toISOString()
+                });
+
+                document.getElementById('item-name').value = '';
+                document.getElementById('item-quantity').value = '0';
+                
+                loadInventory();
+                alert('✅ Article ajouté !');
+            }
+
+            function updateQuantity(index, newQuantity) {
+                inventory.inventory[index].quantity = parseFloat(newQuantity) || 0;
+            }
+
+            function deleteItem(index) {
+                if (confirm('Supprimer cet article ?')) {
+                    inventory.inventory.splice(index, 1);
+                    loadInventory();
                 }
             }
 
-            // Afficher détails commande
-            function showOrderDetails(order) {
-                let details = `═══════════════════════════════════\n`;
-                details += `📋 COMMANDE DU ${new Date(order.timestamp).toLocaleString('fr-FR')}\n`;
-                details += `═══════════════════════════════════\n\n`;
-                details += `👤 CLIENT:\n`;
-                details += `   Nom: ${order.customer.name}\n`;
-                details += `   Téléphone: ${order.customer.phone}\n`;
-                details += `   Email: ${order.customer.email || 'Non renseigné'}\n\n`;
+            function saveInventory() {
+                inventory.lastUpdate = new Date().toISOString();
                 
-                if (order.deliveryMode === 'delivery') {
-                    details += `🏠 LIVRAISON:\n`;
-                    details += `   Adresse: ${order.customer.address}\n`;
-                    details += `   Frais de livraison: ${order.deliveryFee.toFixed(2)} €\n\n`;
-                } else {
-                    details += `🚶 À EMPORTER\n\n`;
-                }
-                
-                details += `🍕 ARTICLES:\n`;
-                order.items.forEach((item, index) => {
-                    details += `   ${index + 1}. ${item.name}\n`;
-                    details += `      Quantité: ${item.quantity}\n`;
-                    details += `      Prix: ${item.price.toFixed(2)} €\n`;
-                    if (item.options && item.options.length > 0) {
-                        details += `      Options: ${item.options.join(', ')}\n`;
-                    }
-                    details += `\n`;
-                });
-                
-                details += `═══════════════════════════════════\n`;
-                details += `💰 TOTAL: ${order.totalPrice.toFixed(2)} €\n`;
-                details += `═══════════════════════════════════`;
-                
-                alert(details);
-            }
-
-            // Gestion des indisponibilités
-            let unavailability = <?= json_encode($unavailabilityData) ?>;
-
-            function loadPizzas() {
-                const grid = document.getElementById('pizzas-grid');
-                grid.innerHTML = '';
-                
-                pizzas.forEach(pizza => {
-                    const id = `pizza-${pizza.id}`;
-                    const isUnavailable = unavailability.items[id] || false;
-                    
-                    const card = document.createElement('div');
-                    card.className = `item-card ${isUnavailable ? 'unavailable' : ''}`;
-                    card.onclick = () => toggleItem(id);
-                    card.innerHTML = `
-                        <div style="font-size: 48px;">${isUnavailable ? '🚫' : '✅'}</div>
-                        <div class="item-name">${pizza.name}</div>
-                    `;
-                    grid.appendChild(card);
-                });
-            }
-
-            function loadPates() {
-                const grid = document.getElementById('pates-grid');
-                grid.innerHTML = '';
-                
-                pates.forEach(pate => {
-                    const id = `pate-${pate.id}`;
-                    const isUnavailable = unavailability.items[id] || false;
-                    
-                    const card = document.createElement('div');
-                    card.className = `item-card ${isUnavailable ? 'unavailable' : ''}`;
-                    card.onclick = () => toggleItem(id);
-                    card.innerHTML = `
-                        <div style="font-size: 48px;">${isUnavailable ? '🚫' : '✅'}</div>
-                        <div class="item-name">${pate.name}</div>
-                    `;
-                    grid.appendChild(card);
-                });
-            }
-
-            function loadSalades() {
-                const grid = document.getElementById('salades-grid');
-                grid.innerHTML = '';
-                
-                salades.forEach(salade => {
-                    const id = `salade-${salade.id}`;
-                    const isUnavailable = unavailability.items[id] || false;
-                    
-                    const card = document.createElement('div');
-                    card.className = `item-card ${isUnavailable ? 'unavailable' : ''}`;
-                    card.onclick = () => toggleItem(id);
-                    card.innerHTML = `
-                        <div style="font-size: 48px;">${isUnavailable ? '🚫' : '✅'}</div>
-                        <div class="item-name">${salade.name}</div>
-                    `;
-                    grid.appendChild(card);
-                });
-            }
-
-            function loadDesserts() {
-                const grid = document.getElementById('desserts-grid');
-                grid.innerHTML = '';
-                
-                desserts.forEach(dessert => {
-                    const id = `dessert-${dessert.id}`;
-                    const isUnavailable = unavailability.items[id] || false;
-                    
-                    const card = document.createElement('div');
-                    card.className = `item-card ${isUnavailable ? 'unavailable' : ''}`;
-                    card.onclick = () => toggleItem(id);
-                    card.innerHTML = `
-                        <div style="font-size: 48px;">${isUnavailable ? '🚫' : '✅'}</div>
-                        <div class="item-name">${dessert.name}</div>
-                    `;
-                    grid.appendChild(card);
-                });
-            }
-
-            function toggleItem(itemId) {
-                unavailability.items[itemId] = !unavailability.items[itemId];
-                loadPizzas();
-                loadPates();
-                loadSalades();
-                loadDesserts();
-            }
-
-            function saveUnavailability() {
                 fetch(window.location.href, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(unavailability)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(inventory)
                 })
-                .then(response => response.json())
+                .then(r => r.json())
+                .then(data => {
+                    alert(data.success ? '✅ Inventaire sauvegardé !' : '❌ Erreur: ' + data.message);
+                })
+                .catch(() => alert('❌ Erreur de sauvegarde'));
+            }
+
+            // === TEMPÉRATURES ===
+            function saveTemperatures() {
+                const today = '<?= $today ?>';
+                
+                const midi = {
+                    frigo_boissons: parseFloat(document.getElementById('midi-boissons').value) || 0,
+                    frigo_blanc: parseFloat(document.getElementById('midi-blanc').value) || 0,
+                    congelateur: parseFloat(document.getElementById('midi-congelateur').value) || 0,
+                    frigo_armoire: parseFloat(document.getElementById('midi-armoire').value) || 0
+                };
+
+                const soir = {
+                    frigo_boissons: parseFloat(document.getElementById('soir-boissons').value) || 0,
+                    frigo_blanc: parseFloat(document.getElementById('soir-blanc').value) || 0,
+                    congelateur: parseFloat(document.getElementById('soir-congelateur').value) || 0,
+                    frigo_armoire: parseFloat(document.getElementById('soir-armoire').value) || 0
+                };
+
+                let errors = [];
+                ['frigo_boissons', 'frigo_blanc', 'frigo_armoire'].forEach(k => {
+                    if (midi[k] > 4) errors.push(`MIDI ${k} > 4°C`);
+                    if (soir[k] > 4) errors.push(`SOIR ${k} > 4°C`);
+                });
+                if (midi.congelateur > -18) errors.push('MIDI congélateur > -18°C');
+                if (soir.congelateur > -18) errors.push('SOIR congélateur > -18°C');
+
+                if (errors.length && !confirm('⚠️ Températures non conformes:\n' + errors.join('\n') + '\n\nEnregistrer quand même ?')) {
+                    return;
+                }
+
+                if (!temperatures.temperatures) temperatures.temperatures = {};
+                temperatures.temperatures[today] = {
+                    midi: midi,
+                    soir: soir,
+                    auto_filled: false,
+                    savedAt: new Date().toISOString()
+                };
+
+                fetch(window.location.href, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(temperatures)
+                })
+                .then(r => r.json())
                 .then(data => {
                     if (data.success) {
-                        alert('✅ Modifications enregistrées avec succès !');
+                        alert('✅ Températures enregistrées !');
+                        loadTempHistory();
                     } else {
                         alert('❌ Erreur: ' + data.message);
                     }
                 })
-                .catch(error => {
-                    alert('❌ Erreur de sauvegarde');
-                    console.error(error);
-                });
+                .catch(() => alert('❌ Erreur de sauvegarde'));
             }
 
-            // Charger les produits au démarrage
+            function loadTempHistory() {
+                const container = document.getElementById('temp-history');
+                if (!temperatures.temperatures) return;
+
+                const dates = Object.keys(temperatures.temperatures).sort().reverse().slice(0, 7);
+                if (dates.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #999;">Aucun historique</p>';
+                    return;
+                }
+
+                let html = '<table class="history-table"><thead><tr>';
+                html += '<th>Date</th><th>Moment</th><th>🥤 Boissons</th><th>🧊 Blanc</th><th>❄️ Congel</th><th>🚪 Armoire</th><th>Statut</th>';
+                html += '</tr></thead><tbody>';
+
+                dates.forEach(date => {
+                    const d = temperatures.temperatures[date];
+                    const auto = d.auto_filled ? '<span style="color: #856404;">🤖 Auto</span>' : '<span style="color: #28a745;">✅ Manuel</span>';
+                    const dateStr = new Date(date).toLocaleDateString('fr-FR');
+
+                    html += `<tr>
+                        <td rowspan="2"><strong>${dateStr}</strong></td>
+                        <td><i class="fas fa-sun"></i> Midi</td>
+                        <td>${d.midi.frigo_boissons.toFixed(1)}°C</td>
+                        <td>${d.midi.frigo_blanc.toFixed(1)}°C</td>
+                        <td>${d.midi.congelateur.toFixed(1)}°C</td>
+                        <td>${d.midi.frigo_armoire.toFixed(1)}°C</td>
+                        <td rowspan="2">${auto}</td>
+                    </tr><tr>
+                        <td><i class="fas fa-moon"></i> Soir</td>
+                        <td>${d.soir.frigo_boissons.toFixed(1)}°C</td>
+                        <td>${d.soir.frigo_blanc.toFixed(1)}°C</td>
+                        <td>${d.soir.congelateur.toFixed(1)}°C</td>
+                        <td>${d.soir.frigo_armoire.toFixed(1)}°C</td>
+                    </tr>`;
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            }
+
+            // Chargement initial
             document.addEventListener('DOMContentLoaded', function() {
-                loadPizzas();
-                loadPates();
-                loadSalades();
-                loadDesserts();
+                loadInventory();
+                loadTempHistory();
             });
         </script>
     <?php endif; ?>
