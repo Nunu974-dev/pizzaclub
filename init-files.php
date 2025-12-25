@@ -15,6 +15,9 @@ echo "<hr>";
 // Chemins des fichiers
 $ordersFile = __DIR__ . '/orders.json';
 $debugFile = __DIR__ . '/debug-order.txt';
+$inventoryFile = __DIR__ . '/inventory.json';
+$temperaturesFile = __DIR__ . '/temperatures.json';
+$unavailabilityFile = __DIR__ . '/unavailability.json';
 
 echo "<h2>1️⃣ Vérification du répertoire</h2>";
 echo "Répertoire actuel: <code>" . __DIR__ . "</code><br>";
@@ -81,8 +84,69 @@ if (file_exists($debugFile)) {
 
 echo "<hr>";
 
+// Créer inventory.json
+echo "<h2>4️⃣ Création du fichier inventory.json</h2>";
+echo "Chemin: <code>$inventoryFile</code><br>";
+
+if (file_exists($inventoryFile)) {
+    echo "⚠️ Le fichier existe déjà<br>";
+} else {
+    $defaultInventory = json_encode(['inventory' => [], 'lastUpdate' => null], JSON_PRETTY_PRINT);
+    $result = file_put_contents($inventoryFile, $defaultInventory);
+    if ($result !== false) {
+        echo "✅ <strong>Fichier créé avec succès</strong><br>";
+        chmod($inventoryFile, 0666);
+    } else {
+        echo "❌ <strong>Échec de la création du fichier</strong><br>";
+    }
+}
+
+echo "<hr>";
+
+// Créer temperatures.json
+echo "<h2>5️⃣ Création du fichier temperatures.json</h2>";
+echo "Chemin: <code>$temperaturesFile</code><br>";
+
+if (file_exists($temperaturesFile)) {
+    echo "⚠️ Le fichier existe déjà<br>";
+} else {
+    $defaultTemperatures = json_encode(['temperatures' => []], JSON_PRETTY_PRINT);
+    $result = file_put_contents($temperaturesFile, $defaultTemperatures);
+    if ($result !== false) {
+        echo "✅ <strong>Fichier créé avec succès</strong><br>";
+        chmod($temperaturesFile, 0666);
+    } else {
+        echo "❌ <strong>Échec de la création du fichier</strong><br>";
+    }
+}
+
+echo "<hr>";
+
+// Créer unavailability.json
+echo "<h2>6️⃣ Création du fichier unavailability.json</h2>";
+echo "Chemin: <code>$unavailabilityFile</code><br>";
+
+if (file_exists($unavailabilityFile)) {
+    echo "⚠️ Le fichier existe déjà<br>";
+} else {
+    $defaultUnavailability = json_encode([
+        'items' => new stdClass(),
+        'ingredients' => new stdClass(),
+        'closures' => ['emergency' => null, 'scheduled' => []]
+    ], JSON_PRETTY_PRINT);
+    $result = file_put_contents($unavailabilityFile, $defaultUnavailability);
+    if ($result !== false) {
+        echo "✅ <strong>Fichier créé avec succès</strong><br>";
+        chmod($unavailabilityFile, 0666);
+    } else {
+        echo "❌ <strong>Échec de la création du fichier</strong><br>";
+    }
+}
+
+echo "<hr>";
+
 // Test d'écriture (SEULEMENT si fichiers vides ou inexistants)
-echo "<h2>4️⃣ Test d'écriture dans les fichiers</h2>";
+echo "<h2>7️⃣ Test d'écriture dans les fichiers</h2>";
 
 // Vérifier si orders.json contient déjà des commandes
 $hasExistingOrders = false;
@@ -142,7 +206,7 @@ echo "✅ Test ignoré (fichier d'historique, on ne touche pas)<br>";
 echo "<hr>";
 
 // Lister tous les fichiers .txt et .json du répertoire
-echo "<h2>5️⃣ Fichiers existants dans le répertoire</h2>";
+echo "<h2>8️⃣ Fichiers existants dans le répertoire</h2>";
 $files = glob(__DIR__ . '/*.{json,txt}', GLOB_BRACE);
 if (count($files) > 0) {
     echo "<ul>";
@@ -161,9 +225,18 @@ if (count($files) > 0) {
 echo "<hr>";
 echo "<h2>📊 Conclusion</h2>";
 
-if (file_exists($ordersFile) && file_exists($debugFile) && is_writable($ordersFile) && is_writable($debugFile)) {
+$allFiles = [$ordersFile, $debugFile, $inventoryFile, $temperaturesFile, $unavailabilityFile];
+$allExist = true;
+foreach ($allFiles as $file) {
+    if (!file_exists($file)) {
+        $allExist = false;
+        break;
+    }
+}
+
+if ($allExist) {
     echo "<p style='color: green; font-size: 18px;'><strong>✅ Tous les fichiers sont prêts !</strong></p>";
-    echo "<p>Tu peux maintenant passer une commande test et vérifier <a href='orders-log.php'>orders-log.php</a></p>";
+    echo "<p>Tu peux maintenant accéder au <a href='admin-dashboard.php' style='font-weight: bold;'>Dashboard Admin</a></p>";
 } else {
     echo "<p style='color: red; font-size: 18px;'><strong>❌ Il y a des problèmes</strong></p>";
     echo "<p>Contacte le support Hostinger pour corriger les permissions d'écriture.</p>";
