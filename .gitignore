@@ -9,3 +9,13 @@ brevo-config.php
 .env
 orders.json
 debug-order.txt
+
+# Fichiers de données admin - NE PAS VERSIONNER
+inventory.json
+temperatures.json
+unavailability.json
+commandes-fournisseurs.json
+cookies.txt
+server-version.html
+admin-dashboard-v2.php
+admin-dashboard-backup.php
