@@ -714,6 +714,9 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                                     <button class="btn-archive" onclick="archiveInventory()">
                                         <i class="fas fa-archive"></i> Archiver & Remise à zéro
                                     </button>
+                                    <button class="btn-export" onclick="showArchives()" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                        <i class="fas fa-history"></i> Voir les Sauvegardes
+                                    </button>
                                 </div>
                                 </div><!-- Fin inventory-section -->
                             </div>
@@ -1140,6 +1143,64 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
             document.addEventListener('DOMContentLoaded', function() {
                 // L'inventaire et les températures se chargent seulement quand on clique sur les boutons
             });
+
+            // === GESTION DES ARCHIVES ===
+            function showArchives() {
+                fetch('inventory-manager.php?action=list-archives')
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            displayArchives(data.archives);
+                        } else {
+                            alert('❌ Erreur: ' + data.message);
+                        }
+                    })
+                    .catch(() => alert('❌ Erreur lors du chargement des archives'));
+            }
+
+            function displayArchives(archives) {
+                if (archives.length === 0) {
+                    alert('📦 Aucune sauvegarde trouvée.\n\nUtilisez le bouton "Archiver & Remise à zéro" pour créer une première sauvegarde.');
+                    return;
+                }
+
+                let html = '<div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center;" onclick="this.remove()">';
+                html += '<div style="background: white; padding: 30px; border-radius: 15px; max-width: 800px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);" onclick="event.stopPropagation()">';
+                html += '<h2 style="margin-top: 0;"><i class="fas fa-history"></i> Sauvegardes d\'Inventaire</h2>';
+                html += '<p style="color: #666; margin-bottom: 20px;">📁 <strong>' + archives.length + '</strong> sauvegarde(s) disponible(s) dans <code>/archives/</code></p>';
+                html += '<table style="width: 100%; border-collapse: collapse;">';
+                html += '<thead><tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">';
+                html += '<th style="padding: 12px; text-align: left;">📅 Date</th>';
+                html += '<th style="padding: 12px; text-align: left;">📦 Fichier</th>';
+                html += '<th style="padding: 12px; text-align: right;">💾 Taille</th>';
+                html += '<th style="padding: 12px; text-align: center;">Actions</th>';
+                html += '</tr></thead><tbody>';
+
+                archives.forEach((archive, index) => {
+                    const dateStr = archive.date.replace('_', ' à ').replace(/-/g, '/');
+                    const sizeKb = (archive.size / 1024).toFixed(1);
+                    const bgColor = index % 2 === 0 ? '#fff' : '#f9f9f9';
+                    
+                    html += `<tr style="background: ${bgColor}; border-bottom: 1px solid #eee;">`;
+                    html += `<td style="padding: 12px;">${dateStr}</td>`;
+                    html += `<td style="padding: 12px; font-family: monospace; font-size: 12px;">${archive.filename}</td>`;
+                    html += `<td style="padding: 12px; text-align: right;">${sizeKb} Ko</td>`;
+                    html += `<td style="padding: 12px; text-align: center;">`;
+                    html += `<a href="archives/${archive.filename}" download style="color: #4CAF50; text-decoration: none; margin-right: 10px;" title="Télécharger">`;
+                    html += `<i class="fas fa-download"></i> Télécharger</a>`;
+                    html += `</td>`;
+                    html += `</tr>`;
+                });
+
+                html += '</tbody></table>';
+                html += '<div style="margin-top: 20px; text-align: center;">';
+                html += '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="padding: 10px 30px; background: #666; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">';
+                html += '<i class="fas fa-times"></i> Fermer</button>';
+                html += '</div>';
+                html += '</div></div>';
+
+                document.body.insertAdjacentHTML('beforeend', html);
+            }
         </script>
     <?php endif; ?>
 </body>
