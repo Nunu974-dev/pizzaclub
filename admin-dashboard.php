@@ -439,6 +439,40 @@ if (file_exists(TEMPERATURE_FILE)) {
             background: #218838;
         }
 
+        .btn-export {
+            padding: 12px 20px;
+            background: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .btn-export:hover {
+            background: #138496;
+        }
+
+        .btn-archive {
+            padding: 12px 20px;
+            background: #fd7e14;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .btn-archive:hover {
+            background: #e8590c;
+        }
+
         .alert-warning {
             background: #fff3cd;
             color: #856404;
@@ -602,9 +636,20 @@ if (file_exists(TEMPERATURE_FILE)) {
                                     <p style="text-align: center; color: #999; padding: 40px;">Aucun article dans l'inventaire</p>
                                 </div>
 
-                                <button class="btn-save" onclick="saveInventory()">
-                                    <i class="fas fa-save"></i> Sauvegarder l'inventaire
-                                </button>
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px;">
+                                    <button class="btn-save" onclick="saveInventory()">
+                                        <i class="fas fa-save"></i> Sauvegarder l'inventaire
+                                    </button>
+                                    <button class="btn-export" onclick="exportInventoryJSON()">
+                                        <i class="fas fa-file-download"></i> Export JSON
+                                    </button>
+                                    <button class="btn-export" onclick="exportInventoryCSV()">
+                                        <i class="fas fa-file-csv"></i> Export CSV
+                                    </button>
+                                    <button class="btn-archive" onclick="archiveInventory()">
+                                        <i class="fas fa-archive"></i> Archiver & Remise à zéro
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- TEMPÉRATURES -->
@@ -777,6 +822,33 @@ if (file_exists(TEMPERATURE_FILE)) {
                     alert(data.success ? '✅ Inventaire sauvegardé !' : '❌ Erreur: ' + data.message);
                 })
                 .catch(() => alert('❌ Erreur de sauvegarde'));
+            }
+
+            function exportInventoryJSON() {
+                window.location.href = 'inventory-manager.php?action=export-json';
+            }
+
+            function exportInventoryCSV() {
+                window.location.href = 'inventory-manager.php?action=export-csv';
+            }
+
+            function archiveInventory() {
+                if (!confirm('⚠️ Ceci va archiver l\'inventaire actuel et remettre toutes les quantités à zéro. Continuer ?')) {
+                    return;
+                }
+
+                fetch('inventory-manager.php?action=archive')
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('✅ ' + data.message + '\nArchive: ' + data.archive);
+                            // Reload inventory to show reset values
+                            loadInventory();
+                        } else {
+                            alert('❌ Erreur: ' + data.message);
+                        }
+                    })
+                    .catch(() => alert('❌ Erreur lors de l\'archivage'));
             }
 
             // === TEMPÉRATURES ===
