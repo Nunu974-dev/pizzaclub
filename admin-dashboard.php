@@ -770,6 +770,14 @@ if (file_exists(TEMPERATURE_FILE)) {
             let inventory = <?= json_encode($inventoryData) ?>;
             let temperatures = <?= json_encode($temperatureData) ?>;
 
+            // Debug - Vérification du chargement
+            console.log('📦 Inventaire chargé:', inventory.inventory ? inventory.inventory.length : 0, 'articles');
+            console.log('🌡️ Températures chargées:', temperatures.temperatures ? Object.keys(temperatures.temperatures).length : 0, 'jours');
+            if (temperatures.temperatures && Object.keys(temperatures.temperatures).length > 0) {
+                const dates = Object.keys(temperatures.temperatures).sort();
+                console.log('📅 Période:', dates[0], 'à', dates[dates.length - 1]);
+            }
+
             // Gestion des onglets
             function switchTab(tabName, button) {
                 document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
