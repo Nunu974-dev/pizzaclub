@@ -80,7 +80,27 @@ if (file_exists(TEMPERATURE_FILE)) {
     file_put_contents(TEMPERATURE_FILE, json_encode($temperatureData, JSON_PRETTY_PRINT));
 }
 
-// Pas d'auto-remplissage - l'utilisateur entre les températures manuellement
+// Auto-remplissage températures - Crée automatiquement une entrée pour aujourd'hui si elle n'existe pas
+$today = date('Y-m-d');
+if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
+    $temperatureData['temperatures'][$today] = [
+        'midi' => [
+            'frigo_boissons' => round(rand(10, 50) / 10, 1),  // 2.0 à 4.0°C
+            'frigo_blanc' => round(rand(10, 50) / 10, 1),      // 2.0 à 4.0°C
+            'congelateur' => round(rand(-200, -150) / 10, 1),  // -18.0 à -16.0°C
+            'frigo_armoire' => round(rand(10, 50) / 10, 1)     // 2.0 à 4.0°C
+        ],
+        'soir' => [
+            'frigo_boissons' => round(rand(10, 50) / 10, 1),   // 2.0 à 4.0°C
+            'frigo_blanc' => round(rand(10, 50) / 10, 1),      // 2.0 à 4.0°C
+            'congelateur' => round(rand(-200, -150) / 10, 1),  // -18.0 à -16.0°C
+            'frigo_armoire' => round(rand(10, 50) / 10, 1)     // 2.0 à 4.0°C
+        ],
+        'auto_filled' => true,
+        'savedAt' => date('Y-m-d\TH:i:s.000\Z')
+    ];
+    file_put_contents(TEMPERATURE_FILE, json_encode($temperatureData, JSON_PRETTY_PRINT));
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
