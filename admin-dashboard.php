@@ -708,6 +708,9 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                                     <button class="btn-export" onclick="exportInventoryCSV()">
                                         <i class="fas fa-file-csv"></i> Export CSV
                                     </button>
+                                    <button class="btn-export" onclick="window.open('export-inventory-with-prices.php', '_blank')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                        <i class="fas fa-euro-sign"></i> Export CSV avec Prix
+                                    </button>
                                     <button class="btn-archive" onclick="archiveInventory()">
                                         <i class="fas fa-archive"></i> Archiver & Remise à zéro
                                     </button>
