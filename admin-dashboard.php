@@ -1065,26 +1065,44 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                 dates.forEach(date => {
                     const d = temperatures.temperatures[date];
                     const dateStr = new Date(date).toLocaleDateString('fr-FR');
+                    const hasMidi = d.midi !== undefined;
+                    const rowspan = hasMidi ? 2 : 1;
 
-                    html += `<tr>
-                        <td rowspan="2"><strong>${dateStr}</strong></td>
-                        <td><i class="fas fa-sun"></i> Midi</td>
-                        <td>${d.midi.frigo_boissons.toFixed(1)}°C</td>
-                        <td>${d.midi.frigo_blanc.toFixed(1)}°C</td>
-                        <td>${d.midi.congelateur.toFixed(1)}°C</td>
-                        <td>${d.midi.frigo_armoire.toFixed(1)}°C</td>
-                        <td rowspan="2" style="text-align: center;">
-                            <button class="btn-delete-temp" onclick="deleteTemperature('${date}')">
-                                <i class="fas fa-trash"></i> Supprimer
-                            </button>
-                        </td>
-                    </tr><tr>
-                        <td><i class="fas fa-moon"></i> Soir</td>
-                        <td>${d.soir.frigo_boissons.toFixed(1)}°C</td>
-                        <td>${d.soir.frigo_blanc.toFixed(1)}°C</td>
-                        <td>${d.soir.congelateur.toFixed(1)}°C</td>
-                        <td>${d.soir.frigo_armoire.toFixed(1)}°C</td>
-                    </tr>`;
+                    if (hasMidi) {
+                        html += `<tr>
+                            <td rowspan="2"><strong>${dateStr}</strong></td>
+                            <td><i class="fas fa-sun"></i> Midi</td>
+                            <td>${d.midi.frigo_boissons}°C</td>
+                            <td>${d.midi.frigo_blanc}°C</td>
+                            <td>${d.midi.congelateur}°C</td>
+                            <td>${d.midi.frigo_armoire}°C</td>
+                            <td rowspan="2" style="text-align: center;">
+                                <button class="btn-delete-temp" onclick="deleteTemperature('${date}')">
+                                    <i class="fas fa-trash"></i> Supprimer
+                                </button>
+                            </td>
+                        </tr><tr>
+                            <td><i class="fas fa-moon"></i> Soir</td>
+                            <td>${d.soir.frigo_boissons}°C</td>
+                            <td>${d.soir.frigo_blanc}°C</td>
+                            <td>${d.soir.congelateur}°C</td>
+                            <td>${d.soir.frigo_armoire}°C</td>
+                        </tr>`;
+                    } else {
+                        html += `<tr>
+                            <td><strong>${dateStr}</strong></td>
+                            <td><i class="fas fa-moon"></i> Soir uniquement</td>
+                            <td>${d.soir.frigo_boissons}°C</td>
+                            <td>${d.soir.frigo_blanc}°C</td>
+                            <td>${d.soir.congelateur}°C</td>
+                            <td>${d.soir.frigo_armoire}°C</td>
+                            <td style="text-align: center;">
+                                <button class="btn-delete-temp" onclick="deleteTemperature('${date}')">
+                                    <i class="fas fa-trash"></i> Supprimer
+                                </button>
+                            </td>
+                        </tr>`;
+                    }
                 });
 
                 html += '</tbody></table>';
