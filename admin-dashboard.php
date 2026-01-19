@@ -43,8 +43,21 @@ if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Sauvegarde inventaire
         if ($data && isset($data['inventory'])) {
+            // Créer une copie de backup automatique
+            $archiveDir = __DIR__ . '/archives';
+            if (!file_exists($archiveDir)) {
+                mkdir($archiveDir, 0755, true);
+            }
+            $backupFile = $archiveDir . '/inventory_backup_' . date('Y-m-d_H-i-s') . '.json';
+            
+            // Sauvegarder l'ancien fichier comme backup
+            if (file_exists(INVENTORY_FILE)) {
+                copy(INVENTORY_FILE, $backupFile);
+            }
+            
+            // Sauvegarder le nouveau contenu
             if (file_put_contents(INVENTORY_FILE, json_encode($data, JSON_PRETTY_PRINT))) {
-                echo json_encode(['success' => true, 'message' => 'Inventaire sauvegardé']);
+                echo json_encode(['success' => true, 'message' => 'Inventaire sauvegardé (backup créé)']);
             } else {
                 http_response_code(500);
                 echo json_encode(['success' => false, 'message' => 'Erreur sauvegarde']);
