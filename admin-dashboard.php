@@ -473,6 +473,39 @@ if (file_exists(TEMPERATURE_FILE)) {
             background: #e8590c;
         }
 
+        .btn-accordion {
+            width: 100%;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-accordion:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-accordion i {
+            transition: transform 0.3s ease;
+        }
+
+        .temp-history-accordion {
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
         .alert-warning {
             background: #fff3cd;
             color: #856404;
@@ -718,8 +751,14 @@ if (file_exists(TEMPERATURE_FILE)) {
                                     <i class="fas fa-save"></i> Enregistrer les températures
                                 </button>
 
-                                <h3 style="margin-top: 40px;">📊 Historique des 7 derniers jours</h3>
-                                <div id="temp-history"></div>
+                                <!-- Accordéon Historique -->
+                                <div style="margin-top: 40px;">
+                                    <button class="btn-accordion" onclick="toggleTempHistory()" id="btn-toggle-history">
+                                        <i class="fas fa-chevron-down" id="icon-toggle-history"></i>
+                                        <span>Voir l'historique complet</span>
+                                    </button>
+                                    <div id="temp-history" class="temp-history-accordion" style="display: none; margin-top: 20px;"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -852,6 +891,26 @@ if (file_exists(TEMPERATURE_FILE)) {
             }
 
             // === TEMPÉRATURES ===
+            let historyVisible = false;
+
+            function toggleTempHistory() {
+                historyVisible = !historyVisible;
+                const historyDiv = document.getElementById('temp-history');
+                const icon = document.getElementById('icon-toggle-history');
+                const btn = document.getElementById('btn-toggle-history');
+                
+                if (historyVisible) {
+                    historyDiv.style.display = 'block';
+                    icon.className = 'fas fa-chevron-up';
+                    btn.querySelector('span').textContent = 'Masquer l\'historique';
+                    loadTempHistory();
+                } else {
+                    historyDiv.style.display = 'none';
+                    icon.className = 'fas fa-chevron-down';
+                    btn.querySelector('span').textContent = 'Voir l\'historique complet';
+                }
+            }
+
             function saveTemperatures() {
                 const today = '<?= $today ?>';
                 
@@ -897,13 +956,27 @@ if (file_exists(TEMPERATURE_FILE)) {
                 .then(data => {
                     if (data.success) {
                         alert('✅ Températures enregistrées !');
-                        loadTempHistory();
+                        if (historyVisible) {
+                            loadTempHistory();
+                        }
                     } else {
                         alert('❌ Erreur: ' + data.message);
                     }
                 })
                 .catch(() => alert('❌ Erreur de sauvegarde'));
-            }Actions</th>';
+            }
+
+            function loadTempHistory() {
+                const container = document.getElementById('temp-history');
+                if (!temperatures.temperatures || Object.keys(temperatures.temperatures).length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">Aucune donnée historique</p>';
+                    return;
+                }
+
+                const dates = Object.keys(temperatures.temperatures).sort().reverse();
+                
+                let html = '<table class="temp-table"><thead><tr>';
+                html += '<th>Date</th><th>Période</th><th>🥤 Boissons</th><th>🧊 Blanc</th><th>❄️ Congel</th><th>🚪 Armoire</th><th>Actions</th>';
                 html += '</tr></thead><tbody>';
 
                 dates.forEach(date => {
@@ -921,17 +994,20 @@ if (file_exists(TEMPERATURE_FILE)) {
                             <button class="btn-delete-temp" onclick="deleteTemperature('${date}')">
                                 <i class="fas fa-trash"></i> Supprimer
                             </button>
-                        
-                dates.forEach(date => {
-                    const d = temperatures.temperatures[date];
-                    const auto = d.auto_filled ? '<span style="color: #856404;">🤖 Auto</span>' : '<span style="color: #28a745;">✅ Manuel</span>';
-                    const dateStr = new Date(date).toLocaleDateString('fr-FR');
+                        </td>
+                    </tr><tr>
+                        <td><i class="fas fa-moon"></i> Soir</td>
+                        <td>${d.soir.frigo_boissons.toFixed(1)}°C</td>
+                        <td>${d.soir.frigo_blanc.toFixed(1)}°C</td>
+                        <td>${d.soir.congelateur.toFixed(1)}°C</td>
+                        <td>${d.soir.frigo_armoire.toFixed(1)}°C</td>
+                    </tr>`;
+                });
 
-                    html += `<tr>
-                        <td rowspan="2"><strong>${dateStr}</strong></td>
-                        <td><i class="fas fa-sun"></i> Midi</td>
-                        <td>${d.midi.frigo_boissons.toFixed(1)}°C</td>
-                        <td>${d.midi.frigo_blanc.toFixed(1)}°C</td>
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            }
+
             function deleteTemperature(date) {
                 if (!confirm(`Supprimer les températures du ${new Date(date).toLocaleDateString('fr-FR')} ?`)) {
                     return;
@@ -956,26 +1032,10 @@ if (file_exists(TEMPERATURE_FILE)) {
                 .catch(() => alert('❌ Erreur de suppression'));
             }
 
-                        <td>${d.midi.congelateur.toFixed(1)}°C</td>
-                        <td>${d.midi.frigo_armoire.toFixed(1)}°C</td>
-                        <td rowspan="2">${auto}</td>
-                    </tr><tr>
-                        <td><i class="fas fa-moon"></i> Soir</td>
-                        <td>${d.soir.frigo_boissons.toFixed(1)}°C</td>
-                        <td>${d.soir.frigo_blanc.toFixed(1)}°C</td>
-                        <td>${d.soir.congelateur.toFixed(1)}°C</td>
-                        <td>${d.soir.frigo_armoire.toFixed(1)}°C</td>
-                    </tr>`;
-                });
-
-                html += '</tbody></table>';
-                container.innerHTML = html;
-            }
-
             // Chargement initial
             document.addEventListener('DOMContentLoaded', function() {
                 loadInventory();
-                loadTempHistory();
+                // L'historique des températures se charge seulement quand on clique sur le bouton
             });
         </script>
     <?php endif; ?>
