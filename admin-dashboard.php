@@ -63,15 +63,21 @@ if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Chargement des données
+// Chargement des données avec création automatique
 $inventoryData = ['inventory' => [], 'lastUpdate' => null];
 if (file_exists(INVENTORY_FILE)) {
     $inventoryData = json_decode(file_get_contents(INVENTORY_FILE), true);
+} else {
+    // Créer le fichier vide s'il n'existe pas
+    file_put_contents(INVENTORY_FILE, json_encode($inventoryData, JSON_PRETTY_PRINT));
 }
 
 $temperatureData = ['temperatures' => []];
 if (file_exists(TEMPERATURE_FILE)) {
     $temperatureData = json_decode(file_get_contents(TEMPERATURE_FILE), true);
+} else {
+    // Créer le fichier vide s'il n'existe pas
+    file_put_contents(TEMPERATURE_FILE, json_encode($temperatureData, JSON_PRETTY_PRINT));
 }
 
 // Pas d'auto-remplissage - l'utilisateur entre les températures manuellement

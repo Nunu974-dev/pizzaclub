@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔄 Restaurer l'Inventaire</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 { color: #333; border-bottom: 3px solid #ffc107; padding-bottom: 10px; }
+        h2 { color: #555; }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .alert-warning { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔄 Restaurer l'Inventaire</h1>
+        
+        <div class="alert alert-warning">
+            <strong>⚠️ Votre inventaire a été remis à zéro par le bouton "Archiver"</strong><br>
+            Pour restaurer vos quantités, vous avez 3 options :
+        </div>
+
+        <h2>Option 1 : Restaurer depuis une archive du serveur</h2>
+        <p>Si vous avez une archive sur le serveur (dossier <code>archives/</code>) :</p>
+        <ol>
+            <li>Téléchargez le fichier d'archive depuis le serveur (ex: <code>inventory_2026-01-19_14-50-00.json</code>)</li>
+            <li>Ouvrez-le dans un éditeur de texte</li>
+            <li>Copiez tout le contenu JSON</li>
+            <li>Collez-le dans la zone ci-dessous</li>
+            <li>Cliquez sur "Restaurer depuis JSON"</li>
+        </ol>
+
+        <textarea id="jsonInput" placeholder='Collez votre JSON ici, exemple:
+{
+    "inventory": [
+        {"name": "Carotte", "quantity": 4, "unit": "pièce(s)"},
+        {"name": "Citron", "quantity": 2, "unit": "pièce(s)"}
+    ],
+    "lastUpdate": "2026-01-19T14:50:00Z"
+}'></textarea>
+
+        <button class="btn btn-success" onclick="restoreFromJSON()">
+            📥 Restaurer depuis JSON
+        </button>
+
+        <div id="result"></div>
+
+        <hr style="margin: 30px 0;">
+
+        <h2>Option 2 : Télécharger l'inventaire actuel (avec quantités à 0)</h2>
+        <p>Téléchargez votre inventaire actuel, modifiez les quantités dans Excel/Google Sheets, puis restaurez-le.</p>
+        
+        <button class="btn btn-primary" onclick="downloadCurrentInventory()">
+            📥 Télécharger l'inventaire actuel en CSV
+        </button>
+
+        <hr style="margin: 30px 0;">
+
+        <h2>Option 3 : Re-saisir manuellement</h2>
+        <p>Allez dans <strong>Admin Dashboard → Gestion Restaurant</strong> et saisissez à nouveau vos quantités.</p>
+        <a href="admin-dashboard.php" class="btn btn-warning">
+            ➡️ Aller au Dashboard
+        </a>
+    </div>
+
+    <script>
+        function restoreFromJSON() {
+            const jsonStr = document.getElementById('jsonInput').value.trim();
+            const resultDiv = document.getElementById('result');
+            
+            if (!jsonStr) {
+                resultDiv.innerHTML = '<div class="alert alert-danger">❌ Veuillez coller le JSON à restaurer</div>';
+                return;
+            }
+
+            try {
+                const data = JSON.parse(jsonStr);
+                
+                if (!data.inventory || !Array.isArray(data.inventory)) {
+                    throw new Error('Format JSON invalide : "inventory" manquant ou invalide');
+                }
+
+                // Sauvegarder via l'API
+                fetch('admin-dashboard.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                })
+                .then(r => r.json())
+                .then(response => {
+                    if (response.success) {
+                        resultDiv.innerHTML = `
+                            <div class="alert alert-success">
+                                <strong>✅ Inventaire restauré avec succès !</strong><br>
+                                ${data.inventory.length} articles restaurés<br>
+                                <a href="admin-dashboard.php" class="btn btn-primary" style="margin-top: 10px;">
+                                    Voir dans le Dashboard
+                                </a>
+                            </div>
+                        `;
+                    } else {
+                        throw new Error(response.message || 'Erreur de sauvegarde');
+                    }
+                })
+                .catch(err => {
+                    resultDiv.innerHTML = `<div class="alert alert-danger">❌ Erreur: ${err.message}</div>`;
+                });
+
+            } catch (e) {
+                resultDiv.innerHTML = `<div class="alert alert-danger">❌ JSON invalide: ${e.message}</div>`;
+            }
+        }
+
+        function downloadCurrentInventory() {
+            window.location.href = 'inventory-manager.php?action=export-csv';
+        }
+    </script>
+</body>
+</html>
