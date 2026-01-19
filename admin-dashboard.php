@@ -662,9 +662,12 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                         <div class="management-grid">
                             <!-- INVENTAIRE ANNUEL -->
                             <div class="section-card">
-                                <h2><i class="fas fa-boxes"></i> Inventaire Annuel</h2>
-                                <p style="color: #666; margin-bottom: 20px;">Gérez votre inventaire des articles en stock</p>
+                                <button class="btn-accordion" onclick="toggleInventory()" id="btn-toggle-inventory">
+                                    <i class="fas fa-chevron-down" id="icon-toggle-inventory"></i>
+                                    <span>📦 Afficher l'Inventaire</span>
+                                </button>
                                 
+                                <div id="inventory-section" style="display: none; margin-top: 20px;">
                                 <h3>Ajouter un article</h3>
                                 <div class="add-item-form">
                                     <div class="form-field">
@@ -709,11 +712,17 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                                         <i class="fas fa-archive"></i> Archiver & Remise à zéro
                                     </button>
                                 </div>
+                                </div><!-- Fin inventory-section -->
                             </div>
 
                             <!-- TEMPÉRATURES -->
                             <div class="section-card">
-                                <h2><i class="fas fa-thermometer-half"></i> Relevé de Température</h2>
+                                <button class="btn-accordion" onclick="toggleTemperatures()" id="btn-toggle-temperatures">
+                                    <i class="fas fa-chevron-down" id="icon-toggle-temperatures"></i>
+                                    <span>🌡️ Afficher les Températures</span>
+                                </button>
+                                
+                                <div id="temperatures-section" style="display: none; margin-top: 20px;">
                                 <p style="color: #666; margin-bottom: 20px;">Enregistrez les températures matin et soir - Aujourd'hui: <strong><?= date('d/m/Y') ?></strong></p>
                                 
                                 <?php 
@@ -785,6 +794,7 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                                     </button>
                                     <div id="temp-history" class="temp-history-accordion" style="display: none; margin-top: 20px;"></div>
                                 </div>
+                                </div><!-- Fin temperatures-section -->
                             </div>
                         </div>
                     </div>
@@ -811,6 +821,45 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                 
                 button.classList.add('active');
                 document.getElementById('tab-' + tabName).classList.add('active');
+            }
+
+            // === ACCORDÉONS INVENTAIRE & TEMPÉRATURES ===
+            let inventoryVisible = false;
+            let temperaturesVisible = false;
+
+            function toggleInventory() {
+                inventoryVisible = !inventoryVisible;
+                const section = document.getElementById('inventory-section');
+                const icon = document.getElementById('icon-toggle-inventory');
+                const btn = document.getElementById('btn-toggle-inventory');
+                
+                if (inventoryVisible) {
+                    section.style.display = 'block';
+                    icon.className = 'fas fa-chevron-up';
+                    btn.querySelector('span').textContent = '📦 Masquer l\'Inventaire';
+                    loadInventory();
+                } else {
+                    section.style.display = 'none';
+                    icon.className = 'fas fa-chevron-down';
+                    btn.querySelector('span').textContent = '📦 Afficher l\'Inventaire';
+                }
+            }
+
+            function toggleTemperatures() {
+                temperaturesVisible = !temperaturesVisible;
+                const section = document.getElementById('temperatures-section');
+                const icon = document.getElementById('icon-toggle-temperatures');
+                const btn = document.getElementById('btn-toggle-temperatures');
+                
+                if (temperaturesVisible) {
+                    section.style.display = 'block';
+                    icon.className = 'fas fa-chevron-up';
+                    btn.querySelector('span').textContent = '🌡️ Masquer les Températures';
+                } else {
+                    section.style.display = 'none';
+                    icon.className = 'fas fa-chevron-down';
+                    btn.querySelector('span').textContent = '🌡️ Afficher les Températures';
+                }
             }
 
             // === INVENTAIRE ===
@@ -1068,8 +1117,7 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
 
             // Chargement initial
             document.addEventListener('DOMContentLoaded', function() {
-                loadInventory();
-                // L'historique des températures se charge seulement quand on clique sur le bouton
+                // L'inventaire et les températures se chargent seulement quand on clique sur les boutons
             });
         </script>
     <?php endif; ?>
