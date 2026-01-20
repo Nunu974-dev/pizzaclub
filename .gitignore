@@ -9,6 +9,7 @@ brevo-config.php
 .env
 orders.json
 debug-order.txt
+backups/
 
 # Fichiers de données admin - NE PAS VERSIONNER
 inventory.json

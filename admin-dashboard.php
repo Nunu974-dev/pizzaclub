@@ -39,10 +39,13 @@ if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (strpos($contentType, 'application/json') !== false) {
         header('Content-Type: application/json');
         
-        $data = json_decode(file_get_contents('php://input'), true);
+        $rawInput = file_get_contents('php://input');
+        $data = json_decode($rawInput, true);
         
         // Sauvegarde inventaire
         if ($data && isset($data['inventory'])) {
+            error_log("📦 INVENTAIRE - Sauvegarde demandée - " . count($data['inventory']) . " articles");
+            
             // Créer une copie de backup automatique
             $archiveDir = __DIR__ . '/archives';
             if (!file_exists($archiveDir)) {
@@ -53,21 +56,40 @@ if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST') {
             // Sauvegarder l'ancien fichier comme backup
             if (file_exists(INVENTORY_FILE)) {
                 copy(INVENTORY_FILE, $backupFile);
+                error_log("📦 INVENTAIRE - Backup créé: " . $backupFile);
             }
             
-            // Sauvegarder le nouveau contenu
-            if (file_put_contents(INVENTORY_FILE, json_encode($data, JSON_PRETTY_PRINT))) {
-                echo json_encode(['success' => true, 'message' => 'Inventaire sauvegardé (backup créé)']);
+            // Sauvegarder le nouveau contenu avec LOCK_EX pour éviter corruption
+            $jsonToSave = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            $bytesWritten = file_put_contents(INVENTORY_FILE, $jsonToSave, LOCK_EX);
+            
+            error_log("📦 INVENTAIRE - Octets écrits: " . $bytesWritten);
+            
+            if ($bytesWritten !== false) {
+                // Vérifier que le fichier a bien été écrit
+                $verif = json_decode(file_get_contents(INVENTORY_FILE), true);
+                error_log("📦 INVENTAIRE - Vérification: " . count($verif['inventory']) . " articles sauvegardés");
+                
+                echo json_encode(['success' => true, 'message' => 'Inventaire sauvegardé (' . $bytesWritten . ' octets, backup créé)']);
             } else {
+                error_log("❌ INVENTAIRE - ERREUR écriture fichier");
                 http_response_code(500);
                 echo json_encode(['success' => false, 'message' => 'Erreur sauvegarde']);
             }
         }
         // Sauvegarde températures
         elseif ($data && isset($data['temperatures'])) {
-            if (file_put_contents(TEMPERATURE_FILE, json_encode($data, JSON_PRETTY_PRINT))) {
-                echo json_encode(['success' => true, 'message' => 'Températures sauvegardées']);
+            error_log("🌡️ TEMPERATURES - Sauvegarde demandée - " . count($data['temperatures']) . " jours");
+            
+            $jsonToSave = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            $bytesWritten = file_put_contents(TEMPERATURE_FILE, $jsonToSave, LOCK_EX);
+            
+            error_log("🌡️ TEMPERATURES - Octets écrits: " . $bytesWritten);
+            
+            if ($bytesWritten !== false) {
+                echo json_encode(['success' => true, 'message' => 'Températures sauvegardées (' . $bytesWritten . ' octets)']);
             } else {
+                error_log("❌ TEMPERATURES - ERREUR écriture fichier");
                 http_response_code(500);
                 echo json_encode(['success' => false, 'message' => 'Erreur sauvegarde']);
             }

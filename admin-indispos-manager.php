@@ -40,7 +40,10 @@ if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (strpos($contentType, 'application/json') !== false) {
         header('Content-Type: application/json');
         
-        $data = json_decode(file_get_contents('php://input'), true);
+        $rawInput = file_get_contents('php://input');
+        error_log("📝 INDISPOS - Données reçues: " . $rawInput);
+        
+        $data = json_decode($rawInput, true);
         
         if ($data && isset($data['items']) && isset($data['ingredients'])) {
             $data['lastUpdate'] = date('c');
@@ -53,13 +56,26 @@ if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 ];
             }
             
-            if (file_put_contents(JSON_FILE, json_encode($data, JSON_PRETTY_PRINT))) {
-                echo json_encode(['success' => true, 'message' => 'Sauvegarde réussie']);
+            $jsonToSave = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            $bytesWritten = file_put_contents(JSON_FILE, $jsonToSave, LOCK_EX);
+            
+            error_log("📝 INDISPOS - Octets écrits: " . $bytesWritten);
+            error_log("📝 INDISPOS - Fichier: " . JSON_FILE);
+            
+            if ($bytesWritten !== false) {
+                // Vérifier que le fichier a bien été écrit
+                if (file_exists(JSON_FILE)) {
+                    $verif = json_decode(file_get_contents(JSON_FILE), true);
+                    error_log("📝 INDISPOS - Vérification: " . count($verif['items']) . " items, " . count($verif['ingredients']) . " ingredients");
+                }
+                echo json_encode(['success' => true, 'message' => 'Sauvegarde réussie (' . $bytesWritten . ' octets)']);
             } else {
+                error_log("❌ INDISPOS - ERREUR écriture fichier");
                 http_response_code(500);
                 echo json_encode(['success' => false, 'message' => 'Erreur d\'écriture du fichier']);
             }
         } else {
+            error_log("❌ INDISPOS - Données invalides reçues");
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Données invalides']);
         }
