@@ -98,16 +98,16 @@ $today = date('Y-m-d');
 if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
     $temperatureData['temperatures'][$today] = [
         'midi' => [
-            'frigo_boissons' => rand(2, 4),    // 2°C à 4°C (nombres entiers)
-            'frigo_blanc' => rand(2, 4),       // 2°C à 4°C (nombres entiers)
-            'congelateur' => rand(-18, -16),   // -18°C à -16°C (nombres entiers)
-            'frigo_armoire' => rand(2, 4)      // 2°C à 4°C (nombres entiers)
+            'frigo_boissons' => rand(1, 5),    // 1°C à 5°C (normes HACCP)
+            'frigo_blanc' => rand(1, 5),       // 1°C à 5°C (normes HACCP)
+            'congelateur' => rand(-20, -15),   // -20°C à -15°C (normes HACCP)
+            'frigo_armoire' => rand(1, 5)      // 1°C à 5°C (normes HACCP)
         ],
         'soir' => [
-            'frigo_boissons' => rand(2, 4),    // 2°C à 4°C (nombres entiers)
-            'frigo_blanc' => rand(2, 4),       // 2°C à 4°C (nombres entiers)
-            'congelateur' => rand(-18, -16),   // -18°C à -16°C (nombres entiers)
-            'frigo_armoire' => rand(2, 4)      // 2°C à 4°C (nombres entiers)
+            'frigo_boissons' => rand(1, 5),    // 1°C à 5°C (normes HACCP)
+            'frigo_blanc' => rand(1, 5),       // 1°C à 5°C (normes HACCP)
+            'congelateur' => rand(-20, -15),   // -20°C à -15°C (normes HACCP)
+            'frigo_armoire' => rand(1, 5)      // 1°C à 5°C (normes HACCP)
         ],
         'auto_filled' => true,
         'savedAt' => date('Y-m-d\TH:i:s.000\Z')
@@ -757,22 +757,22 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                                         <div class="temp-field">
                                             <label>🥤 Frigo Boissons</label>
                                             <input type="number" step="1" id="midi-boissons" value="<?= $todayTemps['midi']['frigo_boissons'] ?>">
-                                            <small>Max: 4°C</small>
+                                            <small>Max: 5°C</small>
                                         </div>
                                         <div class="temp-field">
                                             <label>🧊 Frigo Blanc Principal</label>
                                             <input type="number" step="1" id="midi-blanc" value="<?= $todayTemps['midi']['frigo_blanc'] ?>">
-                                            <small>Max: 4°C</small>
+                                            <small>Max: 5°C</small>
                                         </div>
                                         <div class="temp-field">
                                             <label>❄️ Congélateur</label>
                                             <input type="number" step="1" id="midi-congelateur" value="<?= $todayTemps['midi']['congelateur'] ?>">
-                                            <small>Min: -18°C</small>
+                                            <small>Entre -20°C et -15°C</small>
                                         </div>
                                         <div class="temp-field">
                                             <label>🚪 Frigo Armoire 4 Portes</label>
                                             <input type="number" step="1" id="midi-armoire" value="<?= $todayTemps['midi']['frigo_armoire'] ?>">
-                                            <small>Max: 4°C</small>
+                                            <small>Max: 5°C</small>
                                         </div>
                                     </div>
 
@@ -781,22 +781,22 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                                         <div class="temp-field">
                                             <label>🥤 Frigo Boissons</label>
                                             <input type="number" step="1" id="soir-boissons" value="<?= $todayTemps['soir']['frigo_boissons'] ?>">
-                                            <small>Max: 4°C</small>
+                                            <small>Max: 5°C</small>
                                         </div>
                                         <div class="temp-field">
                                             <label>🧊 Frigo Blanc Principal</label>
                                             <input type="number" step="1" id="soir-blanc" value="<?= $todayTemps['soir']['frigo_blanc'] ?>">
-                                            <small>Max: 4°C</small>
+                                            <small>Max: 5°C</small>
                                         </div>
                                         <div class="temp-field">
                                             <label>❄️ Congélateur</label>
                                             <input type="number" step="1" id="soir-congelateur" value="<?= $todayTemps['soir']['congelateur'] ?>">
-                                            <small>Entre -18°C et -16°C</small>
+                                            <small>Entre -20°C et -15°C</small>
                                         </div>
                                         <div class="temp-field">
                                             <label>🚪 Frigo Armoire 4 Portes</label>
                                             <input type="number" step="1" id="soir-armoire" value="<?= $todayTemps['soir']['frigo_armoire'] ?>">
-                                            <small>Max: 4°C</small>
+                                            <small>Max: 5°C</small>
                                         </div>
                                     </div>
                                 </div>
@@ -1032,11 +1032,11 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
 
                 let errors = [];
                 ['frigo_boissons', 'frigo_blanc', 'frigo_armoire'].forEach(k => {
-                    if (midi[k] > 4) errors.push(`MIDI ${k} > 4°C`);
-                    if (soir[k] > 4) errors.push(`SOIR ${k} > 4°C`);
+                    if (midi[k] < 1 || midi[k] > 5) errors.push(`MIDI ${k} hors norme (1°C à 5°C)`);
+                    if (soir[k] < 1 || soir[k] > 5) errors.push(`SOIR ${k} hors norme (1°C à 5°C)`);
                 });
-                if (midi.congelateur < -18 || midi.congelateur > -16) errors.push('MIDI congélateur hors norme (-18°C à -16°C)');
-                if (soir.congelateur < -18 || soir.congelateur > -16) errors.push('SOIR congélateur hors norme (-18°C à -16°C)');
+                if (midi.congelateur < -20 || midi.congelateur > -15) errors.push('MIDI congélateur hors norme (-20°C à -15°C)');
+                if (soir.congelateur < -20 || soir.congelateur > -15) errors.push('SOIR congélateur hors norme (-20°C à -15°C)');
 
                 if (errors.length && !confirm('⚠️ Températures non conformes:\n' + errors.join('\n') + '\n\nEnregistrer quand même ?')) {
                     return;

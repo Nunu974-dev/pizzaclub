@@ -621,8 +621,11 @@ function sendOrderEmail($supplierName, $email, $items, $total) {
             </div>
 
             <div class="suppliers-grid">
-                <?php foreach ($suppliers as $name => $supplier): ?>
-                    <div class="supplier-card">
+                <?php foreach ($suppliers as $name => $supplier): 
+                    // Créer un ID valide sans espaces
+                    $safeId = str_replace(' ', '-', strtolower($name));
+                ?>
+                    <div class="supplier-card" data-supplier="<?= htmlspecialchars($name) ?>">
                         <form method="POST">
                             <input type="hidden" name="supplier" value="<?= $name ?>">
                             <input type="hidden" name="send_order" value="1">
@@ -656,7 +659,7 @@ function sendOrderEmail($supplierName, $email, $items, $total) {
                                 <?php endforeach; ?>
                             </div>
 
-                            <div class="total-section" id="total-<?= $name ?>">
+                            <div class="total-section" id="total-<?= $safeId ?>">
                                 <div class="total-label">Total</div>
                                 <div class="total-amount">0,00 €</div>
                             </div>
@@ -672,7 +675,10 @@ function sendOrderEmail($supplierName, $email, $items, $total) {
 
         <script>
             function updateTotal(supplier) {
-                const card = document.querySelector(`input[value="${supplier}"]`).closest('.supplier-card');
+                // Trouver la carte du fournisseur
+                const card = document.querySelector(`.supplier-card[data-supplier="${supplier}"]`);
+                if (!card) return;
+                
                 const inputs = card.querySelectorAll('.quantity-input');
                 let total = 0;
 
@@ -682,8 +688,15 @@ function sendOrderEmail($supplierName, $email, $items, $total) {
                     total += quantity * price;
                 });
 
-                const totalElement = card.querySelector(`#total-${supplier} .total-amount`);
-                totalElement.textContent = total.toFixed(2).replace('.', ',') + ' €';
+                // Créer un ID sûr (même logique que PHP)
+                const safeId = supplier.toLowerCase().replace(/ /g, '-');
+                const totalElement = document.getElementById(`total-${safeId}`);
+                if (totalElement) {
+                    const amountElement = totalElement.querySelector('.total-amount');
+                    if (amountElement) {
+                        amountElement.textContent = total.toFixed(2).replace('.', ',') + ' €';
+                    }
+                }
             }
 
             // Auto-hide notifications
