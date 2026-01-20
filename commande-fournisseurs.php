@@ -29,7 +29,7 @@ $isLoggedIn = isset($_SESSION['commande_logged_in']) && $_SESSION['commande_logg
 // Données des fournisseurs et produits
 $suppliers = [
     'Aphrodrink' => [
-        'email' => 'aphrodrink@gmail.com',
+        'email' => 'contact@pizzaclub.re',
         'products' => [
             ['name' => 'Capri-Sun 20 cl', 'price' => 14.89],
             ['name' => 'Cilaos 50 cl', 'price' => 4.32],
@@ -64,7 +64,7 @@ $suppliers = [
         ]
     ],
     'Zembal' => [
-        'email' => 'Zembal974@gmail.com',
+        'email' => 'contact@pizzaclub.re',
         'products' => [
             ['name' => 'Assiettes S + couvercles (x50)', 'price' => 24],
             ['name' => 'Assiettes M 1000ml + couvercles (x50)', 'price' => 14],
@@ -97,7 +97,7 @@ $suppliers = [
         ]
     ],
     'Frais Import' => [
-        'email' => 'commandes@frais-import.com',
+        'email' => 'contact@pizzaclub.re',
         'products' => [
             ['name' => 'Cheddar burger 88 tranches', 'price' => 11.95],
             ['name' => 'Chorizo tranché 500g', 'price' => 7.8],
@@ -140,7 +140,7 @@ $suppliers = [
         ]
     ],
     'SIS' => [
-        'email' => 'commande@sis.re',
+        'email' => 'contact@pizzaclub.re',
         'products' => [
             ['name' => 'Bleu cube 14mm 1.3kg', 'price' => 26.49],
             ['name' => 'Boeuf haché égrené 1kg', 'price' => 11.99],
@@ -276,17 +276,6 @@ function sendOrderEmail($supplierName, $email, $items, $total) {
     $headers .= "Content-type: text/html; charset=UTF-8\r\n";
     $headers .= "From: Pizza Club <commande@pizzaclub.re>\r\n";
     $headers .= "Reply-To: commande@pizzaclub.re\r\n";
-
-    // Ajout CC pour les 4 fournisseurs principaux
-    $ccList = [
-        'commandes@frais-import.com',
-        'commande@sis.re',
-        'Zembal974@gmail.com',
-        'aphrodrink@gmail.com'
-    ];
-    if (in_array($email, $ccList)) {
-        $headers .= "Cc: contact@pizzaclub.re\r\n";
-    }
 
     return mail($email, $subject, $message, $headers);
 }

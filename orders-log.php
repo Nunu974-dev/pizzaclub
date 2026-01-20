@@ -336,17 +336,111 @@ $debugFile = __DIR__ . '/debug-order.txt';
                                         <div class="item-details">
                                             <?php
                                             $custom = $item['customization'];
+                                            
+                                            // TAILLE
                                             if (!empty($custom['size'])) {
-                                                echo "📏 Taille: " . htmlspecialchars($custom['size']) . "<br>";
+                                                $sizeLabel = $custom['size'];
+                                                if ($custom['size'] === 'moyenne') $sizeLabel = '33cm';
+                                                if ($custom['size'] === 'grande') $sizeLabel = '40cm';
+                                                if ($custom['size'] === 'L') $sizeLabel = 'Large';
+                                                if ($custom['size'] === 'XL') $sizeLabel = 'XL';
+                                                echo "📏 Taille: " . htmlspecialchars($sizeLabel) . "<br>";
                                             }
+                                            
+                                            // BASE (pizzas, pâtes, salades)
                                             if (!empty($custom['base'])) {
-                                                echo "🍕 Base: " . htmlspecialchars($custom['base']) . "<br>";
+                                                $baseLabel = $custom['base'];
+                                                if ($custom['base'] === 'creme') $baseLabel = 'Crème';
+                                                if ($custom['base'] === 'tomate') $baseLabel = 'Tomate';
+                                                echo "🍕 Base: " . htmlspecialchars($baseLabel) . "<br>";
                                             }
-                                            if (!empty($custom['removedIngredients'])) {
-                                                echo "❌ Retirer: " . htmlspecialchars(implode(', ', $custom['removedIngredients'])) . "<br>";
+                                            
+                                            // RETIRER (chercher dans toutes les variantes possibles)
+                                            $removed = $custom['removedIngredients'] ?? $custom['ingredients']['removed'] ?? $custom['removed'] ?? [];
+                                            if (!empty($removed)) {
+                                                echo "❌ Retirer: " . htmlspecialchars(implode(', ', $removed)) . "<br>";
                                             }
-                                            if (!empty($custom['addedIngredients'])) {
-                                                echo "➕ Ajouter: " . htmlspecialchars(implode(', ', $custom['addedIngredients'])) . "<br>";
+                                            
+                                            // AJOUTER (chercher dans toutes les variantes possibles)
+                                            $added = $custom['addedIngredients'] ?? $custom['ingredients']['added'] ?? $custom['added'] ?? [];
+                                            if (!empty($added)) {
+                                                echo "➕ Ajouter: " . htmlspecialchars(implode(', ', $added)) . "<br>";
+                                            }
+                                            
+                                            // SUPPLÉMENTS (pâtes, salades, rolls, buns)
+                                            if (!empty($custom['supplements'])) {
+                                                $names = [
+                                                    'champignons' => 'Champignons', 'olives' => 'Olives', 'poivrons' => 'Poivrons',
+                                                    'oignons' => 'Oignons', 'tomates' => 'Tomates', 'pommesDeTerre' => 'Pommes de terre',
+                                                    'mais' => 'Maïs', 'grosPiment' => 'Gros piment', 'fromage' => 'Fromage',
+                                                    'chevre' => 'Chèvre', 'gorgonzola' => 'Gorgonzola', 'parmesan' => 'Parmesan',
+                                                    'jambon' => 'Jambon', 'poulet' => 'Poulet', 'merguez' => 'Merguez',
+                                                    'chorizo' => 'Chorizo', 'boeuf' => 'Bœuf', 'lardons' => 'Lardons',
+                                                    'thon' => 'Thon', 'anchois' => 'Anchois', 'crevettes' => 'Crevettes',
+                                                    'saumon' => 'Saumon', 'oeuf' => 'Œuf', 'miel' => 'Miel'
+                                                ];
+                                                $suppNames = array_map(function($key) use ($names) {
+                                                    return $names[$key] ?? ucfirst($key);
+                                                }, $custom['supplements']);
+                                                echo "➕ SUPPLÉMENTS: " . htmlspecialchars(implode(', ', $suppNames)) . "<br>";
+                                            }
+                                            
+                                            // OPTIONS (salades: pain, vinaigrette sup)
+                                            if (!empty($custom['options'])) {
+                                                $optionLabels = array_map(function($opt) {
+                                                    if ($opt === 'pain') return 'Pain';
+                                                    if ($opt === 'vinaigrette-sup') return 'Vinaigrette sup.';
+                                                    return ucfirst($opt);
+                                                }, $custom['options']);
+                                                echo "🔸 OPTIONS: " . htmlspecialchars(implode(', ', $optionLabels)) . "<br>";
+                                            }
+                                            
+                                            // FORMULES avec pizza
+                                            if (!empty($custom['pizza'])) {
+                                                echo "🍕 Pizza: " . htmlspecialchars($custom['pizza']) . "<br>";
+                                                if (!empty($custom['pizzaCustomization'])) {
+                                                    $pizzaCust = $custom['pizzaCustomization'];
+                                                    if (!empty($pizzaCust['size'])) {
+                                                        $sizeLabel = $pizzaCust['size'];
+                                                        if ($pizzaCust['size'] === 'moyenne') $sizeLabel = '33cm';
+                                                        if ($pizzaCust['size'] === 'grande') $sizeLabel = '40cm';
+                                                        echo "&nbsp;&nbsp;↳ Taille: " . htmlspecialchars($sizeLabel) . "<br>";
+                                                    }
+                                                    if (!empty($pizzaCust['base']) && $pizzaCust['base'] !== 'tomate') {
+                                                        echo "&nbsp;&nbsp;↳ Base: " . htmlspecialchars($pizzaCust['base']) . "<br>";
+                                                    }
+                                                    if (!empty($pizzaCust['ingredients']['added'])) {
+                                                        echo "&nbsp;&nbsp;↳ ➕ Ajouts: " . htmlspecialchars(implode(', ', $pizzaCust['ingredients']['added'])) . "<br>";
+                                                    }
+                                                    if (!empty($pizzaCust['ingredients']['removed'])) {
+                                                        echo "&nbsp;&nbsp;↳ ❌ Retraits: " . htmlspecialchars(implode(', ', $pizzaCust['ingredients']['removed'])) . "<br>";
+                                                    }
+                                                }
+                                            }
+                                            
+                                            // FORMULES avec pâtes/salade
+                                            if (!empty($custom['mainItem'])) {
+                                                $mainType = $custom['mainItem']['type'] === 'pate' ? '🍝' : '🥗';
+                                                echo $mainType . " " . htmlspecialchars($custom['mainItem']['name']) . "<br>";
+                                                if (!empty($custom['mainItem']['customization']['size'])) {
+                                                    $sizeLabel = $custom['mainItem']['customization']['size'];
+                                                    if ($sizeLabel === 'L') $sizeLabel = 'Large';
+                                                    if ($sizeLabel === 'XL') $sizeLabel = 'XL';
+                                                    echo "&nbsp;&nbsp;↳ Taille: " . htmlspecialchars($sizeLabel) . "<br>";
+                                                }
+                                                if (!empty($custom['mainItem']['customization']['supplements'])) {
+                                                    echo "&nbsp;&nbsp;↳ + " . count($custom['mainItem']['customization']['supplements']) . " supplément(s)<br>";
+                                                }
+                                            }
+                                            
+                                            // BOISSON (formules)
+                                            if (!empty($custom['boisson'])) {
+                                                echo "🥤 " . htmlspecialchars($custom['boisson']) . "<br>";
+                                            }
+                                            
+                                            // DESSERT (formules)
+                                            if (!empty($custom['dessert'])) {
+                                                echo "🍰 " . htmlspecialchars($custom['dessert']) . "<br>";
                                             }
                                             ?>
                                         </div>
