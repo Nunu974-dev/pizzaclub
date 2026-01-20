@@ -169,43 +169,8 @@ $suppliers = [
     ],
 ];
 
-// Traitement de l'envoi de commande
-if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_order'])) {
-    $supplierName = $_POST['supplier'];
-    $orders = $_POST['quantities'] ?? [];
-    $comments = $_POST['comments'] ?? ''; // Récupérer les commentaires
-    
-    if (!empty($orders)) {
-        // Filtrer les quantités non nulles
-        $orderedItems = [];
-        $total = 0;
-        
-        foreach ($orders as $productIndex => $quantity) {
-            if ($quantity > 0) {
-                $product = $suppliers[$supplierName]['products'][$productIndex];
-                $subtotal = $product['price'] * $quantity;
-                $orderedItems[] = [
-                    'name' => $product['name'],
-                    'quantity' => $quantity,
-                    'price' => $product['price'],
-                    'subtotal' => $subtotal
-                ];
-                $total += $subtotal;
-            }
-        }
-        
-        if (!empty($orderedItems)) {
-            // Envoyer l'email - TOUJOURS sur contact@pizzaclub.re
-            $success = sendOrderEmail($supplierName, 'contact@pizzaclub.re', $orderedItems, $total, $comments);
-            if ($success) {
-                $successMessage = "✅ Commande envoyée à $supplierName sur contact@pizzaclub.re !";
-            } else {
-                $errorMessage = "❌ Erreur lors de l'envoi de la commande.";
-            }
-        }
-    }
-}
-, $comments = '') {
+// Fonction d'envoi d'email
+function sendOrderEmail($supplierName, $email, $items, $total, $comments = '') {
     $date = date('d/m/Y à H:i');
     
     $subject = "Commande Pizza Club - " . date('d/m/Y') . " - " . $supplierName;
@@ -291,6 +256,43 @@ if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_o
 
     // FORCER l'envoi UNIQUEMENT sur contact@pizzaclub.re
     return mail('contact@pizzaclub.re', $subject, $message, $headers);
+}
+
+// Traitement de l'envoi de commande
+if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_order'])) {
+    $supplierName = $_POST['supplier'];
+    $orders = $_POST['quantities'] ?? [];
+    $comments = $_POST['comments'] ?? ''; // Récupérer les commentaires
+    
+    if (!empty($orders)) {
+        // Filtrer les quantités non nulles
+        $orderedItems = [];
+        $total = 0;
+        
+        foreach ($orders as $productIndex => $quantity) {
+            if ($quantity > 0) {
+                $product = $suppliers[$supplierName]['products'][$productIndex];
+                $subtotal = $product['price'] * $quantity;
+                $orderedItems[] = [
+                    'name' => $product['name'],
+                    'quantity' => $quantity,
+                    'price' => $product['price'],
+                    'subtotal' => $subtotal
+                ];
+                $total += $subtotal;
+            }
+        }
+        
+        if (!empty($orderedItems)) {
+            // Envoyer l'email - TOUJOURS sur contact@pizzaclub.re
+            $success = sendOrderEmail($supplierName, 'contact@pizzaclub.re', $orderedItems, $total, $comments);
+            if ($success) {
+                $successMessage = "✅ Commande envoyée à $supplierName sur contact@pizzaclub.re !";
+            } else {
+                $errorMessage = "❌ Erreur lors de l'envoi de la commande.";
+            }
+        }
+    }
 }
 ?>
 <!DOCTYPE html>
