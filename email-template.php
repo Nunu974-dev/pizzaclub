@@ -181,11 +181,75 @@ function getClientEmailTemplate($orderData) {
                                     ?></small>
                                 <?php endif; ?>
                                 
+                                <?php // ROLLS ?>
+                                <?php elseif ($item['type'] === 'roll'): ?>
+                                    <?php if (isset($custom['size'])): ?>
+                                        (<?= htmlspecialchars($custom['size']) ?>)
+                                    <?php endif; ?>
+                                    
+                                    <?php // INGRÉDIENTS CHOISIS ?>
+                                    <?php if (!empty($custom['ingredients'])): ?>
+                                        <br><small><strong>🥗 INGRÉDIENTS:</strong> 
+                                        <?php
+                                        if (is_array($custom['ingredients'])) {
+                                            echo htmlspecialchars(implode(', ', $custom['ingredients']));
+                                        } else {
+                                            echo htmlspecialchars($custom['ingredients']);
+                                        }
+                                        ?>
+                                        </small>
+                                    <?php endif; ?>
+                                    
+                                    <?php // BASE (crème ou tomate) ?>
+                                    <?php if (!empty($custom['base'])): ?>
+                                        <br><small><strong>🌯 BASE:</strong> 
+                                        <?= $custom['base'] === 'creme' ? 'Crème' : 'Tomate' ?>
+                                        </small>
+                                    <?php endif; ?>
+                                    
+                                    <?php // RETIRER ?>
+                                    <?php
+                                    $removed = $custom['removedIngredients'] ?? $custom['ingredients']['removed'] ?? $custom['removed'] ?? [];
+                                    if (!empty($removed)):
+                                    ?>
+                                        <br><small style="color: #dc3545;"><strong>❌ RETIRER:</strong> <?= htmlspecialchars(implode(', ', $removed)) ?></small>
+                                    <?php endif; ?>
+                                
                                 <?php // BUNS ?>
                                 <?php elseif ($item['type'] === 'bun'): ?>
                                     <?php if (isset($custom['size'])): ?>
                                         (<?= htmlspecialchars($custom['size']) ?>)
                                     <?php endif; ?>
+                                    
+                                    <?php // INGRÉDIENTS CHOISIS ?>
+                                    <?php if (!empty($custom['ingredients'])): ?>
+                                        <br><small><strong>🥗 INGRÉDIENTS:</strong> 
+                                        <?php
+                                        if (is_array($custom['ingredients'])) {
+                                            echo htmlspecialchars(implode(', ', $custom['ingredients']));
+                                        } else {
+                                            echo htmlspecialchars($custom['ingredients']);
+                                        }
+                                        ?>
+                                        </small>
+                                    <?php endif; ?>
+                                    
+                                    <?php // FORMAT (x1 ou x3) ?>
+                                    <?php if (!empty($custom['format'])): ?>
+                                        <br><small><strong>📦 FORMAT:</strong> <?= htmlspecialchars($custom['format']) ?></small>
+                                    <?php endif; ?>
+                                    
+                                    <?php // TYPE (pizza ou pâte) ?>
+                                    <?php if (!empty($custom['type'])): ?>
+                                        <br><small><strong>🍕 TYPE:</strong> 
+                                        <?php
+                                        if ($custom['type'] === 'pizza') echo 'BASE PIZZA';
+                                        elseif ($custom['type'] === 'pate') echo 'BASE PÂTE';
+                                        else echo htmlspecialchars($custom['type']);
+                                        ?>
+                                        </small>
+                                    <?php endif; ?>
+                                    
                                     <?php if (!empty($custom['ingredients']['added'])): ?>
                                         <br><small style="color: #28a745;">✓ Ajouts: <?= htmlspecialchars(implode(', ', $custom['ingredients']['added'])) ?></small>
                                     <?php endif; ?>

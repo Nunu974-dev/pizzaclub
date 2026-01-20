@@ -367,6 +367,28 @@ $debugFile = __DIR__ . '/debug-order.txt';
                                                 echo "➕ Ajouter: " . htmlspecialchars(implode(', ', $added)) . "<br>";
                                             }
                                             
+                                            // INGRÉDIENTS (buns et rolls)
+                                            if (($item['type'] === 'bun' || $item['type'] === 'roll') && !empty($custom['ingredients'])) {
+                                                if (is_array($custom['ingredients'])) {
+                                                    echo "🥗 INGRÉDIENTS: " . htmlspecialchars(implode(', ', $custom['ingredients'])) . "<br>";
+                                                } else {
+                                                    echo "🥗 INGRÉDIENTS: " . htmlspecialchars($custom['ingredients']) . "<br>";
+                                                }
+                                            }
+                                            
+                                            // FORMAT (buns x1/x3)
+                                            if ($item['type'] === 'bun' && !empty($custom['format'])) {
+                                                echo "📦 Format: " . htmlspecialchars($custom['format']) . "<br>";
+                                            }
+                                            
+                                            // TYPE (buns: pizza ou pâte)
+                                            if ($item['type'] === 'bun' && !empty($custom['type'])) {
+                                                $bunType = $custom['type'];
+                                                if ($bunType === 'pizza') echo "🍕 Type: BASE PIZZA<br>";
+                                                elseif ($bunType === 'pate') echo "🍝 Type: BASE PÂTE<br>";
+                                                else echo "Type: " . htmlspecialchars($bunType) . "<br>";
+                                            }
+                                            
                                             // SUPPLÉMENTS (pâtes, salades, rolls, buns)
                                             if (!empty($custom['supplements'])) {
                                                 $names = [
