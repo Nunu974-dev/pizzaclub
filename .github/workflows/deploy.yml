@@ -26,7 +26,20 @@ jobs:
         set ftp:ssl-allow no;
         open -u $FTP_USERNAME,$FTP_PASSWORD $FTP_SERVER;
         cd public_html;
-        mirror -Rev --exclude .git/ --exclude .github/ --exclude img/ --exclude-glob *.md . .;
+        mirror -Rev \
+          --exclude .git/ \
+          --exclude .github/ \
+          --exclude img/ \
+          --exclude backups/ \
+          --exclude-glob *.md \
+          --exclude orders.json \
+          --exclude inventory.json \
+          --exclude temperatures.json \
+          --exclude unavailability.json \
+          --exclude debug-order.txt \
+          --exclude .env \
+          --exclude config/brevo-config.php \
+          . .;
         bye
         "
 
