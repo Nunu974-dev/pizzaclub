@@ -213,6 +213,45 @@ function getKitchenEmailTemplate($orderData) {
                                     </span>
                                 </div>
                                 
+                                <!-- INGRÉDIENTS (buns et rolls) -->
+                                <?php if (($item['type'] === 'bun' || $item['type'] === 'roll') && !empty($custom['ingredients'])): ?>
+                                    <div class="item-detail">
+                                        <span class="item-detail-label">🥗 Ingrédients choisis :</span>
+                                        <span class="item-detail-value">
+                                            <?php
+                                            if (is_array($custom['ingredients'])) {
+                                                echo htmlspecialchars(implode(', ', $custom['ingredients']));
+                                            } else {
+                                                echo htmlspecialchars($custom['ingredients']);
+                                            }
+                                            ?>
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <!-- FORMAT (buns x1/x3) et TYPE (pâte/pizza) -->
+                                <?php if ($item['type'] === 'bun'): ?>
+                                    <?php if (!empty($custom['format'])): ?>
+                                        <div class="item-detail">
+                                            <span class="item-detail-label">📦 Format :</span>
+                                            <span class="item-detail-value"><?= htmlspecialchars($custom['format']) ?></span>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if (!empty($custom['type'])): ?>
+                                        <div class="item-detail">
+                                            <span class="item-detail-label">🍕 Type :</span>
+                                            <span class="item-detail-value">
+                                                <?php
+                                                $bunType = $custom['type'];
+                                                if ($bunType === 'pizza') echo '🍕 BASE PIZZA';
+                                                elseif ($bunType === 'pate') echo '🍝 BASE PÂTE';
+                                                else echo htmlspecialchars($bunType);
+                                                ?>
+                                            </span>
+                                        </div>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                                
                                 <!-- SUPPLÉMENTS (pâtes/salades) -->
                                 <?php if (!empty($custom['supplements']) && is_array($custom['supplements'])): ?>
                                     <div class="item-detail">

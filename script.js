@@ -4011,10 +4011,20 @@ async function submitOrder() {
         console.error('Erreur lors de la soumission:', error);
         showNotification('Erreur lors de l\'envoi de la commande. Veuillez réessayer.', 'error');
         
-        // Réactiver le bouton en cas d'erreur
+        // RÉINITIALISER COMPLÈTEMENT LA SESSION EN CAS D'ERREUR
+        // Vider le panier et réinitialiser tous les états
+        clearCart();
+        
+        // Fermer le modal de commande
+        closeCheckoutModal();
+        
+        // Réactiver le bouton
         submitBtn.disabled = false;
         submitBtn.classList.remove('loading');
         submitBtn.innerHTML = '<i class="fas fa-check"></i> Confirmer la commande';
+        
+        // Afficher un message explicite
+        console.log('🔄 Session réinitialisée suite à l\'erreur');
     }
 }
 
