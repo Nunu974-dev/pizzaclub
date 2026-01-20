@@ -98,16 +98,16 @@ $today = date('Y-m-d');
 if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
     $temperatureData['temperatures'][$today] = [
         'midi' => [
-            'frigo_boissons' => round(rand(10, 50) / 10, 1),  // 2.0 à 4.0°C
-            'frigo_blanc' => round(rand(10, 50) / 10, 1),      // 2.0 à 4.0°C
-            'congelateur' => round(rand(-200, -150) / 10, 1),  // -18.0 à -16.0°C
-            'frigo_armoire' => round(rand(10, 50) / 10, 1)     // 2.0 à 4.0°C
+            'frigo_boissons' => rand(2, 4),    // 2°C à 4°C (nombres entiers)
+            'frigo_blanc' => rand(2, 4),       // 2°C à 4°C (nombres entiers)
+            'congelateur' => rand(-18, -16),   // -18°C à -16°C (nombres entiers)
+            'frigo_armoire' => rand(2, 4)      // 2°C à 4°C (nombres entiers)
         ],
         'soir' => [
-            'frigo_boissons' => round(rand(10, 50) / 10, 1),   // 2.0 à 4.0°C
-            'frigo_blanc' => round(rand(10, 50) / 10, 1),      // 2.0 à 4.0°C
-            'congelateur' => round(rand(-200, -150) / 10, 1),  // -18.0 à -16.0°C
-            'frigo_armoire' => round(rand(10, 50) / 10, 1)     // 2.0 à 4.0°C
+            'frigo_boissons' => rand(2, 4),    // 2°C à 4°C (nombres entiers)
+            'frigo_blanc' => rand(2, 4),       // 2°C à 4°C (nombres entiers)
+            'congelateur' => rand(-18, -16),   // -18°C à -16°C (nombres entiers)
+            'frigo_armoire' => rand(2, 4)      // 2°C à 4°C (nombres entiers)
         ],
         'auto_filled' => true,
         'savedAt' => date('Y-m-d\TH:i:s.000\Z')
@@ -756,22 +756,22 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                                         <h4><i class="fas fa-sun"></i> MIDI</h4>
                                         <div class="temp-field">
                                             <label>🥤 Frigo Boissons</label>
-                                            <input type="number" step="0.1" id="midi-boissons" value="<?= $todayTemps['midi']['frigo_boissons'] ?>">
+                                            <input type="number" step="1" id="midi-boissons" value="<?= $todayTemps['midi']['frigo_boissons'] ?>">
                                             <small>Max: 4°C</small>
                                         </div>
                                         <div class="temp-field">
                                             <label>🧊 Frigo Blanc Principal</label>
-                                            <input type="number" step="0.1" id="midi-blanc" value="<?= $todayTemps['midi']['frigo_blanc'] ?>">
+                                            <input type="number" step="1" id="midi-blanc" value="<?= $todayTemps['midi']['frigo_blanc'] ?>">
                                             <small>Max: 4°C</small>
                                         </div>
                                         <div class="temp-field">
                                             <label>❄️ Congélateur</label>
-                                            <input type="number" step="0.1" id="midi-congelateur" value="<?= $todayTemps['midi']['congelateur'] ?>">
+                                            <input type="number" step="1" id="midi-congelateur" value="<?= $todayTemps['midi']['congelateur'] ?>">
                                             <small>Min: -18°C</small>
                                         </div>
                                         <div class="temp-field">
                                             <label>🚪 Frigo Armoire 4 Portes</label>
-                                            <input type="number" step="0.1" id="midi-armoire" value="<?= $todayTemps['midi']['frigo_armoire'] ?>">
+                                            <input type="number" step="1" id="midi-armoire" value="<?= $todayTemps['midi']['frigo_armoire'] ?>">
                                             <small>Max: 4°C</small>
                                         </div>
                                     </div>
@@ -780,22 +780,22 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                                         <h4><i class="fas fa-moon"></i> SOIR</h4>
                                         <div class="temp-field">
                                             <label>🥤 Frigo Boissons</label>
-                                            <input type="number" step="0.1" id="soir-boissons" value="<?= $todayTemps['soir']['frigo_boissons'] ?>">
+                                            <input type="number" step="1" id="soir-boissons" value="<?= $todayTemps['soir']['frigo_boissons'] ?>">
                                             <small>Max: 4°C</small>
                                         </div>
                                         <div class="temp-field">
                                             <label>🧊 Frigo Blanc Principal</label>
-                                            <input type="number" step="0.1" id="soir-blanc" value="<?= $todayTemps['soir']['frigo_blanc'] ?>">
-                                            <small>Entre -18°C et -16</small>
+                                            <input type="number" step="1" id="soir-blanc" value="<?= $todayTemps['soir']['frigo_blanc'] ?>">
+                                            <small>Max: 4°C</small>
                                         </div>
                                         <div class="temp-field">
                                             <label>❄️ Congélateur</label>
-                                            <input type="number" step="0.1" id="soir-congelateur" value="<?= $todayTemps['soir']['congelateur'] ?>">
+                                            <input type="number" step="1" id="soir-congelateur" value="<?= $todayTemps['soir']['congelateur'] ?>">
                                             <small>Entre -18°C et -16°C</small>
                                         </div>
                                         <div class="temp-field">
                                             <label>🚪 Frigo Armoire 4 Portes</label>
-                                            <input type="number" step="0.1" id="soir-armoire" value="<?= $todayTemps['soir']['frigo_armoire'] ?>">
+                                            <input type="number" step="1" id="soir-armoire" value="<?= $todayTemps['soir']['frigo_armoire'] ?>">
                                             <small>Max: 4°C</small>
                                         </div>
                                     </div>
@@ -1017,17 +1017,17 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                 const today = '<?= $today ?>';
                 
                 const midi = {
-                    frigo_boissons: parseFloat(document.getElementById('midi-boissons').value) || 0,
-                    frigo_blanc: parseFloat(document.getElementById('midi-blanc').value) || 0,
-                    congelateur: parseFloat(document.getElementById('midi-congelateur').value) || 0,
-                    frigo_armoire: parseFloat(document.getElementById('midi-armoire').value) || 0
+                    frigo_boissons: parseInt(document.getElementById('midi-boissons').value) || 0,
+                    frigo_blanc: parseInt(document.getElementById('midi-blanc').value) || 0,
+                    congelateur: parseInt(document.getElementById('midi-congelateur').value) || 0,
+                    frigo_armoire: parseInt(document.getElementById('midi-armoire').value) || 0
                 };
 
                 const soir = {
-                    frigo_boissons: parseFloat(document.getElementById('soir-boissons').value) || 0,
-                    frigo_blanc: parseFloat(document.getElementById('soir-blanc').value) || 0,
-                    congelateur: parseFloat(document.getElementById('soir-congelateur').value) || 0,
-                    frigo_armoire: parseFloat(document.getElementById('soir-armoire').value) || 0
+                    frigo_boissons: parseInt(document.getElementById('soir-boissons').value) || 0,
+                    frigo_blanc: parseInt(document.getElementById('soir-blanc').value) || 0,
+                    congelateur: parseInt(document.getElementById('soir-congelateur').value) || 0,
+                    frigo_armoire: parseInt(document.getElementById('soir-armoire').value) || 0
                 };
 
                 let errors = [];
