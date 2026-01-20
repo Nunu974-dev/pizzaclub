@@ -1783,8 +1783,8 @@
                 <div class="checkout-step active" id="step1">
                     <h4>Mode de commande</h4>
                     <div class="delivery-options">
-                        <label class="delivery-option">
-                            <input type="radio" name="deliveryMode" value="livraison" checked>
+                        <label class="delivery-option" id="delivery-option-livraison">
+                            <input type="radio" name="deliveryMode" value="livraison" checked id="radio-livraison">
                             <div class="option-card">
                                 <i class="fas fa-truck"></i>
                                 <span>Livraison</span>
@@ -1792,13 +1792,21 @@
                             </div>
                         </label>
                         <label class="delivery-option">
-                            <input type="radio" name="deliveryMode" value="emporter">
+                            <input type="radio" name="deliveryMode" value="emporter" id="radio-emporter">
                             <div class="option-card">
                                 <i class="fas fa-shopping-bag"></i>
                                 <span>À emporter</span>
                                 <small>15-20 min</small>
                             </div>
                         </label>
+                    </div>
+                    
+                    <!-- Message minimum livraison -->
+                    <div id="delivery-minimum-warning" style="display: none; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 12px; margin-top: 15px;">
+                        <p style="margin: 0; color: #856404; font-size: 13px; text-align: center;">
+                            ⚠️ <strong>Commande minimum 10€ pour la livraison</strong><br>
+                            <small>Il vous manque <span id="missing-amount">0.00</span>€ pour activer la livraison</small>
+                        </p>
                     </div>
 
                     <!-- Cadre jaune informatif -->

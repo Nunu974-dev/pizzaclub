@@ -1219,6 +1219,40 @@ function updateCartTotals() {
     document.getElementById('cartSubtotal').textContent = `${subtotal.toFixed(2)}€`;
     document.getElementById('cartDeliveryFee').textContent = deliveryFee === 0 ? 'Offert' : `${deliveryFee.toFixed(2)}€`;
     document.getElementById('cartTotal').textContent = `${total.toFixed(2)}€`;
+    
+    // Vérifier le minimum de 10€ pour la livraison
+    checkDeliveryMinimum(subtotal);
+}
+
+// Vérifier le minimum de 10€ pour la livraison
+function checkDeliveryMinimum(subtotal) {
+    const minimumDelivery = 10;
+    const radioLivraison = document.getElementById('radio-livraison');
+    const radioEmporter = document.getElementById('radio-emporter');
+    const warningDiv = document.getElementById('delivery-minimum-warning');
+    const missingAmountSpan = document.getElementById('missing-amount');
+    
+    if (!radioLivraison || !warningDiv) return; // Éléments pas encore chargés
+    
+    if (subtotal < minimumDelivery) {
+        // Désactiver la livraison
+        radioLivraison.disabled = true;
+        
+        // Si livraison était sélectionnée, basculer sur à emporter
+        if (radioLivraison.checked && radioEmporter) {
+            radioEmporter.checked = true;
+            updateDeliveryMode();
+        }
+        
+        // Afficher le message d'avertissement
+        const missingAmount = (minimumDelivery - subtotal).toFixed(2);
+        missingAmountSpan.textContent = missingAmount;
+        warningDiv.style.display = 'block';
+    } else {
+        // Activer la livraison
+        radioLivraison.disabled = false;
+        warningDiv.style.display = 'none';
+    }
 }
 
 function getDeliveryFee(subtotal) {
