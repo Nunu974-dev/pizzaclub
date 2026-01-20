@@ -290,8 +290,7 @@ if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_o
     $headers .= "Reply-To: contact@pizzaclub.re\r\n";
 
     // FORCER l'envoi UNIQUEMENT sur contact@pizzaclub.re
-    return mail('contact@pizzaclub.re'
-    return mail($email, $subject, $message, $headers);
+    return mail('contact@pizzaclub.re', $subject, $message, $headers);
 }
 ?>
 <!DOCTYPE html>
