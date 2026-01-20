@@ -169,11 +169,49 @@ $suppliers = [
     ],
 ];
 
-// Fonction d'envoi d'email
+// Traitement de l'envoi de commande
+if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_order'])) {
+    $supplierName = $_POST['supplier'];
+    $orders = $_POST['quantities'] ?? [];
+    
+    if (!empty($orders)) {
+        // Filtrer les quantités non nulles
+        $orderedItems = [];
+        $total = 0;
+        
+        foreach ($orders as $productIndex => $quantity) {
+            if ($quantity > 0) {
+                $product = $suppliers[$supplierName]['products'][$productIndex];
+                $subtotal = $product['price'] * $quantity;
+                $orderedItems[] = [
+                    'name' => $product['name'],
+                    'quantity' => $quantity,
+                    'price' => $product['price'],
+                    'subtotal' => $subtotal
+                ];
+                $total += $subtotal;
+            }
+        }
+        
+        if (!empty($orderedItems)) {
+            // Récupérer les commentaires
+            $comments = $_POST['comments'] ?? '';
+            
+            // Envoyer l'email à contact@pizzaclub.re
+            $success = sendOrderEmail($supplierName, $suppliers[$supplierName]['email'], $orderedItems, $total, $comments);
+            if ($success) {
+                $successMessage = "✅ Commande envoyée sur contact@pizzaclub.re !";
+            } else {
+                $errorMessage = "❌ Erreur lors de l'envoi de la commande.";
+            }
+        }
+    }
+}
+
 function sendOrderEmail($supplierName, $email, $items, $total, $comments = '') {
     $date = date('d/m/Y à H:i');
     
-    $subject = "Commande Pizza Club - " . date('d/m/Y') . " - " . $supplierName;
+    $subject = "Commande Pizza Club - " . date('d/m/Y');
     
     $message = "
     <html>
@@ -186,7 +224,6 @@ function sendOrderEmail($supplierName, $email, $items, $total, $comments = '') {
             th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
             th { background-color: #667eea; color: white; }
             .total { font-size: 1.2em; font-weight: bold; text-align: right; padding: 20px; background: #f5f5f5; }
-            .comments { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
             .footer { text-align: center; padding: 20px; color: #666; font-size: 0.9em; }
         </style>
     </head>
@@ -194,11 +231,10 @@ function sendOrderEmail($supplierName, $email, $items, $total, $comments = '') {
         <div class='header'>
             <h1>🍕 Commande Pizza Club</h1>
             <p>$date</p>
-            <p style='font-size: 18px; margin-top: 10px;'>Fournisseur : <strong>$supplierName</strong></p>
         </div>
         <div class='content'>
-            <h2>Bonjour,</h2>
-            <p>Veuillez trouver ci-dessous notre commande pour <strong>$supplierName</strong> :</p>
+            <h2>Bonjour $supplierName,</h2>
+            <p>Veuillez trouver ci-dessous notre commande :</p>
             
             <table>
                 <thead>
@@ -232,9 +268,9 @@ function sendOrderEmail($supplierName, $email, $items, $total, $comments = '') {
     // Ajouter les commentaires s'ils existent
     if (!empty($comments)) {
         $message .= "
-            <div class='comments'>
-                <h3 style='margin-top: 0; color: #856404;'>📝 Commentaires / Instructions :</h3>
-                <p style='margin: 0; white-space: pre-line;'>" . nl2br(htmlspecialchars($comments)) . "</p>
+            <div style='margin: 20px 0; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107;'>
+                <h3 style='margin-bottom: 10px;'>💬 Commentaires / Instructions :</h3>
+                <p style='white-space: pre-wrap;'>" . htmlspecialchars($comments) . "</p>
             </div>";
     }
     
@@ -243,56 +279,19 @@ function sendOrderEmail($supplierName, $email, $items, $total, $comments = '') {
             <p>Cordialement,<br>L'équipe Pizza Club</p>
         </div>
         <div class='footer'>
-            <p>Pizza Club - La Réunion<br>📞 02 62 66 82 30 | 📧 contact@pizzaclub.re</p>
-        </div>
+            <p>Pizza Club - La Réunion<br>📞 0262 XX XX XX | 📧 contact@pizzaclub.re</p>
+    // Envoyer à contact@pizzaclub.re au lieu de l'email du fournisseur
+    return mail('contact@pizzaclub.re'
     </body>
     </html>
     ";
     
     $headers = "MIME-Version: 1.0\r\n";
     $headers .= "Content-type: text/html; charset=UTF-8\r\n";
-    $headers .= "From: Pizza Club <contact@pizzaclub.re>\r\n";
-    $headers .= "Reply-To: contact@pizzaclub.re\r\n";
+    $headers .= "From: Pizza Club <commande@pizzaclub.re>\r\n";
+    $headers .= "Reply-To: commande@pizzaclub.re\r\n";
 
-    // FORCER l'envoi UNIQUEMENT sur contact@pizzaclub.re
-    return mail('contact@pizzaclub.re', $subject, $message, $headers);
-}
-
-// Traitement de l'envoi de commande
-if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_order'])) {
-    $supplierName = $_POST['supplier'];
-    $orders = $_POST['quantities'] ?? [];
-    $comments = $_POST['comments'] ?? ''; // Récupérer les commentaires
-    
-    if (!empty($orders)) {
-        // Filtrer les quantités non nulles
-        $orderedItems = [];
-        $total = 0;
-        
-        foreach ($orders as $productIndex => $quantity) {
-            if ($quantity > 0) {
-                $product = $suppliers[$supplierName]['products'][$productIndex];
-                $subtotal = $product['price'] * $quantity;
-                $orderedItems[] = [
-                    'name' => $product['name'],
-                    'quantity' => $quantity,
-                    'price' => $product['price'],
-                    'subtotal' => $subtotal
-                ];
-                $total += $subtotal;
-            }
-        }
-        
-        if (!empty($orderedItems)) {
-            // Envoyer l'email - TOUJOURS sur contact@pizzaclub.re
-            $success = sendOrderEmail($supplierName, 'contact@pizzaclub.re', $orderedItems, $total, $comments);
-            if ($success) {
-                $successMessage = "✅ Commande envoyée à $supplierName sur contact@pizzaclub.re !";
-            } else {
-                $errorMessage = "❌ Erreur lors de l'envoi de la commande.";
-            }
-        }
-    }
+    return mail($email, $subject, $message, $headers);
 }
 ?>
 <!DOCTYPE html>
@@ -650,25 +649,13 @@ if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_o
                                                 <div class="product-price"><?= number_format($product['price'], 2, ',', ' ') ?> €</div>
                                             <?php endif; ?>
                                         </div>
-                             !-- CHAMP COMMENTAIRES -->
-                            <div style="margin: 20px 0;">
-                                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">
-                                    💬 Commentaires / Instructions pour <?= $name ?>
-                                </label>
-                                <textarea 
-                                    name="comments" 
-                                    rows="4" 
-                                    style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-family: Arial; font-size: 14px; resize: vertical;"
-                                    placeholder="Ex: Livraison avant 14h, appeler avant livraison, produit urgent, etc."></textarea>
-                            </div>
-
-                            <div class="total-section" id="total-<?= $safeId ?>">
-                                <div class="total-label">Total</div>
-                                <div class="total-amount">0,00 €</div>
-                            </div>
-
-                            <button type="submit" class="btn-send-order">
-                                <i class="fas fa-paper-plane"></i> Envoyer sur contact@pizzaclub.r?>"
+                                        <div class="product-quantity">
+                                            <input type="number" 
+                                                   name="quantities[<?= $index ?>]" 
+                                                   min="0" 
+                                                   value="0" 
+                                                   class="quantity-input"
+                                                   data-price="<?= $product['price'] ?>"
                                                    onchange="updateTotal('<?= $name ?>')">
                                         </div>
                                     </div>
@@ -680,8 +667,20 @@ if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_o
                                 <div class="total-amount">0,00 €</div>
                             </div>
 
+                            <!-- CHAMP COMMENTAIRES -->
+                            <div style="margin: 20px 0;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">
+                                    💬 Commentaires / Instructions
+                                </label>
+                                <textarea 
+                                    name="comments" 
+                                    rows="4" 
+                                    style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-family: Arial; font-size: 14px; resize: vertical;"
+                                    placeholder="Ex: Livraison avant 14h, appeler avant livraison, produit urgent, etc."></textarea>
+                            </div>
+
                             <button type="submit" class="btn-send-order">
-                                <i class="fas fa-paper-plane"></i> Envoyer la commande
+                                <i class="fas fa-paper-plane"></i> Envoyer sur contact@pizzaclub.re
                             </button>
                         </form>
                     </div>
