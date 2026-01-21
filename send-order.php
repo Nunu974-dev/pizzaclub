@@ -503,68 +503,223 @@ if (!empty($orderData['customer']['comments'])) {
     $message .= $orderData['customer']['comments'] . "\n";
 }
 
-// Utiliser le template HTML pour l'email restaurant
-require_once __DIR__ . '/email-template-kitchen.php';
-$htmlMessage = getKitchenEmailTemplate($orderData);
+// ========================================
+// ENVOI EMAIL CUISINE VIA BREVO API
+// ========================================
+$emailSent = false;
 
-// Headers pour l'email restaurant - HTML
-$headers = "From: Pizza Club <commande@pizzaclub.re>\r\n";
-$headers .= "Reply-To: " . ($orderData['customer']['email'] ?: 'commande@pizzaclub.re') . "\r\n";
-$headers .= "Return-Path: commande@pizzaclub.re\r\n";
-$headers .= "X-Mailer: PHP/" . phpversion() . "\r\n";
-$headers .= "X-Priority: 1\r\n";
-$headers .= "Importance: High\r\n";
-$headers .= "MIME-Version: 1.0\r\n";
-$headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-
-// ⚠️ IMPORTANT: Utiliser ini_set pour forcer SMTP (Hostinger bloque mail())
-ini_set('SMTP', 'smtp.hostinger.com');
-ini_set('smtp_port', '587');
-ini_set('sendmail_from', 'commande@pizzaclub.re');
-
-// Envoi de l'email au restaurant
-$emailSent = mail($to, $subject, $htmlMessage, $headers);
-
-// Log pour debug
-$emailLog = "📧 Email restaurant - To: $to, Subject: $subject, Sent: " . ($emailSent ? 'YES ✅' : 'NO ❌');
-error_log($emailLog);
-file_put_contents(__DIR__ . '/debug-order.txt', $emailLog . "\n", FILE_APPEND | LOCK_EX);
-
-// Si l'email principal échoue, essayer avec un email de secours
-if (!$emailSent) {
-    // Tenter avec un autre domaine email si disponible
-    $backupEmail = 'contact@pizzaclub.re'; // ou tout autre email de secours
-    $emailSent = mail($backupEmail, $subject, $htmlMessage, $headers);
-    $backupLog = "📧 Email secours - To: $backupEmail, Sent: " . ($emailSent ? 'YES ✅' : 'NO ❌');
-    error_log($backupLog);
-    file_put_contents(__DIR__ . '/debug-order.txt', $backupLog . "\n", FILE_APPEND | LOCK_EX);
+try {
+    error_log("======= TENTATIVE ENVOI EMAIL CUISINE BREVO =======");
+    
+    // Charger la config Brevo
+    $configPaths = [
+        __DIR__ . '/config/brevo-config.php',
+        __DIR__ . '/brevo-config.php'
+    ];
+    
+    $brevoApiKey = null;
+    foreach ($configPaths as $configPath) {
+        if (file_exists($configPath)) {
+            error_log("✓ Config trouvé: $configPath");
+            $brevoConfig = require $configPath;
+            $brevoApiKey = $brevoConfig['api_key'];
+            break;
+        }
+    }
+    
+    // Fallback sur variable d'environnement
+    if (!$brevoApiKey && getenv('BREVO_API_KEY')) {
+        $brevoApiKey = getenv('BREVO_API_KEY');
+        error_log("✓ Config depuis variables d'environnement");
+    }
+    
+    if ($brevoApiKey) {
+        // Utiliser le template HTML pour l'email restaurant
+        require_once __DIR__ . '/email-template-kitchen.php';
+        $htmlMessage = getKitchenEmailTemplate($orderData);
+        
+        // API Brevo pour emails transactionnels
+        $brevoUrl = "https://api.brevo.com/v3/smtp/email";
+        
+        $brevoEmailData = [
+            'sender' => [
+                'name' => 'Pizza Club',
+                'email' => 'commande@pizzaclub.re'
+            ],
+            'to' => [
+                [
+                    'email' => $to,
+                    'name' => 'Cuisine Pizza Club'
+                ]
+            ],
+            'subject' => $subject,
+            'htmlContent' => $htmlMessage,
+            'headers' => [
+                'X-Priority' => '1',
+                'Importance' => 'High'
+            ]
+        ];
+        
+        error_log("Envoi email cuisine via Brevo API à: $to");
+        
+        $ch = curl_init($brevoUrl);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($brevoEmailData));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'api-key: ' . $brevoApiKey,
+            'Content-Type: application/json',
+            'Accept: application/json'
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        
+        $brevoResponse = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+        
+        $emailSent = ($httpCode === 201 || $httpCode === 200);
+        
+        // Log détaillé
+        error_log("======= BREVO EMAIL CUISINE DEBUG =======");
+        error_log("To: $to");
+        error_log("HTTP Code: $httpCode");
+        error_log("API Response: " . $brevoResponse);
+        
+        if ($curlError) {
+            error_log("CURL Error: $curlError");
+        }
+        
+        if ($emailSent) {
+            error_log("✓ EMAIL CUISINE ENVOYÉ VIA BREVO!");
+        } else {
+            error_log("✗ EMAIL CUISINE ÉCHOUÉ - Code: $httpCode");
+            $responseData = json_decode($brevoResponse, true);
+            if ($responseData) {
+                error_log("Détails erreur: " . json_encode($responseData, JSON_PRETTY_PRINT));
+            }
+        }
+        error_log("======= FIN BREVO EMAIL CUISINE =======");
+        
+        // Log dans fichier
+        $emailLog = "📧 Email restaurant (BREVO) - To: $to, Subject: $subject, Sent: " . ($emailSent ? 'YES ✅' : 'NO ❌');
+        file_put_contents(__DIR__ . '/debug-order.txt', $emailLog . "\n", FILE_APPEND | LOCK_EX);
+        
+    } else {
+        error_log("ERREUR: Pas de clé API Brevo trouvée pour l'email cuisine");
+        file_put_contents(__DIR__ . '/debug-order.txt', "❌ Email cuisine: Pas de clé API Brevo\n", FILE_APPEND | LOCK_EX);
+    }
+} catch (Exception $e) {
+    error_log("EXCEPTION Email cuisine Brevo: " . $e->getMessage());
+    file_put_contents(__DIR__ . '/debug-order.txt', "❌ Email cuisine exception: " . $e->getMessage() . "\n", FILE_APPEND | LOCK_EX);
 }
 
-// Envoi de l'email de confirmation au client
+// ========================================
+// ENVOI EMAIL CLIENT VIA BREVO API
+// ========================================
 $clientEmailSent = false;
 if (!empty($orderData['customer']['email'])) {
     try {
-        $clientSubject = 'Confirmation de commande ' . $orderData['orderNumber'] . ' - Pizza Club';
+        error_log("======= TENTATIVE ENVOI EMAIL CLIENT BREVO =======");
         
-        // Utiliser le template HTML
-        if (!file_exists(__DIR__ . '/email-template.php')) {
-            error_log("ERREUR: email-template.php introuvable");
-        } else {
-            require_once __DIR__ . '/email-template.php';
-            $clientHtmlMessage = getClientEmailTemplate($orderData);
+        // Charger la config Brevo
+        $configPaths = [
+            __DIR__ . '/config/brevo-config.php',
+            __DIR__ . '/brevo-config.php'
+        ];
+        
+        $brevoApiKey = null;
+        foreach ($configPaths as $configPath) {
+            if (file_exists($configPath)) {
+                $brevoConfig = require $configPath;
+                $brevoApiKey = $brevoConfig['api_key'];
+                break;
+            }
         }
         
-        $clientHeaders = "From: Pizza Club <commande@pizzaclub.re>\r\n";
-        $clientHeaders .= "Reply-To: commande@pizzaclub.re\r\n";
-        $clientHeaders .= "Return-Path: commande@pizzaclub.re\r\n";
-        $clientHeaders .= "X-Mailer: PHP/" . phpversion() . "\r\n";
-        $clientHeaders .= "MIME-Version: 1.0\r\n";
-        $clientHeaders .= "Content-Type: text/html; charset=UTF-8\r\n";
+        // Fallback sur variable d'environnement
+        if (!$brevoApiKey && getenv('BREVO_API_KEY')) {
+            $brevoApiKey = getenv('BREVO_API_KEY');
+        }
         
-        $clientEmailSent = mail($orderData['customer']['email'], $clientSubject, $clientHtmlMessage, $clientHeaders);
-        $clientLog = "📧 Email client - To: {$orderData['customer']['email']}, Sent: " . ($clientEmailSent ? 'YES ✅' : 'NO ❌');
-        error_log($clientLog);
-        file_put_contents(__DIR__ . '/debug-order.txt', $clientLog . "\n", FILE_APPEND | LOCK_EX);
+        if ($brevoApiKey) {
+            $clientSubject = 'Confirmation de commande ' . $orderData['orderNumber'] . ' - Pizza Club';
+            
+            // Utiliser le template HTML client
+            if (!file_exists(__DIR__ . '/email-template.php')) {
+                error_log("ERREUR: email-template.php introuvable");
+            } else {
+                require_once __DIR__ . '/email-template.php';
+                $clientHtmlMessage = getClientEmailTemplate($orderData);
+                
+                // API Brevo pour emails transactionnels
+                $brevoUrl = "https://api.brevo.com/v3/smtp/email";
+                
+                $brevoEmailData = [
+                    'sender' => [
+                        'name' => 'Pizza Club',
+                        'email' => 'commande@pizzaclub.re'
+                    ],
+                    'to' => [
+                        [
+                            'email' => $orderData['customer']['email'],
+                            'name' => $orderData['customer']['firstName'] . ' ' . $orderData['customer']['lastName']
+                        ]
+                    ],
+                    'subject' => $clientSubject,
+                    'htmlContent' => $clientHtmlMessage,
+                    'replyTo' => [
+                        'email' => 'commande@pizzaclub.re',
+                        'name' => 'Pizza Club'
+                    ]
+                ];
+                
+                error_log("Envoi email client via Brevo API à: " . $orderData['customer']['email']);
+                
+                $ch = curl_init($brevoUrl);
+                curl_setopt($ch, CURLOPT_POST, 1);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($brevoEmailData));
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    'api-key: ' . $brevoApiKey,
+                    'Content-Type: application/json',
+                    'Accept: application/json'
+                ]);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                
+                $brevoResponse = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $curlError = curl_error($ch);
+                curl_close($ch);
+                
+                $clientEmailSent = ($httpCode === 201 || $httpCode === 200);
+                
+                // Log détaillé
+                error_log("======= BREVO EMAIL CLIENT DEBUG =======");
+                error_log("To: " . $orderData['customer']['email']);
+                error_log("HTTP Code: $httpCode");
+                error_log("API Response: " . $brevoResponse);
+                
+                if ($curlError) {
+                    error_log("CURL Error: $curlError");
+                }
+                
+                if ($clientEmailSent) {
+                    error_log("✓ EMAIL CLIENT ENVOYÉ VIA BREVO!");
+                } else {
+                    error_log("✗ EMAIL CLIENT ÉCHOUÉ - Code: $httpCode");
+                    $responseData = json_decode($brevoResponse, true);
+                    if ($responseData) {
+                        error_log("Détails erreur: " . json_encode($responseData, JSON_PRETTY_PRINT));
+                    }
+                }
+                error_log("======= FIN BREVO EMAIL CLIENT =======");
+                
+                $clientLog = "📧 Email client (BREVO) - To: {$orderData['customer']['email']}, Sent: " . ($clientEmailSent ? 'YES ✅' : 'NO ❌');
+                file_put_contents(__DIR__ . '/debug-order.txt', $clientLog . "\n", FILE_APPEND | LOCK_EX);
+            }
+        } else {
+            error_log("ERREUR: Pas de clé API Brevo trouvée pour l'email client");
+            file_put_contents(__DIR__ . '/debug-order.txt', "❌ Email client: Pas de clé API Brevo\n", FILE_APPEND | LOCK_EX);
+        }
     } catch (Exception $e) {
         $errorLog = "❌ ERREUR email client: " . $e->getMessage();
         error_log($errorLog);
