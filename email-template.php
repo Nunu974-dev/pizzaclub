@@ -56,6 +56,25 @@ function getClientEmailTemplate($orderData) {
                         📍 À retirer au : 43 Rue Four à Chaux, 97410 Saint-Pierre
                     <?php endif; ?>
                     <br>⏱️ <strong>Temps estimé : <?= htmlspecialchars($orderData['estimatedTime']) ?></strong>
+                    
+                    <?php 
+                    $isScheduled = !empty($orderData['scheduledDate']) && $orderData['scheduledTime'] !== null;
+                    if ($isScheduled): 
+                        $scheduledHour = (int)$orderData['scheduledTime'];
+                        $deliveryStart = $scheduledHour . ':00';
+                        $deliveryEnd = ($scheduledHour + 1) . ':00';
+                        $period = ($scheduledHour < 16) ? 'MIDI' : 'SOIR';
+                        $firstDeliveryTime = ($scheduledHour < 16) ? '11:45' : '18:45';
+                    ?>
+                        <br>
+                        <strong style="color: #FF6600;">📅 Livraison programmée :</strong><br>
+                        <span style="color: #666;">Date : <?= htmlspecialchars($orderData['scheduledDate']) ?></span><br>
+                        <span style="color: #666;">Créneau : <?= $deliveryStart ?> - <?= $deliveryEnd ?></span><br>
+                        <span style="font-size: 12px; color: #999;">ℹ️ Première livraison <?= $period ?> : <?= $firstDeliveryTime ?></span>
+                    <?php else: ?>
+                        <br>
+                        <strong style="color: #28a745;">⚡ Commande IMMÉDIATE</strong>
+                    <?php endif; ?>
                 </div>
                 
                 <h3 style="color: #FF0000;">Votre commande</h3>

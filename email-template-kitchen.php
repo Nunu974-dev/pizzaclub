@@ -48,6 +48,32 @@ function getKitchenEmailTemplate($orderData) {
                 <?= $deliveryMode ?>
             </div>
             
+            <!-- Horaire de livraison -->
+            <div class="content">
+                <div class="section" style="background-color: #fff3cd; border: 2px solid #ffc107;">
+                    <h3 style="color: #856404;">⏰ HORAIRE DE LIVRAISON</h3>
+                    <?php 
+                    $isScheduled = !empty($orderData['scheduledDate']) && $orderData['scheduledTime'] !== null;
+                    if ($isScheduled): 
+                        // Déterminer le créneau de livraison (45 min après ouverture)
+                        $scheduledHour = (int)$orderData['scheduledTime'];
+                        $deliveryStart = $scheduledHour . ':00';
+                        $deliveryEnd = ($scheduledHour + 1) . ':00';
+                        
+                        // Déterminer si c'est le midi ou le soir
+                        $period = ($scheduledHour < 16) ? 'MIDI' : 'SOIR';
+                        $firstDeliveryTime = ($scheduledHour < 16) ? '11:45' : '18:45';
+                    ?>
+                        <p style="margin: 0; color: #856404;"><strong>📅 Date :</strong> <?= htmlspecialchars($orderData['scheduledDate']) ?></p>
+                        <p style="margin: 10px 0 0 0; color: #856404;"><strong>🕐 Créneau demandé :</strong> <?= $deliveryStart ?> - <?= $deliveryEnd ?></p>
+                        <p style="margin: 10px 0 0 0; color: #856404; font-size: 13px;"><em>ℹ️ Première livraison <?= $period ?> : <?= $firstDeliveryTime ?></em></p>
+                    <?php else: ?>
+                        <p style="margin: 0; color: #28a745;"><strong>⚡ Commande IMMÉDIATE</strong></p>
+                        <p style="margin: 10px 0 0 0; color: #666;"><em>À préparer et livrer dès que possible</em></p>
+                    <?php endif; ?>
+                </div>
+            </div>
+            
             <!-- Informations client -->
             <div class="content">
                 <div class="section">

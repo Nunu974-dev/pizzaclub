@@ -100,10 +100,57 @@ file_put_contents(
 // ========================================
 require_once __DIR__ . '/check-closure.php';
 
+// Fonction pour vérifier si une date programmée est valide
+function isScheduledDateValid($scheduledDate, $scheduledTime) {
+    if (empty($scheduledDate)) {
+        return ['valid' => true];
+    }
+    
+    $date = new DateTime($scheduledDate);
+    $dayOfWeek = (int)$date->format('N'); // 1 = Lundi, 7 = Dimanche
+    
+    // Bloquer les lundis (fermé toute la journée)
+    if ($dayOfWeek === 1) {
+        return [
+            'valid' => false,
+            'message' => '🔒 Restaurant fermé le lundi. Choisissez un autre jour.'
+        ];
+    }
+    
+    // Bloquer les dimanches midi (avant 17h)
+    if ($dayOfWeek === 7 && $scheduledTime !== null) {
+        $scheduledHour = (int)$scheduledTime;
+        if ($scheduledHour < 17) {
+            return [
+                'valid' => false,
+                'message' => '🔒 Restaurant fermé le dimanche midi. Choisissez le soir (à partir de 18h) ou un autre jour.'
+            ];
+        }
+    }
+    
+    return ['valid' => true];
+}
+
 // Vérifier si c'est une commande "maintenant" (pas programmée)
 $isOrderNow = true;
 if (isset($orderData['scheduledDate']) && !empty($orderData['scheduledDate'])) {
     $isOrderNow = false; // C'est une commande programmée
+    
+    // Vérifier que la date programmée est valide
+    $scheduledValidation = isScheduledDateValid(
+        $orderData['scheduledDate'], 
+        $orderData['scheduledTime'] ?? null
+    );
+    
+    if (!$scheduledValidation['valid']) {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false, 
+            'error' => $scheduledValidation['message'],
+            'closureType' => 'scheduled_closed_day'
+        ]);
+        exit;
+    }
 }
 
 // Si c'est une commande "maintenant", vérifier si le restaurant est fermé

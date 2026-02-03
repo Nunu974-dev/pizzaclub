@@ -45,6 +45,19 @@ function isRestaurantClosed() {
         ];
     }
     
+    // Dimanche midi = fermeture (N = 7) - uniquement avant 17h
+    if ($dayOfWeek === 7) {
+        $currentHour = (int)date('G');
+        if ($currentHour < 17) {
+            return [
+                'isClosed' => true,
+                'reason' => 'Fermeture dimanche midi',
+                'type' => 'weekly',
+                'message' => '🔒 Restaurant fermé le dimanche midi. Réouverture à 18h !'
+            ];
+        }
+    }
+    
     // Vérifier la fermeture d'urgence
     if (isset($data['closures']['emergency']) && $data['closures']['emergency'] !== null) {
         $emergency = $data['closures']['emergency'];

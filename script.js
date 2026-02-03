@@ -3981,7 +3981,10 @@ async function submitOrder() {
             discount: discountAmount,
             total: totalAmount,
             timestamp: new Date().toISOString(),
-            estimatedTime: CONFIG.delivery.estimatedTime[customerData.deliveryMode]
+            estimatedTime: CONFIG.delivery.estimatedTime[customerData.deliveryMode],
+            deliveryTimeMode: deliveryTimeMode,
+            scheduledDate: scheduledDeliveryDate,
+            scheduledTime: scheduledDeliveryHour
         };
 
         // Sauvegarder la commande
