@@ -109,8 +109,46 @@ function isRestaurantClosed() {
     }
     
     // ========================================
-    // HORAIRES DE FERMETURE + DÉLAI AVANT FERMETURE
-    // Restaurant ferme à 14h et 21h/22h
+    // HORAIRES D'OUVERTURE DU RESTAURANT
+    // Midi: 11h-14h | Soir: 18h-21h
+    // ========================================
+    
+    $currentHour = (int)date('G');
+    $currentMinute = (int)date('i');
+    $currentTotalMinutes = ($currentHour * 60) + $currentMinute;
+    
+    // Vérifier si on est pendant les heures de fermeture (entre 14h et 18h)
+    if ($currentHour >= 14 && $currentHour < 18) {
+        return [
+            'isClosed' => true,
+            'reason' => 'Fermeture entre midi et soir',
+            'type' => 'closed_hours',
+            'message' => '🔒 Restaurant fermé. Réouverture à 18h pour le service du soir !'
+        ];
+    }
+    
+    // Vérifier si on est avant l'ouverture du matin (avant 11h)
+    if ($currentHour < 11) {
+        return [
+            'isClosed' => true,
+            'reason' => 'Fermeture avant ouverture',
+            'type' => 'closed_hours',
+            'message' => '🔒 Restaurant fermé. Ouverture à 11h pour le service du midi !'
+        ];
+    }
+    
+    // Vérifier si on est après la fermeture du soir (après 21h)
+    if ($currentHour >= 21) {
+        return [
+            'isClosed' => true,
+            'reason' => 'Fermeture après service',
+            'type' => 'closed_hours',
+            'message' => '🔒 Restaurant fermé pour aujourd\'hui. Réouverture demain à 11h !'
+        ];
+    }
+    
+    // ========================================
+    // DÉLAI AVANT FERMETURE
     // Bloquer commandes: 45min avant (livraison), 30min avant (emporter)
     // ========================================
     
@@ -121,15 +159,11 @@ function isRestaurantClosed() {
     // Délais avant fermeture
     $cutoffMinutes = $isDelivery ? 45 : 30;
     
-    // Horaires de fermeture (14h midi, 21h ou 22h soir)
+    // Horaires de fermeture (14h midi, 21h soir)
     $closingTimes = [
         ['hour' => 14, 'minute' => 0],  // Fermeture midi
-        ['hour' => 21, 'minute' => 0],  // Fermeture soir (à ajuster)
+        ['hour' => 21, 'minute' => 0],  // Fermeture soir
     ];
-    
-    $currentHour = (int)date('G');
-    $currentMinute = (int)date('i');
-    $currentTotalMinutes = ($currentHour * 60) + $currentMinute;
     
     foreach ($closingTimes as $closing) {
         $closingTotalMinutes = ($closing['hour'] * 60) + $closing['minute'];
