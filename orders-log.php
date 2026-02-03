@@ -314,6 +314,25 @@ $debugFile = __DIR__ . '/debug-order.txt';
                         
                         <span class="mode-badge"><?= $deliveryMode ?></span>
                         
+                        <?php 
+                        // Vérifier si c'est une commande programmée
+                        $isScheduled = !empty($order['scheduledDate']) && isset($order['scheduledTime']);
+                        ?>
+                        
+                        <?php if ($isScheduled): ?>
+                            <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; margin: 15px 0; border-radius: 5px;">
+                                <strong style="color: #856404;">⏰ COMMANDE PROGRAMMÉE</strong><br>
+                                <span style="color: #856404;">
+                                    📅 Date: <?= htmlspecialchars($order['scheduledDate']) ?><br>
+                                    🕐 Créneau: <?= (int)$order['scheduledTime'] ?>:00 - <?= ((int)$order['scheduledTime'] + 1) ?>:00
+                                </span>
+                            </div>
+                        <?php else: ?>
+                            <div style="background: #d4edda; border: 2px solid #28a745; padding: 15px; margin: 15px 0; border-radius: 5px;">
+                                <strong style="color: #155724;">⚡ COMMANDE IMMÉDIATE</strong>
+                            </div>
+                        <?php endif; ?>
+                        
                         <div class="customer-info">
                             <strong>Client:</strong> <?= htmlspecialchars($customer['firstName']) ?> <?= htmlspecialchars($customer['lastName']) ?><br>
                             <strong>Téléphone:</strong> <?= htmlspecialchars($customer['phone']) ?><br>
