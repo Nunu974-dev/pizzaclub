@@ -585,7 +585,7 @@ function createSimpleCard(item, type) {
     
     let priceDisplay;
     if (isPate) {
-        priceDisplay = `<div class="pizza-price">${item.priceL.toFixed(2)}€</div>`;
+        priceDisplay = `<div class="pizza-price">${item.priceL.toFixed(2)}€ <small style="font-size:0.7em;color:#888;display:block;">Base Farci/Gnocchi : +1.50€ L / +2€ XL</small></div>`;
     } else if (isBun) {
         priceDisplay = `<div class="pizza-price">À partir de ${item.price.toFixed(2)}€</div>`;
     } else if (isRoll && !item.isBox) {
