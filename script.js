@@ -2719,11 +2719,11 @@ function openPatesCustomizeModal(pateId) {
             <div class="size-options">
                 <label class="size-option">
                     <input type="radio" name="pateSize" value="L" checked>
-                    <span>L (${pate.priceL.toFixed(2)}€)</span>
+                    <span>L (${window.pendingMenuPatesSalade && !window.pendingMenuPatesSalade.standalone ? FORMULES_DATA.patesSalade.priceL.toFixed(2) : pate.priceL.toFixed(2)}€)</span>
                 </label>
                 <label class="size-option">
                     <input type="radio" name="pateSize" value="XL">
-                    <span>XL (+${EXTRAS.patesSizes.XL.price.toFixed(2)}€ = ${pate.priceXL.toFixed(2)}€)</span>
+                    <span>XL (${window.pendingMenuPatesSalade && !window.pendingMenuPatesSalade.standalone ? FORMULES_DATA.patesSalade.priceXL.toFixed(2) : pate.priceXL.toFixed(2)}€)</span>
                 </label>
             </div>
         </div>
@@ -2796,8 +2796,13 @@ function updatePatesCustomizePrice() {
     const selectedSize = document.querySelector('input[name="pateSize"]:checked')?.value || 'L';
     const selectedSupplements = Array.from(document.querySelectorAll('input[name="patesSupplement"]:checked'));
     
-    // Prix de base selon taille
-    let price = selectedSize === 'L' ? pate.priceL : pate.priceXL;
+    // Prix de base : prix formule si dans un menu, sinon prix standalone
+    let price;
+    if (!window.pendingMenuPatesSalade.standalone) {
+        price = selectedSize === 'XL' ? FORMULES_DATA.patesSalade.priceXL : FORMULES_DATA.patesSalade.priceL;
+    } else {
+        price = selectedSize === 'L' ? pate.priceL : pate.priceXL;
+    }
     
     // Ajouter le prix des suppléments
     const supplementPrice = EXTRAS.patesSupplements[selectedSize].price;
@@ -2825,8 +2830,13 @@ function confirmPatesCustomization() {
     const selectedSupplements = Array.from(document.querySelectorAll('input[name="patesSupplement"]:checked'))
         .map(cb => cb.value);
     
-    // Calculer le prix
-    let price = selectedSize === 'L' ? pate.priceL : pate.priceXL;
+    // Calculer le prix : formule si dans un menu, standalone sinon
+    let price;
+    if (!window.pendingMenuPatesSalade.standalone) {
+        price = selectedSize === 'XL' ? FORMULES_DATA.patesSalade.priceXL : FORMULES_DATA.patesSalade.priceL;
+    } else {
+        price = selectedSize === 'L' ? pate.priceL : pate.priceXL;
+    }
     const supplementPrice = EXTRAS.patesSupplements[selectedSize].price;
     price += selectedSupplements.length * supplementPrice;
     
@@ -3118,8 +3128,10 @@ function updateSaladesCustomizePrice() {
     const selectedSupplements = Array.from(document.querySelectorAll('input[name="saladeSupplement"]:checked'));
     const selectedOptions = Array.from(document.querySelectorAll('input[name="saladeOption"]:checked'));
     
-    // Prix de base
-    let price = salade.price;
+    // Prix de base : formule si dans un menu, standalone sinon
+    let price = (window.pendingMenuPatesSalade && !window.pendingMenuPatesSalade.standalone)
+        ? FORMULES_DATA.patesSalade.priceL
+        : salade.price;
     
     // Ajouter le prix des options (pain, vinaigrette sup)
     selectedOptions.forEach(option => {
@@ -3156,8 +3168,13 @@ function confirmSaladesCustomization() {
     const selectedOptions = Array.from(document.querySelectorAll('input[name="saladeOption"]:checked'))
         .map(cb => ({ type: cb.value, price: parseFloat(cb.getAttribute('data-price')) || 0 }));
     
-    // Calculer le prix
-    let price = salade.price;
+    // Calculer le prix : formule si dans un menu, standalone sinon
+    let price;
+    if (!window.pendingMenuPatesSalade.standalone) {
+        price = FORMULES_DATA.patesSalade.priceL;
+    } else {
+        price = salade.price;
+    }
     
     // Ajouter prix des options
     selectedOptions.forEach(option => {
