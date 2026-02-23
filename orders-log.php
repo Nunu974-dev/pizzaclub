@@ -128,6 +128,17 @@ if (!isset($_SESSION['logged_orders']) || $_SESSION['logged_orders'] !== true) {
     exit;
 }
 
+// ====== API POLLING - vérifier nouvelles commandes ======
+if (isset($_GET['action']) && $_GET['action'] === 'check') {
+    header('Content-Type: application/json');
+    $file = __DIR__ . '/orders.json';
+    $orders = file_exists($file) ? json_decode(file_get_contents($file), true) : [];
+    $count = is_array($orders) ? count($orders) : 0;
+    $lastId = ($count > 0) ? ($orders[0]['id'] ?? '') : '';
+    echo json_encode(['count' => $count, 'lastId' => (string)$lastId]);
+    exit;
+}
+
 // Lire le fichier de commandes
 $ordersFile = __DIR__ . '/orders.json';
 $debugFile = __DIR__ . '/debug-order.txt';
@@ -536,5 +547,130 @@ $debugFile = __DIR__ . '/debug-order.txt';
             </div>
         </div>
     </div>
+
+<!-- ====== NOTIFICATION SONORE - POLLING 5 MIN ====== -->
+<div id="notifBanner" style="
+    display:none; position:fixed; top:0; left:0; right:0; z-index:9999;
+    background:#ff0000; color:white; text-align:center;
+    padding:18px; font-size:22px; font-weight:bold;
+    box-shadow:0 4px 15px rgba(0,0,0,0.4); cursor:pointer;
+" onclick="dismissNotif()">
+    🍕 NOUVELLE COMMANDE ! Cliquez pour rafraîchir
+</div>
+
+<script>
+(function() {
+    // Stocker le dernier ID connu (commande la plus récente au chargement)
+    let lastKnownId = null;
+    let notifEnabled = false;
+
+    // Lire l'état initial au chargement
+    fetch('orders-log.php?action=check')
+        .then(r => r.json())
+        .then(data => { lastKnownId = data.lastId; });
+
+    // Son "ding" généré sans fichier audio
+    function playDing() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+            function beep(freq, start, duration) {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = freq;
+                osc.type = 'sine';
+                gain.gain.setValueAtTime(0.8, ctx.currentTime + start);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration);
+                osc.start(ctx.currentTime + start);
+                osc.stop(ctx.currentTime + start + duration);
+            }
+
+            beep(880, 0,    0.15);
+            beep(660, 0.18, 0.15);
+            beep(880, 0.36, 0.3);
+        } catch(e) {}
+    }
+
+    // Vibration mobile
+    function vibrate() {
+        if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
+    }
+
+    // Notification navigateur
+    function browserNotif() {
+        if (Notification.permission === 'granted') {
+            new Notification('🍕 Nouvelle commande !', {
+                body: 'Une nouvelle commande vient d\'arriver sur Pizza Club',
+                icon: 'img/favicon.ico',
+                requireInteraction: true
+            });
+        }
+    }
+
+    function showBanner() {
+        document.getElementById('notifBanner').style.display = 'block';
+        // Faire clignoter le titre de l'onglet
+        let blink = setInterval(() => {
+            document.title = document.title === '📋 Commandes Pizza Club'
+                ? '🔔 NOUVELLE COMMANDE !'
+                : '📋 Commandes Pizza Club';
+        }, 800);
+        window.blinkInterval = blink;
+    }
+
+    window.dismissNotif = function() {
+        document.getElementById('notifBanner').style.display = 'none';
+        clearInterval(window.blinkInterval);
+        document.title = '📋 Commandes Pizza Club';
+        location.reload();
+    };
+
+    // Polling toutes les 5 minutes
+    function poll() {
+        fetch('orders-log.php?action=check')
+            .then(r => r.json())
+            .then(data => {
+                if (lastKnownId !== null && data.lastId !== lastKnownId) {
+                    // 🔔 Nouvelle commande détectée !
+                    playDing();
+                    vibrate();
+                    browserNotif();
+                    showBanner();
+                    lastKnownId = data.lastId;
+                }
+            })
+            .catch(() => {}); // Silencieux si erreur réseau
+    }
+
+    setInterval(poll, 5 * 60 * 1000); // toutes les 5 minutes
+
+    // Demander permission notification navigateur au premier clic
+    document.addEventListener('click', function askPerm() {
+        if (Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+        document.removeEventListener('click', askPerm);
+    }, { once: true });
+
+    // Bouton activer dans le header
+    const btn = document.createElement('button');
+    btn.innerHTML = '🔔 Activer les alertes';
+    btn.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#ff0000;color:white;border:none;padding:12px 18px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.3);z-index:1000;';
+    btn.onclick = function() {
+        Notification.requestPermission().then(p => {
+            if (p === 'granted') {
+                btn.innerHTML = '✅ Alertes activées';
+                btn.style.background = '#4CAF50';
+                playDing(); // Test son
+                setTimeout(() => btn.remove(), 3000);
+            }
+        });
+    };
+    document.body.appendChild(btn);
+})();
+</script>
+
 </body>
 </html>
