@@ -3428,7 +3428,7 @@ function generateMenuPatesList() {
             window.pendingMenuPatesSalade = {
                 type: 'pate',
                 itemId: pate.id,
-                basePrice: FORMULES_DATA.patesSalade.price,
+                basePrice: FORMULES_DATA.patesSalade.priceL,
                 boissonChosen: false,
                 dessertChosen: false
             };
@@ -3463,7 +3463,7 @@ function generateMenuSaladesList() {
             window.pendingMenuPatesSalade = {
                 type: 'salade',
                 itemId: salade.id,
-                basePrice: FORMULES_DATA.patesSalade.price,
+                basePrice: FORMULES_DATA.patesSalade.priceL,
                 boissonChosen: false,
                 dessertChosen: false
             };
