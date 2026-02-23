@@ -1087,7 +1087,7 @@ function createCartItemElement(item) {
         if (item.customization.base) {
             const baseLabels = {
                 classique: 'Classique',
-                ricottaEpinard: 'Ricotta Épinard',
+                farciselonarrivage: 'Farci selon arrivage',
                 gnocchi: 'Gnocchi'
             };
             details.push(`Base: ${baseLabels[item.customization.base] || item.customization.base}`);
@@ -1935,10 +1935,11 @@ function updatePatesPrice() {
     const isL = sizeInput.value === 'L';
     let price = isL ? currentPate.priceL : currentPate.priceXL;
 
-    // Ajouter le prix de la base (Gnocchi/Poulet Farci)
+    // Ajouter le prix de la base (Farci selon arrivage / Gnocchi)
     const baseInput = document.querySelector('input[name="patesBase"]:checked');
-    if (baseInput.value === 'gnocchi') {
-        price += isL ? 1.50 : 2.00;
+    const baseData = EXTRAS.patesBases[baseInput.value];
+    if (baseData) {
+        price += isL ? (baseData.priceL || 0) : (baseData.priceXL || 0);
     }
 
     // Ajouter le supplément selon la taille
@@ -1993,9 +1994,10 @@ function addCustomizedPatesToCart() {
     const isL = size === 'L';
     let basePrice = isL ? currentPate.priceL : currentPate.priceXL;
     
-    // Ajouter le prix de la base Gnocchi/Poulet Farci
-    if (base === 'gnocchi') {
-        basePrice += isL ? 1.50 : 2.00;
+    // Ajouter le prix de la base (Farci selon arrivage / Gnocchi)
+    const baseData = EXTRAS.patesBases[base];
+    if (baseData) {
+        basePrice += isL ? (baseData.priceL || 0) : (baseData.priceXL || 0);
     }
     
     // Ajouter le supplément
@@ -2702,7 +2704,7 @@ function openPatesCustomizeModal(pateId) {
             <div class="base-options">
                 ${pate.bases.map(base => {
                     const baseKey = base.toLowerCase().replace(/[éè]/g, 'e').replace(/\s+/g, '');
-                    const basePrice = EXTRAS.patesBases[baseKey] || 0;
+                    const basePrice = EXTRAS.patesBases[baseKey]?.price || 0;
                     return `
                         <label class="base-option">
                             <input type="radio" name="pateBase" value="${baseKey}" ${base === 'Classique' ? 'checked' : ''}>
@@ -2796,6 +2798,8 @@ function updatePatesCustomizePrice() {
     const selectedSize = document.querySelector('input[name="pateSize"]:checked')?.value || 'L';
     const selectedSupplements = Array.from(document.querySelectorAll('input[name="patesSupplement"]:checked'));
     
+    const selectedBase = document.querySelector('input[name="pateBase"]:checked')?.value || 'classique';
+
     // Prix de base : prix formule si dans un menu, sinon prix standalone
     let price;
     if (!window.pendingMenuPatesSalade.standalone) {
@@ -2803,8 +2807,12 @@ function updatePatesCustomizePrice() {
     } else {
         price = selectedSize === 'L' ? pate.priceL : pate.priceXL;
     }
+
+    // Ajouter le supplément base (Farci selon arrivage / Gnocchi : +1.50€ L / +2€ XL)
+    const baseData = EXTRAS.patesBases[selectedBase];
+    if (baseData) price += selectedSize === 'XL' ? (baseData.priceXL || 0) : (baseData.priceL || 0);
     
-    // Ajouter le prix des suppléments
+    // Ajouter le prix des suppléments ingrédients
     const supplementPrice = EXTRAS.patesSupplements[selectedSize].price;
     price += selectedSupplements.length * supplementPrice;
     
@@ -2837,6 +2845,11 @@ function confirmPatesCustomization() {
     } else {
         price = selectedSize === 'L' ? pate.priceL : pate.priceXL;
     }
+
+    // Ajouter le supplément base (Farci selon arrivage / Gnocchi : +1.50€ L / +2€ XL)
+    const baseDataConfirm = EXTRAS.patesBases[selectedBase];
+    if (baseDataConfirm) price += selectedSize === 'XL' ? (baseDataConfirm.priceXL || 0) : (baseDataConfirm.priceL || 0);
+
     const supplementPrice = EXTRAS.patesSupplements[selectedSize].price;
     price += selectedSupplements.length * supplementPrice;
     

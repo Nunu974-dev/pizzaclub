@@ -528,7 +528,7 @@ const PATES_DATA = [
         priceXL: 11.90,
         image: 'img/Pates/carbo_decoupe.png',
         category: 'pates',
-        bases: ['Classique', 'Ricotta Épinard', 'Gnocchi']
+        bases: ['Classique', 'Farci selon arrivage', 'Gnocchi']
     },
     {
         id: 102,
@@ -538,7 +538,7 @@ const PATES_DATA = [
         priceXL: 11.90,
         image: 'img/Pates/PATE_BOLOGNAISE.jpg',
         category: 'pates',
-        bases: ['Classique', 'Ricotta Épinard', 'Gnocchi']
+        bases: ['Classique', 'Farci selon arrivage', 'Gnocchi']
     },
     {
         id: 103,
@@ -548,7 +548,7 @@ const PATES_DATA = [
         priceXL: 11.90,
         image: 'img/Pates/PATE_POULET2.jpg',
         category: 'pates',
-        bases: ['Classique', 'Ricotta Épinard', 'Gnocchi']
+        bases: ['Classique', 'Farci selon arrivage', 'Gnocchi']
     },
     {
         id: 104,
@@ -558,7 +558,7 @@ const PATES_DATA = [
         priceXL: 11.90,
         image: 'img/Pates/PATE_SAUMON.jpg',
         category: 'pates',
-        bases: ['Classique', 'Ricotta Épinard', 'Gnocchi']
+        bases: ['Classique', 'Farci selon arrivage', 'Gnocchi']
     },
     {
         id: 105,
@@ -568,7 +568,7 @@ const PATES_DATA = [
         priceXL: 11.90,
         image: 'img/Pates/Pate_Pesto/AR5A9018.jpg',
         category: 'pates',
-        bases: ['Classique', 'Ricotta Épinard', 'Gnocchi']
+        bases: ['Classique', 'Farci selon arrivage', 'Gnocchi']
     },
     {
         id: 106,
@@ -578,7 +578,7 @@ const PATES_DATA = [
         priceXL: 11.90,
         image: 'img/Pates/PATE_POULET2.jpg',
         category: 'pates',
-        bases: ['Classique', 'Ricotta Épinard', 'Gnocchi']
+        bases: ['Classique', 'Farci selon arrivage', 'Gnocchi']
     },
     {
         id: 107,
@@ -588,7 +588,7 @@ const PATES_DATA = [
         priceXL: 11.90,
         image: 'img/Pates/PATE_BOLOGNAISE.jpg',
         category: 'pates',
-        bases: ['Classique', 'Ricotta Épinard', 'Gnocchi']
+        bases: ['Classique', 'Farci selon arrivage', 'Gnocchi']
     }
 ];
 
@@ -802,9 +802,9 @@ const EXTRAS = {
         XL: { name: 'XL', price: 3.00 } // +3€ pour XL
     },
     patesBases: {
-        classique: { name: 'Classique', price: 2 },
-        ricottaEpinard: { name: 'Ricotta Épinard', price: 2 },
-        gnocchi: { name: 'Gnocchi', price: 2 }
+        classique: { name: 'Classique', priceL: 0, priceXL: 0 },
+        farciselonarrivage: { name: 'Farci selon arrivage', priceL: 1.50, priceXL: 2.00 },
+        gnocchi: { name: 'Gnocchi', priceL: 1.50, priceXL: 2.00 }
     },
     patesSupplements: {
         L: { name: 'Supplément L', price: 1.00 },
