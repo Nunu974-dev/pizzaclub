@@ -913,6 +913,50 @@ file_put_contents($logFile, $logEntry, FILE_APPEND);
 $jsonFile = $logDir . '/' . $orderData['orderNumber'] . '.json';
 file_put_contents($jsonFile, $jsonData);
 
+// ========================================
+// NOTIFICATION NTFY.SH (push téléphone)
+// ========================================
+try {
+    require_once __DIR__ . '/ntfy-config.php';
+
+    $customer   = $orderData['customer'];
+    $mode       = ($customer['deliveryMode'] === 'livraison') ? '🛵 LIVRAISON' : '🏃 À EMPORTER';
+    $total      = number_format($orderData['total'], 2, ',', ' ');
+    $orderNum   = $orderData['orderNumber'] ?? '?';
+    $firstName  = $customer['firstName'] ?? '';
+    $lastName   = $customer['lastName'] ?? '';
+    $phone      = $customer['phone'] ?? '';
+
+    // Résumé articles
+    $items = $orderData['items'] ?? [];
+    $itemLines = array_map(fn($i) => '• ' . $i['name'] . ' x' . $i['quantity'], $items);
+    $itemsText = implode("\n", array_slice($itemLines, 0, 5));
+    if (count($items) > 5) $itemsText .= "\n• ...";
+
+    $ntfyMessage = "📋 {$orderNum}\n👤 {$firstName} {$lastName} - {$phone}\n{$mode}\n\n{$itemsText}\n\n💰 TOTAL : {$total}€";
+
+    $ch = curl_init(NTFY_SERVER . '/' . NTFY_TOPIC);
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $ntfyMessage,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 5,
+        CURLOPT_HTTPHEADER     => [
+            'Title: 🍕 NOUVELLE COMMANDE !',
+            'Tags: bell,rotating_light',
+            'Priority: urgent',
+            'Content-Type: text/plain; charset=utf-8',
+        ],
+    ]);
+    $ntfyResponse = curl_exec($ch);
+    $ntfyCode     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    error_log("📱 ntfy.sh - Code: {$ntfyCode} - Response: {$ntfyResponse}");
+} catch (Exception $e) {
+    error_log("ntfy.sh EXCEPTION: " . $e->getMessage());
+}
+
 // Réponse - Succès si au moins l'email restaurant OU le SMS est envoyé
 $response = [
     'success' => true, // Toujours true car commande enregistrée

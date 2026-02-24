@@ -150,6 +150,13 @@ $debugFile = __DIR__ . '/debug-order.txt';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>📋 Commandes Pizza Club</title>
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#FF0000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="🍕 Commandes">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -548,127 +555,198 @@ $debugFile = __DIR__ . '/debug-order.txt';
         </div>
     </div>
 
-<!-- ====== NOTIFICATION SONORE - POLLING 5 MIN ====== -->
-<div id="notifBanner" style="
-    display:none; position:fixed; top:0; left:0; right:0; z-index:9999;
-    background:#ff0000; color:white; text-align:center;
-    padding:18px; font-size:22px; font-weight:bold;
-    box-shadow:0 4px 15px rgba(0,0,0,0.4); cursor:pointer;
-" onclick="dismissNotif()">
-    🍕 NOUVELLE COMMANDE ! Cliquez pour rafraîchir
+<!-- ====== ALARME COMMANDE + PWA ====== -->
+
+<!-- Overlay alarme plein écran -->
+<div id="alarmOverlay" style="
+    display:none; position:fixed; inset:0; z-index:99999;
+    background:#CC0000;
+    flex-direction:column; align-items:center; justify-content:center;
+    text-align:center;
+">
+    <div id="alarmIcon" style="font-size:100px; animation:pulse 0.6s infinite alternate;">🍕</div>
+    <div style="color:white; font-size:36px; font-weight:900; margin:20px 0; text-shadow:0 2px 8px rgba(0,0,0,0.4);" id="alarmTitle">
+        NOUVELLE COMMANDE !
+    </div>
+    <div id="alarmDetails" style="color:rgba(255,255,255,0.9); font-size:18px; margin-bottom:40px; max-width:320px; line-height:1.5;"></div>
+    <button onclick="confirmOrder()" style="
+        background:white; color:#CC0000;
+        border:none; padding:22px 60px;
+        font-size:24px; font-weight:900;
+        border-radius:16px;
+        box-shadow:0 8px 30px rgba(0,0,0,0.3);
+        cursor:pointer; letter-spacing:1px;
+        animation:scalePulse 0.8s infinite alternate;
+    ">✅ CONFIRMER</button>
+    <div style="color:rgba(255,255,255,0.6); font-size:13px; margin-top:20px;">
+        Appuyer pour arrêter la sonnerie
+    </div>
 </div>
+
+<style>
+    @keyframes pulse { from { transform:scale(1); } to { transform:scale(1.2); } }
+    @keyframes scalePulse { from { transform:scale(1); } to { transform:scale(1.06); box-shadow:0 12px 40px rgba(0,0,0,0.4); } }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+</style>
 
 <script>
 (function() {
-    // Stocker le dernier ID connu (commande la plus récente au chargement)
-    let lastKnownId = null;
-    let notifEnabled = false;
+    let lastKnownId   = null;
+    let alarmCtx      = null;
+    let alarmInterval = null;
+    let blinkInterval = null;
+    let alarmNodes    = [];
 
-    // Lire l'état initial au chargement
-    fetch('orders-log.php?action=check')
-        .then(r => r.json())
-        .then(data => { lastKnownId = data.lastId; });
+    // ── Enregistrement Service Worker (PWA) ─────────────────
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
 
-    // Son "ding" généré sans fichier audio
-    function playDing() {
+    // ── Générer son d'alarme (sonnerie urgente en boucle) ─────
+    function createAlarmSound() {
         try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            alarmCtx = new (window.AudioContext || window.webkitAudioContext)();
+        } catch(e) { return; }
 
-            function beep(freq, start, duration) {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.frequency.value = freq;
-                osc.type = 'sine';
-                gain.gain.setValueAtTime(0.8, ctx.currentTime + start);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration);
-                osc.start(ctx.currentTime + start);
-                osc.stop(ctx.currentTime + start + duration);
-            }
+        function note(freq, start, dur, vol) {
+            const o = alarmCtx.createOscillator();
+            const g = alarmCtx.createGain();
+            o.connect(g); g.connect(alarmCtx.destination);
+            o.type = 'square';
+            o.frequency.value = freq;
+            g.gain.setValueAtTime(vol || 0.4, alarmCtx.currentTime + start);
+            g.gain.exponentialRampToValueAtTime(0.001, alarmCtx.currentTime + start + dur);
+            o.start(alarmCtx.currentTime + start);
+            o.stop(alarmCtx.currentTime + start + dur);
+            return o;
+        }
 
-            beep(880, 0,    0.15);
-            beep(660, 0.18, 0.15);
-            beep(880, 0.36, 0.3);
-        } catch(e) {}
+        function playRing() {
+            // Sonnerie style téléphone urgente
+            note(1200, 0.00, 0.12);
+            note(900,  0.14, 0.12);
+            note(1200, 0.28, 0.12);
+            note(900,  0.42, 0.12);
+            note(1200, 0.56, 0.12);
+        }
+
+        playRing();
+        // Se répète toutes les 1.2s
+        alarmInterval = setInterval(playRing, 1200);
     }
 
-    // Vibration mobile
-    function vibrate() {
-        if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
+    function stopAlarmSound() {
+        clearInterval(alarmInterval);
+        alarmInterval = null;
+        if (alarmCtx) { try { alarmCtx.close(); } catch(e){} alarmCtx = null; }
     }
 
-    // Notification navigateur
-    function browserNotif() {
+    // ── Vibration mobile en boucle ────────────────────────────
+    let vibrateLoop = null;
+    function startVibration() {
+        if (!navigator.vibrate) return;
+        navigator.vibrate([500, 200, 500, 200, 500]);
+        vibrateLoop = setInterval(() => navigator.vibrate([500, 200, 500, 200, 500]), 2500);
+    }
+    function stopVibration() {
+        clearInterval(vibrateLoop);
+        if (navigator.vibrate) navigator.vibrate(0);
+    }
+
+    // ── Afficher l'alarme ─────────────────────────────────────
+    function showAlarm(orderData) {
+        const overlay  = document.getElementById('alarmOverlay');
+        const details  = document.getElementById('alarmDetails');
+
+        // Remplir les détails si disponibles
+        if (orderData) {
+            details.textContent = orderData;
+        }
+
+        overlay.style.display = 'flex';
+
+        // Clignotement titre onglet
+        blinkInterval = setInterval(() => {
+            document.title = document.title.startsWith('🔔')
+                ? '📋 Commandes Pizza Club'
+                : '🔔 NOUVELLE COMMANDE !';
+        }, 700);
+
+        createAlarmSound();
+        startVibration();
+
+        // Notification navigateur persistante
         if (Notification.permission === 'granted') {
-            new Notification('🍕 Nouvelle commande !', {
-                body: 'Une nouvelle commande vient d\'arriver sur Pizza Club',
-                icon: 'img/favicon.ico',
-                requireInteraction: true
+            new Notification('🍕 NOUVELLE COMMANDE !', {
+                body: orderData || 'Une commande vient d\'arriver !',
+                requireInteraction: true,
+                icon: 'img/favicon.ico'
             });
         }
     }
 
-    function showBanner() {
-        document.getElementById('notifBanner').style.display = 'block';
-        // Faire clignoter le titre de l'onglet
-        let blink = setInterval(() => {
-            document.title = document.title === '📋 Commandes Pizza Club'
-                ? '🔔 NOUVELLE COMMANDE !'
-                : '📋 Commandes Pizza Club';
-        }, 800);
-        window.blinkInterval = blink;
-    }
-
-    window.dismissNotif = function() {
-        document.getElementById('notifBanner').style.display = 'none';
-        clearInterval(window.blinkInterval);
+    // ── Confirmer réception ───────────────────────────────────
+    window.confirmOrder = function() {
+        document.getElementById('alarmOverlay').style.display = 'none';
+        stopAlarmSound();
+        stopVibration();
+        clearInterval(blinkInterval);
         document.title = '📋 Commandes Pizza Club';
         location.reload();
     };
 
-    // Polling toutes les 5 minutes
+    // ── Init : lire le dernier ID connu ───────────────────────
+    fetch('orders-log.php?action=check')
+        .then(r => r.json())
+        .then(d => { lastKnownId = d.lastId; })
+        .catch(() => {});
+
+    // ── Polling toutes les 5 minutes ──────────────────────────
     function poll() {
         fetch('orders-log.php?action=check')
             .then(r => r.json())
             .then(data => {
                 if (lastKnownId !== null && data.lastId !== lastKnownId) {
-                    // 🔔 Nouvelle commande détectée !
-                    playDing();
-                    vibrate();
-                    browserNotif();
-                    showBanner();
                     lastKnownId = data.lastId;
+                    showAlarm('Nouvelle commande reçue');
                 }
             })
-            .catch(() => {}); // Silencieux si erreur réseau
+            .catch(() => {});
     }
 
-    setInterval(poll, 5 * 60 * 1000); // toutes les 5 minutes
+    setInterval(poll, 5 * 60 * 1000);
 
-    // Demander permission notification navigateur au premier clic
-    document.addEventListener('click', function askPerm() {
-        if (Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
-        document.removeEventListener('click', askPerm);
-    }, { once: true });
+    // ── Bouton installer comme app (PWA) ─────────────────────
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const installBtn = document.createElement('button');
+        installBtn.innerHTML = '📲 Installer l\'app';
+        installBtn.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#FF6600;color:white;border:none;padding:12px 18px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.3);z-index:1000;';
+        installBtn.onclick = () => {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(() => installBtn.remove());
+        };
+        document.body.appendChild(installBtn);
+    });
 
-    // Bouton activer dans le header
-    const btn = document.createElement('button');
-    btn.innerHTML = '🔔 Activer les alertes';
-    btn.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#ff0000;color:white;border:none;padding:12px 18px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.3);z-index:1000;';
-    btn.onclick = function() {
+    // ── Bouton activer alertes ────────────────────────────────
+    const notifBtn = document.createElement('button');
+    notifBtn.innerHTML = '🔔 Activer les alertes';
+    notifBtn.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#ff0000;color:white;border:none;padding:12px 18px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.3);z-index:1000;';
+    notifBtn.onclick = () => {
         Notification.requestPermission().then(p => {
             if (p === 'granted') {
-                btn.innerHTML = '✅ Alertes activées';
-                btn.style.background = '#4CAF50';
-                playDing(); // Test son
-                setTimeout(() => btn.remove(), 3000);
+                notifBtn.innerHTML = '✅ Alertes activées';
+                notifBtn.style.background = '#4CAF50';
+                // Test son
+                showAlarm('🔔 Test sonnerie - Appuie CONFIRMER pour valider');
+                setTimeout(() => { if (Notification.permission === 'granted') notifBtn.remove(); }, 4000);
             }
         });
     };
-    document.body.appendChild(btn);
+    if (Notification.permission !== 'granted') document.body.appendChild(notifBtn);
 })();
 </script>
 

@@ -1,0 +1,20 @@
+{
+  "name": "Pizza Club - Commandes",
+  "short_name": "🍕 Commandes",
+  "description": "Dashboard commandes Pizza Club La Réunion",
+  "start_url": "/orders-log.php",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FF0000",
+  "theme_color": "#FF0000",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍕</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
