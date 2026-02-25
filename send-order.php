@@ -919,29 +919,14 @@ file_put_contents($jsonFile, $jsonData);
 // INCRÉMENTER usedCount si code promo utilisé
 // ========================================
 if (!empty($orderData['promoCode'])) {
-    $promoPayload = json_encode(['action' => 'use', 'code' => $orderData['promoCode']]);
-    $chPromo = curl_init('http://localhost/promo-manager.php');
-    if (!$chPromo) {
-        // Fallback : écriture directe dans le JSON
-        $promoFile = __DIR__ . '/promo-codes.json';
-        if (file_exists($promoFile)) {
-            $promoData = json_decode(file_get_contents($promoFile), true);
-            $promoCode = strtoupper($orderData['promoCode']);
-            foreach ($promoData['codes'] as &$c) {
-                if ($c['code'] === $promoCode) { $c['usedCount']++; break; }
-            }
-            file_put_contents($promoFile, json_encode($promoData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    $promoFile = __DIR__ . '/promo-codes.json';
+    if (file_exists($promoFile)) {
+        $promoData = json_decode(file_get_contents($promoFile), true);
+        $promoCode = strtoupper($orderData['promoCode']);
+        foreach ($promoData['codes'] as &$c) {
+            if ($c['code'] === $promoCode) { $c['usedCount']++; break; }
         }
-    } else {
-        curl_setopt_array($chPromo, [
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => $promoPayload,
-            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 3,
-        ]);
-        curl_exec($chPromo);
-        curl_close($chPromo);
+        file_put_contents($promoFile, json_encode($promoData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 }
 

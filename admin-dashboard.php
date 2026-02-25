@@ -692,7 +692,13 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
 
                 <!-- Onglet 2: Commandes Clients -->
                 <div id="tab-orders" class="tab-content">
-                    <iframe src="orders-log.php"></iframe>
+                    <div style="padding:8px 12px;background:#f5f5f5;border-bottom:1px solid #ddd;display:flex;align-items:center;gap:10px;">
+                        <button onclick="refreshOrdersIframe()" style="background:#FF6600;color:white;border:none;padding:7px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:bold;">
+                            <i class="fas fa-sync-alt"></i> Rafraîchir
+                        </button>
+                        <span id="orders-last-refresh" style="font-size:12px;color:#888;"></span>
+                    </div>
+                    <iframe id="orders-iframe" src="orders-log.php" style="width:100%;height:calc(100% - 42px);border:none;"></iframe>
                 </div>
 
                 <!-- Onglet 3: Indisponibilités -->
@@ -938,6 +944,16 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                 const tabEl = document.getElementById('tab-' + tabName);
                 if (tabEl) tabEl.classList.add('active');
                 if (tabName === 'promos') loadPromos();
+                if (tabName === 'orders') refreshOrdersIframe();
+            }
+
+            function refreshOrdersIframe() {
+                const iframe = document.getElementById('orders-iframe');
+                if (iframe) {
+                    iframe.src = 'orders-log.php?t=' + Date.now();
+                    const lbl = document.getElementById('orders-last-refresh');
+                    if (lbl) lbl.textContent = 'Mis à jour : ' + new Date().toLocaleTimeString('fr-FR');
+                }
             }
 
             // === ACCORDÉONS INVENTAIRE & TEMPÉRATURES ===
