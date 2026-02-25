@@ -1312,7 +1312,8 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
             if(lastKnownId!==null && data.lastId!==lastKnownId){ lastKnownId=data.lastId; showAlarm(); }
         }).catch(()=>{});
     }
-    setInterval(poll, 5*60*1000);
+    poll(); // vérification immédiate au chargement
+    setInterval(poll, 30*1000); // toutes les 30 secondes
 
     // Bouton installer app (toujours visible)
     let deferredPrompt=null;

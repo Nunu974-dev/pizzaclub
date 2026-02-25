@@ -714,7 +714,8 @@ $debugFile = __DIR__ . '/debug-order.txt';
             .catch(() => {});
     }
 
-    setInterval(poll, 5 * 60 * 1000);
+    poll(); // vérification immédiate au chargement
+    setInterval(poll, 30 * 1000); // toutes les 30 secondes
 
     // ── Bouton installer comme app (PWA) ─────────────────────
     let deferredPrompt = null;
