@@ -155,6 +155,8 @@ if (isset($orderData['scheduledDate']) && !empty($orderData['scheduledDate'])) {
 
 // Si c'est une commande "maintenant", vérifier si le restaurant est fermé
 if ($isOrderNow) {
+    // Passer le mode de livraison pour calculer le bon délai (45min livraison, 30min emporter)
+    $GLOBALS['_deliveryMode'] = $orderData['customer']['deliveryMode'] ?? 'livraison';
     $closureStatus = isRestaurantClosed();
     if ($closureStatus['isClosed']) {
         http_response_code(403);

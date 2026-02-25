@@ -153,7 +153,7 @@ function isRestaurantClosed() {
     // ========================================
     
     // Récupérer le mode de livraison depuis la requête (si disponible)
-    $deliveryMode = $_GET['deliveryMode'] ?? $_POST['deliveryMode'] ?? 'livraison';
+    $deliveryMode = $_GET['deliveryMode'] ?? $_POST['deliveryMode'] ?? $GLOBALS['_deliveryMode'] ?? 'livraison';
     $isDelivery = ($deliveryMode === 'livraison');
     
     // Délais avant fermeture
