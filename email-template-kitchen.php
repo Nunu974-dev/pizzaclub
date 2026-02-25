@@ -343,6 +343,9 @@ function getKitchenEmailTemplate($orderData) {
                 <?php if ($orderData['customer']['deliveryMode'] === 'livraison'): ?>
                     <p style="margin: 5px 0; font-size: 16px;">Frais de livraison : <?= number_format($orderData['deliveryFee'], 2) ?> €</p>
                 <?php endif; ?>
+                <?php if (!empty($orderData['promoCode']) && !empty($orderData['discount']) && $orderData['discount'] > 0): ?>
+                    <p style="margin: 5px 0; font-size: 16px; color: #ffe082;">🏷 Code promo (<?= htmlspecialchars($orderData['promoCode']) ?>) : -<?= number_format($orderData['discount'], 2) ?> €</p>
+                <?php endif; ?>
                 <h2 style="margin: 10px 0 0 0;">TOTAL : <?= number_format($orderData['total'], 2) ?> €</h2>
             </div>
             

@@ -511,6 +511,12 @@ $debugFile = __DIR__ . '/debug-order.txt';
                             <?php endforeach; ?>
                         </div>
                         
+                        <?php if (!empty($order['promoCode']) && !empty($order['discount']) && $order['discount'] > 0): ?>
+                        <div style="display:flex;justify-content:space-between;padding:6px 12px;background:#fff3cd;border-radius:6px;margin-bottom:6px;font-size:14px;color:#856404;">
+                            <span>🏷 Code promo <strong><?= htmlspecialchars($order['promoCode']) ?></strong></span>
+                            <span>-<?= number_format($order['discount'], 2, ',', ' ') ?>€</span>
+                        </div>
+                        <?php endif; ?>
                         <div class="total">
                             TOTAL: <?= number_format($order['total'], 2, ',', ' ') ?>€
                         </div>

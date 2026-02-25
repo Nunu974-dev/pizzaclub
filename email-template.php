@@ -342,6 +342,12 @@ function getClientEmailTemplate($orderData) {
                         <span>Livraison :</span>
                         <span><?= number_format($orderData['deliveryFee'], 2) ?>€</span>
                     </div>
+                    <?php if (!empty($orderData['promoCode']) && !empty($orderData['discount']) && $orderData['discount'] > 0): ?>
+                    <div style="display: flex; justify-content: space-between; padding: 5px 0; color: #2e7d32; font-weight: bold;">
+                        <span>🏷 Code promo (<?= htmlspecialchars($orderData['promoCode']) ?>) :</span>
+                        <span>-<?= number_format($orderData['discount'], 2) ?>€</span>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 
                 <div class="total">
