@@ -679,6 +679,9 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                 <button class="tab-btn" onclick="switchTab('management', this)">
                     <i class="fas fa-cogs"></i> Gestion Restaurant
                 </button>
+                <button class="tab-btn" onclick="switchTab('promos', this)">
+                    <i class="fas fa-tag"></i> Codes Promo
+                </button>
             </div>
 
             <div class="content-area">
@@ -846,6 +849,72 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
                         </div>
                     </div>
                 </div>
+
+                <!-- Onglet 5: Codes Promo -->
+                <div id="tab-promos" class="tab-content">
+                    <div class="local-content">
+                        <h2 style="margin-bottom:24px;color:#333;"><i class="fas fa-tag"></i> Gestion des Codes Promo</h2>
+
+                        <!-- Formulaire création -->
+                        <div class="section-card" style="margin-bottom:24px;padding:24px;">
+                            <h3 style="margin-top:0;margin-bottom:20px;color:#FF6600;">➕ Créer un code promo</h3>
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+                                <div>
+                                    <label style="display:block;font-weight:600;margin-bottom:6px;">Code *</label>
+                                    <input id="pc-code" type="text" placeholder="ex: PIZZA10" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;text-transform:uppercase;box-sizing:border-box;">
+                                </div>
+                                <div>
+                                    <label style="display:block;font-weight:600;margin-bottom:6px;">Description</label>
+                                    <input id="pc-desc" type="text" placeholder="ex: 10% pour ouverture" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                                </div>
+                                <div>
+                                    <label style="display:block;font-weight:600;margin-bottom:6px;">Type de remise *</label>
+                                    <select id="pc-type" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;">
+                                        <option value="euros">Montant fixe (€)</option>
+                                        <option value="percent">Pourcentage (%)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display:block;font-weight:600;margin-bottom:6px;">Valeur *</label>
+                                    <input id="pc-value" type="number" min="0" step="0.01" placeholder="ex: 5" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                                </div>
+                                <div>
+                                    <label style="display:block;font-weight:600;margin-bottom:6px;">Minimum commande (€)</label>
+                                    <input id="pc-min" type="number" min="0" step="0.01" value="0" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                                </div>
+                                <div>
+                                    <label style="display:block;font-weight:600;margin-bottom:6px;">Date début</label>
+                                    <input id="pc-start" type="date" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                                </div>
+                                <div>
+                                    <label style="display:block;font-weight:600;margin-bottom:6px;">Date fin</label>
+                                    <input id="pc-end" type="date" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                                </div>
+                                <div>
+                                    <label style="display:block;font-weight:600;margin-bottom:6px;">Utilisations limitées ?</label>
+                                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:6px;">
+                                        <input id="pc-limited" type="checkbox" onchange="document.getElementById('pc-max-wrap').style.display=this.checked?'block':'none'" style="width:18px;height:18px;cursor:pointer;">
+                                        <span>Oui, limiter à :</span>
+                                    </label>
+                                    <div id="pc-max-wrap" style="display:none;margin-top:8px;">
+                                        <input id="pc-max" type="number" min="1" value="50" placeholder="ex: 50" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                                    </div>
+                                </div>
+                            </div>
+                            <button onclick="createPromo()" style="margin-top:20px;background:#FF6600;color:white;border:none;padding:12px 32px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;">
+                                <i class="fas fa-plus"></i> Créer le code
+                            </button>
+                            <span id="pc-msg" style="margin-left:16px;font-weight:600;"></span>
+                        </div>
+
+                        <!-- Liste des codes -->
+                        <div class="section-card" style="padding:24px;">
+                            <h3 style="margin-top:0;margin-bottom:20px;color:#333;">📋 Codes existants</h3>
+                            <div id="promos-table-wrap">Chargement...</div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -865,9 +934,10 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
             function switchTab(tabName, button) {
                 document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
                 document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-                
-                button.classList.add('active');
-                document.getElementById('tab-' + tabName).classList.add('active');
+                if (button) button.classList.add('active');
+                const tabEl = document.getElementById('tab-' + tabName);
+                if (tabEl) tabEl.classList.add('active');
+                if (tabName === 'promos') loadPromos();
             }
 
             // === ACCORDÉONS INVENTAIRE & TEMPÉRATURES ===
@@ -1184,6 +1254,100 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
             document.addEventListener('DOMContentLoaded', function() {
                 // L'inventaire et les températures se chargent seulement quand on clique sur les boutons
             });
+
+            // ── CODES PROMO ────────────────────────────────────────
+            function loadPromos() {
+                fetch('promo-manager.php')
+                    .then(r => r.json())
+                    .then(data => renderPromosTable(data.codes || []))
+                    .catch(() => { document.getElementById('promos-table-wrap').innerHTML = '<p style="color:red">Erreur de chargement</p>'; });
+            }
+
+            function renderPromosTable(codes) {
+                const wrap = document.getElementById('promos-table-wrap');
+                if (!codes.length) { wrap.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">Aucun code promo créé.</p>'; return; }
+                let html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px;">';
+                html += '<thead><tr style="background:#f5f5f5;">'
+                    + '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #ddd;">Code</th>'
+                    + '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #ddd;">Description</th>'
+                    + '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #ddd;">Remise</th>'
+                    + '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #ddd;">Min. cmd</th>'
+                    + '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #ddd;">Période</th>'
+                    + '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #ddd;">Utilisations</th>'
+                    + '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #ddd;">Statut</th>'
+                    + '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #ddd;">Actions</th>'
+                    + '</tr></thead><tbody>';
+                codes.forEach((c, i) => {
+                    const bg = i % 2 === 0 ? '#fff' : '#fafafa';
+                    const remise = c.type === 'percent' ? c.value + '%' : c.value.toFixed(2) + '€';
+                    const periode = (!c.startDate && !c.endDate) ? 'Illimitée' : (c.startDate||'…') + ' → ' + (c.endDate||'…');
+                    const uses = c.limitedUses ? `${c.usedCount} / ${c.maxUses}` : `${c.usedCount} / ∞`;
+                    const actif = c.active ? '<span style="background:#4CAF50;color:white;padding:3px 10px;border-radius:12px;font-size:12px;">Actif</span>'
+                                           : '<span style="background:#999;color:white;padding:3px 10px;border-radius:12px;font-size:12px;">Inactif</span>';
+                    html += `<tr style="background:${bg};border-bottom:1px solid #eee;">
+                        <td style="padding:10px 12px;font-weight:700;color:#FF6600;">${c.code}</td>
+                        <td style="padding:10px 12px;color:#555;">${c.description||'—'}</td>
+                        <td style="padding:10px 12px;text-align:center;font-weight:600;">${remise}</td>
+                        <td style="padding:10px 12px;text-align:center;">${c.minOrder>0?c.minOrder.toFixed(2)+'€':'Aucun'}</td>
+                        <td style="padding:10px 12px;text-align:center;font-size:12px;">${periode}</td>
+                        <td style="padding:10px 12px;text-align:center;">${uses}</td>
+                        <td style="padding:10px 12px;text-align:center;">${actif}</td>
+                        <td style="padding:10px 12px;text-align:center;">
+                            <button onclick="togglePromo('${c.id}')" title="${c.active?'Désactiver':'Activer'}"
+                                style="background:${c.active?'#FF9800':'#4CAF50'};color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px;">
+                                ${c.active?'⏸ Off':'▶ On'}
+                            </button>
+                            <button onclick="deletePromo('${c.id}','${c.code}')"
+                                style="background:#f44336;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">
+                                🗑
+                            </button>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table></div>';
+                wrap.innerHTML = html;
+            }
+
+            function createPromo() {
+                const code = document.getElementById('pc-code').value.trim().toUpperCase();
+                const type = document.getElementById('pc-type').value;
+                const value = parseFloat(document.getElementById('pc-value').value);
+                const msg = document.getElementById('pc-msg');
+                if (!code || isNaN(value) || value <= 0) { msg.style.color='red'; msg.textContent='Code et valeur requis.'; return; }
+                const payload = {
+                    action: 'create', code, type, value,
+                    description: document.getElementById('pc-desc').value.trim(),
+                    minOrder: parseFloat(document.getElementById('pc-min').value)||0,
+                    limitedUses: document.getElementById('pc-limited').checked,
+                    maxUses: parseInt(document.getElementById('pc-max').value)||0,
+                    startDate: document.getElementById('pc-start').value||null,
+                    endDate: document.getElementById('pc-end').value||null,
+                };
+                fetch('promo-manager.php', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+                    .then(r=>r.json())
+                    .then(data => {
+                        if (data.success) {
+                            msg.style.color='green'; msg.textContent='✅ Code créé !';
+                            ['pc-code','pc-desc','pc-value','pc-min','pc-start','pc-end'].forEach(id=>document.getElementById(id).value='');
+                            document.getElementById('pc-limited').checked=false;
+                            document.getElementById('pc-max-wrap').style.display='none';
+                            setTimeout(()=>msg.textContent='',3000);
+                            loadPromos();
+                        } else { msg.style.color='red'; msg.textContent='❌ '+data.error; }
+                    })
+                    .catch(()=>{ msg.style.color='red'; msg.textContent='❌ Erreur réseau'; });
+            }
+
+            function togglePromo(id) {
+                fetch('promo-manager.php', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'toggle',id})})
+                    .then(r=>r.json()).then(()=>loadPromos());
+            }
+
+            function deletePromo(id, code) {
+                if (!confirm(`Supprimer le code "${code}" ?`)) return;
+                fetch('promo-manager.php', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',id})})
+                    .then(r=>r.json()).then(()=>loadPromos());
+            }
 
             // === GESTION DES ARCHIVES ===
             function showArchives() {

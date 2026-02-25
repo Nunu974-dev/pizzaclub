@@ -17,6 +17,7 @@ let pendingCartAction = null; // Action en attente après sélection de l'heure
 // Variables pour le code promo
 let promoCodeApplied = null; // Code promo actuellement appliqué
 let promoDiscount = 0; // Montant de la réduction
+let promoData = null; // Données complètes du code (type, value, etc.)
 
 // ========================================
 // UTILITAIRES MODALS
@@ -965,12 +966,15 @@ function clearCart() {
     scheduledDeliveryDate = null;
     promoCodeApplied = null;
     promoDiscount = 0;
+    promoData = null;
     localStorage.removeItem('promoApplied');
     localStorage.removeItem('deliveryTimeSet');
     localStorage.removeItem('deliveryTimeMode');
     localStorage.removeItem('scheduledDeliveryHour');
     localStorage.removeItem('scheduledDeliveryDate');
     localStorage.removeItem('promoCodeApplied');
+    localStorage.removeItem('promoDiscount');
+    localStorage.removeItem('promoData');
     
     // Réactiver le champ de code promo
     const input = document.getElementById('promoCodeInput');
@@ -1204,14 +1208,22 @@ function updateCartTotals() {
     
     // Appliquer la réduction du code promo si valide
     let discount = 0;
-    if (promoCodeApplied === 'LIV10' && subtotal >= 20) {
-        discount = 2;
-        promoDiscount = 2;
-        document.getElementById('promoDiscountRow').style.display = 'flex';
-        document.getElementById('promoDiscountAmount').textContent = `-${discount.toFixed(2)}€`;
+    if (promoData && promoCodeApplied) {
+        if (promoData.type === 'percent') {
+            discount = Math.round(subtotal * promoData.value / 100 * 100) / 100;
+        } else {
+            discount = promoData.value;
+        }
+        discount = Math.min(discount, subtotal);
+        promoDiscount = discount;
+        const row = document.getElementById('promoDiscountRow');
+        const amt = document.getElementById('promoDiscountAmount');
+        if (row) row.style.display = 'flex';
+        if (amt) amt.textContent = `-${discount.toFixed(2)}€`;
     } else {
         promoDiscount = 0;
-        document.getElementById('promoDiscountRow').style.display = 'none';
+        const row = document.getElementById('promoDiscountRow');
+        if (row) row.style.display = 'none';
     }
     
     const total = subtotal + deliveryFee - discount;
@@ -1324,43 +1336,36 @@ function isInDeliveryZone(postalCode, address = '', city = '') {
 // ========================================
 // CODE PROMO
 // ========================================
-function applyPromoCode() {
+async function applyPromoCode() {
     const input = document.getElementById('promoCodeInput');
     const code = input.value.trim().toUpperCase();
-    
-    if (!code) {
-        showPromoMessage('Veuillez entrer un code promo.', 'error');
-        return;
-    }
-    
+    if (!code) { showPromoMessage('Veuillez entrer un code promo.', 'error'); return; }
     const subtotal = cart.reduce((sum, item) => sum + item.totalPrice, 0);
-    
-    // Vérifier si le code est valide
-    if (code === 'LIV10') {
-        if (subtotal < 20) {
-            showPromoMessage('Ce code nécessite un minimum de 20€ de commande.', 'error');
-            return;
+    try {
+        const res = await fetch('validate-promo.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, subtotal })
+        });
+        const data = await res.json();
+        if (data.valid) {
+            promoCodeApplied = data.code;
+            promoDiscount = data.discount;
+            promoData = data;
+            localStorage.setItem('promoCodeApplied', promoCodeApplied);
+            localStorage.setItem('promoDiscount', promoDiscount);
+            localStorage.setItem('promoData', JSON.stringify(promoData));
+            input.value = '';
+            input.disabled = true;
+            const btnApply = document.getElementById('btnApplyPromo');
+            if (btnApply) btnApply.disabled = true;
+            showPromoMessage(data.message, 'success');
+            updateCartTotals();
+        } else {
+            showPromoMessage(data.message || 'Code promo invalide.', 'error');
         }
-        
-        promoCodeApplied = 'LIV10';
-        promoDiscount = 2;
-        localStorage.setItem('promoCodeApplied', promoCodeApplied);
-        localStorage.setItem('promoDiscount', promoDiscount);
-        
-        input.value = '';
-        input.disabled = true;
-        
-        const btnApply = document.getElementById('btnApplyPromo');
-        if (btnApply) {
-            btnApply.disabled = true;
-        }
-        
-        showPromoMessage('Code promo appliqué ! -2€ sur votre commande', 'success');
-        updateCartTotals();
-        
-        console.log('Code promo appliqué:', promoCodeApplied, 'Réduction:', promoDiscount);
-    } else {
-        showPromoMessage('Code promo invalide.', 'error');
+    } catch(e) {
+        showPromoMessage('Erreur lors de la vérification du code.', 'error');
     }
 }
 
@@ -1380,8 +1385,10 @@ function showPromoMessage(message, type) {
 function removePromoCode() {
     promoCodeApplied = null;
     promoDiscount = 0;
+    promoData = null;
     localStorage.removeItem('promoCodeApplied');
     localStorage.removeItem('promoDiscount');
+    localStorage.removeItem('promoData');
     
     const input = document.getElementById('promoCodeInput');
     const btnApply = document.getElementById('btnApplyPromo');
@@ -3961,12 +3968,18 @@ function displayOrderSummary() {
     
     // Appliquer le code promo
     let discount = 0;
-    if (promoCodeApplied === 'LIV10' && subtotal >= 20) {
-        discount = 2;
-        document.getElementById('summaryPromoDiscountRow').style.display = 'flex';
-        document.getElementById('summaryPromoDiscountAmount').textContent = `-${discount.toFixed(2)}€`;
+    if (promoData && promoCodeApplied) {
+        discount = promoData.type === 'percent'
+            ? Math.round(subtotal * promoData.value / 100 * 100) / 100
+            : promoData.value;
+        discount = Math.min(discount, subtotal);
+        const sRow = document.getElementById('summaryPromoDiscountRow');
+        const sAmt = document.getElementById('summaryPromoDiscountAmount');
+        if (sRow) sRow.style.display = 'flex';
+        if (sAmt) sAmt.textContent = `-${discount.toFixed(2)}€`;
     } else {
-        document.getElementById('summaryPromoDiscountRow').style.display = 'none';
+        const sRow = document.getElementById('summaryPromoDiscountRow');
+        if (sRow) sRow.style.display = 'none';
     }
     
     const total = subtotal + deliveryFee - discount;
@@ -3998,7 +4011,13 @@ async function submitOrder() {
         // Préparer les données de la commande
         const subtotalAmount = cart.reduce((sum, item) => sum + item.totalPrice, 0);
         const deliveryFeeAmount = getDeliveryFee(subtotalAmount);
-        const discountAmount = (promoCodeApplied === 'LIV10' && subtotalAmount >= 20) ? 2 : 0;
+        let discountAmount = 0;
+        if (promoData && promoCodeApplied) {
+            discountAmount = promoData.type === 'percent'
+                ? Math.round(subtotalAmount * promoData.value / 100 * 100) / 100
+                : promoData.value;
+            discountAmount = Math.min(discountAmount, subtotalAmount);
+        }
         const totalAmount = subtotalAmount + deliveryFeeAmount - discountAmount;
         
         const orderData = {
@@ -4472,10 +4491,12 @@ function loadCartFromStorage() {
     // Charger le code promo
     const savedPromoCode = localStorage.getItem('promoCodeApplied');
     const savedPromoDiscount = localStorage.getItem('promoDiscount');
+    const savedPromoData = localStorage.getItem('promoData');
     
     if (savedPromoCode) {
         promoCodeApplied = savedPromoCode;
-        promoDiscount = savedPromoDiscount ? parseFloat(savedPromoDiscount) : 2;
+        promoDiscount = savedPromoDiscount ? parseFloat(savedPromoDiscount) : 0;
+        promoData = savedPromoData ? JSON.parse(savedPromoData) : null;
         
         const input = document.getElementById('promoCodeInput');
         const btn = document.getElementById('btnApplyPromo');
@@ -4484,7 +4505,8 @@ function loadCartFromStorage() {
             input.value = '';
             input.disabled = true;
             btn.disabled = true;
-            showPromoMessage('Code promo appliqué ! -2€ sur votre commande', 'success');
+            const label = promoData ? promoData.label : `-${promoDiscount.toFixed(2)}€`;
+            showPromoMessage(`Code promo appliqué ! ${label} sur votre commande`, 'success');
         }
         
         // Mettre à jour les totaux pour afficher la réduction
