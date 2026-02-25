@@ -7,6 +7,7 @@ twilio-config.php
 whatsapp-config.php
 brevo-config.php
 .env
+.env.ftp
 orders.json
 debug-order.txt
 backups/
@@ -15,8 +16,13 @@ backups/
 inventory.json
 temperatures.json
 unavailability.json
+promo-codes.json
 commandes-fournisseurs.json
 cookies.txt
 server-version.html
 admin-dashboard-v2.php
 admin-dashboard-backup.php
+
+# FTP Deploy - credentials et script local
+.env.ftp
+ftp-deploy.sh
