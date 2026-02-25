@@ -718,18 +718,16 @@ $debugFile = __DIR__ . '/debug-order.txt';
 
     // ── Bouton installer comme app (PWA) ─────────────────────
     let deferredPrompt = null;
-    window.addEventListener('beforeinstallprompt', e => {
-        e.preventDefault();
-        deferredPrompt = e;
-        const installBtn = document.createElement('button');
-        installBtn.innerHTML = '📲 Installer l\'app';
-        installBtn.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#FF6600;color:white;border:none;padding:12px 18px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.3);z-index:1000;';
-        installBtn.onclick = () => {
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then(() => installBtn.remove());
-        };
-        document.body.appendChild(installBtn);
-    });
+    const installBtn = document.createElement('button');
+    installBtn.innerHTML = '📲 Installer l\'app';
+    installBtn.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#FF6600;color:white;border:none;padding:12px 18px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.3);z-index:1000;';
+    installBtn.onclick = () => {
+        if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => installBtn.remove()); }
+        else { alert('Pour installer :\n\n🟠 Chrome/Edge : Menu ⋮ → "Installer l\'application"\n🦊 Firefox : Menu ☰ → "Installer le site"\n📱 Android : Menu ⋮ → "Ajouter à l\'écran d\'accueil"'); }
+    };
+    document.body.appendChild(installBtn);
+    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; });
+    window.addEventListener('appinstalled', () => installBtn.remove());
 
     // ── Bouton activer alertes ────────────────────────────────
     const notifBtn = document.createElement('button');
