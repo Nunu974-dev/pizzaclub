@@ -478,7 +478,7 @@ $debugFile = __DIR__ . '/debug-order.txt';
                                             }
                                             
                                             // FORMULES avec pâtes/salade
-                                            if (!empty($custom['mainItem'])) {
+                                            if (!empty($custom['mainItem']) && is_array($custom['mainItem'])) {
                                                 $mainType = $custom['mainItem']['type'] === 'pate' ? '🍝' : '🥗';
                                                 echo $mainType . " " . htmlspecialchars($custom['mainItem']['name']) . "<br>";
                                                 if (!empty($custom['mainItem']['customization']['size'])) {
@@ -487,8 +487,14 @@ $debugFile = __DIR__ . '/debug-order.txt';
                                                     if ($sizeLabel === 'XL') $sizeLabel = 'XL';
                                                     echo "&nbsp;&nbsp;↳ Taille: " . htmlspecialchars($sizeLabel) . "<br>";
                                                 }
+                                                if (!empty($custom['mainItem']['customization']['base'])) {
+                                                    echo "&nbsp;&nbsp;↳ Base: " . htmlspecialchars($custom['mainItem']['customization']['base']) . "<br>";
+                                                }
+                                                if (!empty($custom['mainItem']['customization']['options'])) {
+                                                    echo "&nbsp;&nbsp;↳ Options: " . htmlspecialchars(implode(', ', $custom['mainItem']['customization']['options'])) . "<br>";
+                                                }
                                                 if (!empty($custom['mainItem']['customization']['supplements'])) {
-                                                    echo "&nbsp;&nbsp;↳ + " . count($custom['mainItem']['customization']['supplements']) . " supplément(s)<br>";
+                                                    echo "&nbsp;&nbsp;↳ + " . htmlspecialchars(implode(', ', $custom['mainItem']['customization']['supplements'])) . "<br>";
                                                 }
                                             }
                                             

@@ -157,6 +157,69 @@ function getKitchenEmailTemplate($orderData) {
                                     <?php endif; ?>
                                 <?php endif; ?>
                                 
+                                <?php if (isset($custom['mainItem']) && is_array($custom['mainItem'])): ?>
+                                    <?php $mainItem = $custom['mainItem']; ?>
+                                    <?php if ($mainItem['type'] === 'pate'): ?>
+                                        <div class="item-detail">
+                                            <span class="item-detail-label">🍝 Pâte :</span>
+                                            <span class="item-detail-value"><?= htmlspecialchars($mainItem['name']) ?></span>
+                                        </div>
+                                        <?php if (!empty($mainItem['customization']['size'])): ?>
+                                            <div class="item-detail">
+                                                <span class="item-detail-label">📏 Taille :</span>
+                                                <span class="item-detail-value"><?= $mainItem['customization']['size'] === 'XL' ? 'XL' : 'Large' ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($mainItem['customization']['base'])): ?>
+                                            <div class="item-detail">
+                                                <span class="item-detail-label">🍝 Base :</span>
+                                                <span class="item-detail-value"><?= htmlspecialchars($mainItem['customization']['base']) ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($mainItem['customization']['supplements'])): ?>
+                                            <div class="item-detail">
+                                                <span class="item-detail-label">➕ Suppléments :</span>
+                                                <span class="item-detail-value"><?= htmlspecialchars(implode(', ', $mainItem['customization']['supplements'])) ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <div class="item-detail">
+                                            <span class="item-detail-label">🥗 Salade :</span>
+                                            <span class="item-detail-value"><?= htmlspecialchars($mainItem['name']) ?></span>
+                                        </div>
+                                        <?php if (!empty($mainItem['customization']['base'])): ?>
+                                            <div class="item-detail">
+                                                <span class="item-detail-label">🥗 Base :</span>
+                                                <span class="item-detail-value"><?= htmlspecialchars($mainItem['customization']['base']) ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($mainItem['customization']['options'])): ?>
+                                            <div class="item-detail">
+                                                <span class="item-detail-label">⚙️ Options :</span>
+                                                <span class="item-detail-value"><?= htmlspecialchars(implode(', ', $mainItem['customization']['options'])) ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($mainItem['customization']['supplements'])): ?>
+                                            <div class="item-detail">
+                                                <span class="item-detail-label">➕ Suppléments :</span>
+                                                <span class="item-detail-value"><?= htmlspecialchars(implode(', ', $mainItem['customization']['supplements'])) ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                    <?php if (!empty($custom['boisson'])): ?>
+                                        <div class="item-detail">
+                                            <span class="item-detail-label">🥤 Boisson :</span>
+                                            <span class="item-detail-value"><?= htmlspecialchars($custom['boisson']) ?></span>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if (!empty($custom['dessert'])): ?>
+                                        <div class="item-detail">
+                                            <span class="item-detail-label">🍰 Dessert :</span>
+                                            <span class="item-detail-value"><?= htmlspecialchars($custom['dessert']) ?></span>
+                                        </div>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                                
                             <?php else: ?>
                                 <!-- PRODUITS INDIVIDUELS (PIZZAS, PÂTES, SALADES, etc.) -->
                                 

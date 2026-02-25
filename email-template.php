@@ -300,24 +300,32 @@ function getClientEmailTemplate($orderData) {
                                     <br>🥤 <?= htmlspecialchars($custom['boisson']) ?> 33cl</small>
                                 
                                 <?php // FORMULE PÂTES/SALADE ?>
-                                <?php elseif ($item['type'] === 'formule' && isset($custom['mainItem'])): ?>
+                                <?php elseif ($item['type'] === 'formule' && isset($custom['mainItem']) && is_array($custom['mainItem'])): ?>
                                     <br><small>
                                     <?php if ($custom['mainItem']['type'] === 'pate'): ?>
                                         🍝 <?= htmlspecialchars($custom['mainItem']['name']) ?>
                                         <?php if (!empty($custom['mainItem']['customization']['size'])): ?>
                                             <?php 
-                                            // Conversion des tailles en dimensions
                                             $sizeLabel = $custom['mainItem']['customization']['size'];
-                                            if ($custom['mainItem']['customization']['size'] === 'L') $sizeLabel = 'Large';
-                                            if ($custom['mainItem']['customization']['size'] === 'XL') $sizeLabel = 'XL';
+                                            if ($sizeLabel === 'L') $sizeLabel = 'Large';
+                                            if ($sizeLabel === 'XL') $sizeLabel = 'XL';
                                             ?>
                                             (<?= htmlspecialchars($sizeLabel) ?>)
                                         <?php endif; ?>
+                                        <?php if (!empty($custom['mainItem']['customization']['base'])): ?>
+                                            - Base <?= htmlspecialchars($custom['mainItem']['customization']['base']) ?>
+                                        <?php endif; ?>
                                     <?php else: ?>
                                         🥗 <?= htmlspecialchars($custom['mainItem']['name']) ?>
+                                        <?php if (!empty($custom['mainItem']['customization']['base'])): ?>
+                                            - Base <?= htmlspecialchars($custom['mainItem']['customization']['base']) ?>
+                                        <?php endif; ?>
+                                        <?php if (!empty($custom['mainItem']['customization']['options'])): ?>
+                                            <br>&nbsp;&nbsp;Options: <?= htmlspecialchars(implode(', ', $custom['mainItem']['customization']['options'])) ?>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                     <?php if (!empty($custom['mainItem']['customization']['supplements'])): ?>
-                                        <br>&nbsp;&nbsp;+ <?= count($custom['mainItem']['customization']['supplements']) ?> supplément(s)
+                                        <br>&nbsp;&nbsp;+ <?= htmlspecialchars(implode(', ', $custom['mainItem']['customization']['supplements'])) ?>
                                     <?php endif; ?>
                                     <br>🥤 <?= htmlspecialchars($custom['boisson']) ?>
                                     <br>🍰 <?= htmlspecialchars($custom['dessert']) ?></small>

@@ -3390,26 +3390,37 @@ function confirmMenuPatesSaladeWithBoissonDessert() {
     const boisson = selectedBoissonInput ? selectedBoissonInput.value : 'Coca-Cola';
     const dessert = DESSERTS_DATA.find(d => d.id === parseInt(selectedDessertInput.value));
     
-    // Construire le nom de l'item principal
-    let mainItemName;
-    let mainItemDetails = [];
+    // Construire l'objet mainItem pour l'affichage email/dashboard
+    let mainItemObj;
     
     if (pending.type === 'pate') {
         const pate = PATES_DATA.find(p => p.id === pending.itemId);
-        const baseLabel = pending.customization.base === 'classique' ? '' : ` (${pending.customization.base})`;
-        mainItemName = `${pate.name}${baseLabel} - ${pending.customization.size}`;
-        
-        if (pending.customization.supplements.length > 0) {
-            mainItemDetails = pending.customization.supplements.map(key => EXTRAS.toppings[key]?.name).filter(Boolean);
-        }
+        const supplements = pending.customization.supplements.length > 0
+            ? pending.customization.supplements.map(key => EXTRAS.toppings[key]?.name).filter(Boolean)
+            : [];
+        mainItemObj = {
+            type: 'pate',
+            name: pate.name,
+            customization: {
+                size: pending.customization.size,
+                base: pending.customization.base !== 'classique' ? pending.customization.base : null,
+                supplements: supplements.length > 0 ? supplements : null
+            }
+        };
     } else {
         const salade = SALADES_DATA.find(s => s.id === pending.itemId);
-        const baseLabel = pending.customization.base === 'saladeverte' ? '' : ` (${pending.customization.base})`;
-        mainItemName = `${salade.name}${baseLabel}`;
-        
-        if (pending.customization.supplements.length > 0) {
-            mainItemDetails = pending.customization.supplements.map(key => EXTRAS.toppings[key]?.name).filter(Boolean);
-        }
+        const supplements = pending.customization.supplements.length > 0
+            ? pending.customization.supplements.map(key => EXTRAS.toppings[key]?.name).filter(Boolean)
+            : [];
+        mainItemObj = {
+            type: 'salade',
+            name: salade.name,
+            customization: {
+                base: pending.customization.base !== 'saladeverte' ? pending.customization.base : null,
+                supplements: supplements.length > 0 ? supplements : null,
+                options: pending.customization.options?.length > 0 ? pending.customization.options : null
+            }
+        };
     }
     
     // Ajouter au panier
@@ -3422,8 +3433,7 @@ function confirmMenuPatesSaladeWithBoissonDessert() {
         quantity: 1,
         totalPrice: pending.calculatedPrice,
         customization: {
-            mainItem: mainItemName,
-            mainItemDetails: mainItemDetails.length > 0 ? mainItemDetails : undefined,
+            mainItem: mainItemObj,
             dessert: dessert.name,
             boisson: boisson
         }
