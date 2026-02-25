@@ -143,6 +143,12 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎛️ Admin Dashboard - Pizza Club</title>
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#FF0000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="🍕 Admin">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -1238,5 +1244,97 @@ if ($isLoggedIn && !isset($temperatureData['temperatures'][$today])) {
             }
         </script>
     <?php endif; ?>
+
+<!-- ====== ALARME COMMANDE + BOUTON INSTALLER APP ====== -->
+
+<!-- Overlay alarme plein écran -->
+<div id="alarmOverlay" style="
+    display:none; position:fixed; inset:0; z-index:99999;
+    background:#CC0000;
+    flex-direction:column; align-items:center; justify-content:center;
+    text-align:center;
+">
+    <div style="font-size:100px; animation:pulse 0.6s infinite alternate;">🍕</div>
+    <div style="color:white; font-size:36px; font-weight:900; margin:20px 0;">
+        NOUVELLE COMMANDE !
+    </div>
+    <div id="alarmDetails" style="color:rgba(255,255,255,0.9); font-size:18px; margin-bottom:40px;"></div>
+    <button onclick="confirmOrder()" style="
+        background:white; color:#CC0000;
+        border:none; padding:22px 60px;
+        font-size:24px; font-weight:900;
+        border-radius:16px; cursor:pointer;
+        animation:scalePulse 0.8s infinite alternate;
+    ">✅ CONFIRMER</button>
+    <div style="color:rgba(255,255,255,0.6); font-size:13px; margin-top:20px;">Appuyer pour arrêter la sonnerie</div>
+</div>
+<style>
+    @keyframes pulse { from{transform:scale(1)} to{transform:scale(1.2)} }
+    @keyframes scalePulse { from{transform:scale(1)} to{transform:scale(1.06)} }
+</style>
+
+<script>
+(function() {
+    // Service Worker
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+
+    let lastKnownId = null;
+    let alarmCtx = null, alarmInterval = null, vibrateLoop = null, blinkInterval = null;
+
+    fetch('orders-log.php?action=check').then(r=>r.json()).then(d=>{ lastKnownId = d.lastId; }).catch(()=>{});
+
+    function createAlarm() {
+        try { alarmCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){return;}
+        function note(f,s,d){ const o=alarmCtx.createOscillator(),g=alarmCtx.createGain(); o.connect(g);g.connect(alarmCtx.destination); o.type='square';o.frequency.value=f; g.gain.setValueAtTime(0.4,alarmCtx.currentTime+s);g.gain.exponentialRampToValueAtTime(0.001,alarmCtx.currentTime+s+d);o.start(alarmCtx.currentTime+s);o.stop(alarmCtx.currentTime+s+d); }
+        function ring(){ note(1200,0,.12);note(900,.14,.12);note(1200,.28,.12);note(900,.42,.12);note(1200,.56,.12); }
+        ring(); alarmInterval = setInterval(ring, 1200);
+    }
+    function stopAlarm() {
+        clearInterval(alarmInterval); alarmInterval=null;
+        if(alarmCtx){try{alarmCtx.close();}catch(e){} alarmCtx=null;}
+        clearInterval(vibrateLoop); if(navigator.vibrate)navigator.vibrate(0);
+    }
+    function showAlarm() {
+        document.getElementById('alarmOverlay').style.display='flex';
+        blinkInterval=setInterval(()=>{ document.title=document.title.startsWith('🔔')?'🎛️ Admin Dashboard - Pizza Club':'🔔 NOUVELLE COMMANDE !'; },700);
+        createAlarm();
+        if(navigator.vibrate){navigator.vibrate([500,200,500,200,500]);vibrateLoop=setInterval(()=>navigator.vibrate([500,200,500,200,500]),2500);}
+        if(Notification.permission==='granted') new Notification('🍕 NOUVELLE COMMANDE !',{body:'Aller sur la page commandes',requireInteraction:true});
+    }
+    window.confirmOrder = function() {
+        document.getElementById('alarmOverlay').style.display='none';
+        stopAlarm(); clearInterval(blinkInterval);
+        document.title='🎛️ Admin Dashboard - Pizza Club';
+    };
+
+    function poll() {
+        fetch('orders-log.php?action=check').then(r=>r.json()).then(data=>{
+            if(lastKnownId!==null && data.lastId!==lastKnownId){ lastKnownId=data.lastId; showAlarm(); }
+        }).catch(()=>{});
+    }
+    setInterval(poll, 5*60*1000);
+
+    // Bouton installer app
+    let deferredPrompt=null;
+    window.addEventListener('beforeinstallprompt', e=>{
+        e.preventDefault(); deferredPrompt=e;
+        const btn=document.createElement('button');
+        btn.innerHTML='📲 Installer l\'app';
+        btn.style.cssText='position:fixed;bottom:80px;right:20px;background:#FF6600;color:white;border:none;padding:12px 18px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.3);z-index:9000;';
+        btn.onclick=()=>{ deferredPrompt.prompt(); deferredPrompt.userChoice.then(()=>btn.remove()); };
+        document.body.appendChild(btn);
+    });
+
+    // Bouton activer alertes
+    if(Notification.permission!=='granted'){
+        const nb=document.createElement('button');
+        nb.innerHTML='🔔 Activer les alertes';
+        nb.style.cssText='position:fixed;bottom:20px;right:20px;background:#ff0000;color:white;border:none;padding:12px 18px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.3);z-index:9000;';
+        nb.onclick=()=>Notification.requestPermission().then(p=>{ if(p==='granted'){nb.style.background='#4CAF50';nb.innerHTML='✅ Activé';setTimeout(()=>nb.remove(),2000);} });
+        document.body.appendChild(nb);
+    }
+})();
+</script>
+
 </body>
 </html>
