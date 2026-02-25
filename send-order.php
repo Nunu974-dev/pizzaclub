@@ -917,7 +917,9 @@ file_put_contents($jsonFile, $jsonData);
 // NOTIFICATION NTFY.SH (push téléphone)
 // ========================================
 try {
-    require_once __DIR__ . '/ntfy-config.php';
+    // Config ntfy (inlinée pour éviter les erreurs de require_once)
+    if (!defined('NTFY_TOPIC')) define('NTFY_TOPIC', 'pizzaclub-commandes-974');
+    if (!defined('NTFY_SERVER')) define('NTFY_SERVER', 'https://ntfy.sh');
 
     $customer   = $orderData['customer'];
     $mode       = ($customer['deliveryMode'] === 'livraison') ? '🛵 LIVRAISON' : '🏃 À EMPORTER';
