@@ -134,8 +134,71 @@ if (isset($_GET['action']) && $_GET['action'] === 'check') {
     $file = __DIR__ . '/orders.json';
     $orders = file_exists($file) ? json_decode(file_get_contents($file), true) : [];
     $count = is_array($orders) ? count($orders) : 0;
-    $lastId = ($count > 0) ? ($orders[0]['id'] ?? '') : '';
-    echo json_encode(['count' => $count, 'lastId' => (string)$lastId]);
+    $lastOrderNum = ($count > 0) ? ($orders[$count - 1]['orderNumber'] ?? '') : '';
+    echo json_encode(['count' => $count, 'lastOrderNum' => $lastOrderNum]);
+    exit;
+}
+
+// ====== EXPORT CSV des commandes ======
+if (isset($_GET['action']) && $_GET['action'] === 'export_csv') {
+    $file = __DIR__ . '/orders.json';
+    $orders = file_exists($file) ? json_decode(file_get_contents($file), true) : [];
+    if (!is_array($orders)) $orders = [];
+
+    // Trier par date décroissante
+    usort($orders, function($a, $b) {
+        return strtotime($b['timestamp']) - strtotime($a['timestamp']);
+    });
+
+    $filename = 'commandes_pizzaclub_' . date('Ymd_His') . '.csv';
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+
+    $out = fopen('php://output', 'w');
+    // BOM UTF-8 pour Excel
+    fwrite($out, "\xEF\xBB\xBF");
+
+    // En-têtes CSV
+    fputcsv($out, [
+        'N° Commande', 'Date', 'Heure', 'Mode', 'Prénom', 'Nom',
+        'Email', 'Téléphone', 'Adresse', 'Code Postal', 'Ville',
+        'Articles', 'Sous-total', 'Frais livraison', 'Code promo', 'Remise', 'Total (€)', 'Commentaire'
+    ], ';');
+
+    foreach ($orders as $order) {
+        $c = $order['customer'] ?? [];
+        $dt = strtotime($order['timestamp']);
+
+        // Résumé des articles
+        $articlesList = [];
+        foreach ($order['items'] ?? [] as $item) {
+            $articlesList[] = ($item['name'] ?? '') . ' x' . ($item['quantity'] ?? 1);
+        }
+
+        fputcsv($out, [
+            $order['orderNumber'] ?? '',
+            date('d/m/Y', $dt),
+            date('H:i', $dt),
+            ($c['deliveryMode'] ?? '') === 'livraison' ? 'Livraison' : 'À emporter',
+            $c['firstName'] ?? '',
+            $c['lastName'] ?? '',
+            $c['email'] ?? '',
+            $c['phone'] ?? '',
+            $c['address'] ?? '',
+            $c['postalCode'] ?? '',
+            $c['city'] ?? '',
+            implode(' | ', $articlesList),
+            number_format($order['subtotal'] ?? $order['total'] ?? 0, 2, '.', ''),
+            number_format($order['deliveryFee'] ?? 0, 2, '.', ''),
+            $order['promoCode'] ?? '',
+            number_format($order['discount'] ?? 0, 2, '.', ''),
+            number_format($order['total'] ?? 0, 2, '.', ''),
+            $c['comments'] ?? ''
+        ], ';');
+    }
+
+    fclose($out);
     exit;
 }
 
@@ -159,10 +222,14 @@ $debugFile = __DIR__ . '/debug-order.txt';
     <meta name="apple-mobile-web-app-title" content="🍕 Commandes">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { overflow-x: hidden; }
         body { 
             font-family: Arial, sans-serif; 
             background: #f5f5f5; 
             padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+            width: 100%;
         }
         .container { 
             max-width: 1200px; 
@@ -171,6 +238,13 @@ $debugFile = __DIR__ . '/debug-order.txt';
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        @media (max-width: 600px) {
+            body { padding: 8px; }
+            .container { padding: 15px; border-radius: 6px; }
+            .order-header { margin: -15px -15px 15px -15px; }
+            .order { padding: 15px; }
         }
         h1 { 
             color: #FF0000; 
@@ -225,6 +299,8 @@ $debugFile = __DIR__ . '/debug-order.txt';
             padding: 15px; 
             border-left: 4px solid #ffc107;
             margin: 15px 0;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
         .customer-info strong { color: #000; }
         .items-list { 
@@ -288,22 +364,32 @@ $debugFile = __DIR__ . '/debug-order.txt';
             font-size: 12px;
             overflow-x: auto;
             white-space: pre-wrap;
+            word-break: break-all;
             max-height: 500px;
             overflow-y: auto;
+            max-width: 100%;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header-bar">
-            <h1>📋 Historique des commandes Pizza Club</h1>
-            <a href="?logout" class="logout-btn">🚪 Déconnexion</a>
+        <div class="header-bar" style="flex-direction:column;align-items:center;gap:12px;">
+            <h1 style="text-align:center;">📋 Historique des commandes Pizza Club</h1>
+            <div style="display:flex;gap:10px;align-items:center;width:100%;justify-content:center;flex-wrap:wrap;">
+                <button onclick="location.reload()" style="background:#28a745;color:white;padding:10px 18px;border:none;border-radius:5px;font-size:14px;font-weight:bold;cursor:pointer;">⟳ Rafraîchir</button>
+                <button id="wakeLockBtn" onclick="toggleRestaurantMode()" style="background:#FF6600;color:white;padding:10px 18px;border:none;border-radius:5px;font-size:14px;font-weight:bold;cursor:pointer;">🔴 Mode Restaurant (Activer)</button>
+                <a href="?action=export_csv" style="background:#17a2b8;color:white;padding:10px 18px;border-radius:5px;font-size:14px;font-weight:bold;text-decoration:none;">📥 Exporter CSV</a>
+                <a href="?logout" class="logout-btn">🚪 Déconnexion</a>
+            </div>
+            <div id="wakeLockStatus" style="font-size:12px;color:#666;display:none;">
+                ⚡ Mode Restaurant actif — écran allumé — polling 15s — son activé
+            </div>
         </div>
         
         <div class="info-box">
-            <strong>📍 Fichiers:</strong><br>
-            JSON: <?= file_exists($ordersFile) ? '✅ Trouvé' : '❌ Introuvable' ?> (<?= $ordersFile ?>)<br>
-            Debug: <?= file_exists($debugFile) ? '✅ Trouvé' : '❌ Introuvable' ?> (<?= $debugFile ?>)
+            <strong>📍 Fichiers:</strong>
+            JSON: <?= file_exists($ordersFile) ? '✅ OK' : '❌ Introuvable' ?> &nbsp;|&nbsp;
+            Debug: <?= file_exists($debugFile) ? '✅ OK' : '❌ Introuvable' ?>
         </div>
         
         <?php
@@ -354,13 +440,18 @@ $debugFile = __DIR__ . '/debug-order.txt';
                         <div class="customer-info">
                             <strong>Client:</strong> <?= htmlspecialchars($customer['firstName']) ?> <?= htmlspecialchars($customer['lastName']) ?><br>
                             <strong>Téléphone:</strong> <?= htmlspecialchars($customer['phone']) ?><br>
-                            <?php if (!empty($customer['email'])): ?>
-                                <strong>Email:</strong> <?= htmlspecialchars($customer['email']) ?><br>
-                            <?php endif; ?>
+                            <strong>Email:</strong> <?= !empty($customer['email']) ? htmlspecialchars($customer['email']) : '<em style="color:#999;">Non renseigné</em>' ?><br>
                             <?php if ($customer['deliveryMode'] === 'livraison'): ?>
                                 <strong>Adresse:</strong> <?= htmlspecialchars($customer['address']) ?>, <?= htmlspecialchars($customer['postalCode']) ?> <?= htmlspecialchars($customer['city']) ?>
                             <?php endif; ?>
                         </div>
+                        
+                        <?php if (!empty($customer['comments'])): ?>
+                        <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 12px 15px; margin: 10px 0; border-radius: 5px;">
+                            <strong style="color: #856404;">💬 COMMENTAIRE CLIENT :</strong><br>
+                            <span style="color: #856404;"><?= nl2br(htmlspecialchars($customer['comments'])) ?></span>
+                        </div>
+                        <?php endif; ?>
                         
                         <div class="items-list">
                             <h3 style="margin-bottom: 15px; color: #FF0000;">📦 Articles commandés</h3>
@@ -468,11 +559,11 @@ $debugFile = __DIR__ . '/debug-order.txt';
                                                     if (!empty($pizzaCust['base']) && $pizzaCust['base'] !== 'tomate') {
                                                         echo "&nbsp;&nbsp;↳ Base: " . htmlspecialchars($pizzaCust['base']) . "<br>";
                                                     }
-                                                    if (!empty($pizzaCust['ingredients']['added'])) {
-                                                        echo "&nbsp;&nbsp;↳ ➕ Ajouts: " . htmlspecialchars(implode(', ', $pizzaCust['ingredients']['added'])) . "<br>";
+                                                    if (!empty($pizzaCust['addedIngredients'])) {
+                                                        echo "&nbsp;&nbsp;↳ ➕ Ajouts: " . htmlspecialchars(implode(', ', $pizzaCust['addedIngredients'])) . "<br>";
                                                     }
-                                                    if (!empty($pizzaCust['ingredients']['removed'])) {
-                                                        echo "&nbsp;&nbsp;↳ ❌ Retraits: " . htmlspecialchars(implode(', ', $pizzaCust['ingredients']['removed'])) . "<br>";
+                                                    if (!empty($pizzaCust['removedIngredients'])) {
+                                                        echo "&nbsp;&nbsp;↳ ❌ Retraits: " . htmlspecialchars(implode(', ', $pizzaCust['removedIngredients'])) . "<br>";
                                                     }
                                                 }
                                             }
@@ -507,6 +598,17 @@ $debugFile = __DIR__ . '/debug-order.txt';
                                             if (!empty($custom['dessert'])) {
                                                 echo "🍰 " . htmlspecialchars($custom['dessert']) . "<br>";
                                             }
+                                            
+                                            // SANDWICH
+                                            if ($item['type'] === 'sandwich') {
+                                                if (!empty($custom['base'])) echo "🥖 Base: " . htmlspecialchars(ucfirst($custom['base'])) . "<br>";
+                                                if (!empty($custom['sauces']) && is_array($custom['sauces'])) {
+                                                    echo "🥫 Sauces: " . htmlspecialchars(implode(' + ', array_map('ucfirst', $custom['sauces']))) . "<br>";
+                                                }
+                                                if (!empty($custom['type'])) {
+                                                    echo "🔥 " . ($custom['type'] === 'gratine' ? 'Gratiné (chaud)' : 'Américain (froid)') . "<br>";
+                                                }
+                                            }
                                             ?>
                                         </div>
                                     <?php endif; ?>
@@ -517,11 +619,44 @@ $debugFile = __DIR__ . '/debug-order.txt';
                             <?php endforeach; ?>
                         </div>
                         
+                        <?php if (!empty($order['estimatedTime'])): ?>
+                        <div style="background:#e8f4f8;border:2px solid #17a2b8;padding:10px 15px;margin:10px 0;border-radius:5px;font-size:14px;">
+                            <strong style="color:#0c6478;">⏱️ Temps estimé :</strong> <span style="color:#0c6478;"><?= htmlspecialchars($order['estimatedTime']) ?></span>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <?php $subtotal = $order['subtotal'] ?? null; $deliveryFee = $order['deliveryFee'] ?? 0; ?>
+                        <?php if ($subtotal !== null && ($deliveryFee > 0 || !empty($order['promoCode']))): ?>
+                        <div style="border:2px solid #ddd;border-radius:6px;overflow:hidden;margin-top:10px;">
+                            <div style="display:flex;justify-content:space-between;padding:7px 12px;font-size:14px;background:#f8f9fa;">
+                                <span>Sous-total</span>
+                                <span><?= number_format($subtotal, 2, ',', ' ') ?>€</span>
+                            </div>
+                            <?php if ($deliveryFee > 0): ?>
+                            <div style="display:flex;justify-content:space-between;padding:7px 12px;font-size:14px;">
+                                <span>🛵 Frais de livraison</span>
+                                <span><?= number_format($deliveryFee, 2, ',', ' ') ?>€</span>
+                            </div>
+                            <?php elseif ($customer['deliveryMode'] === 'livraison'): ?>
+                            <div style="display:flex;justify-content:space-between;padding:7px 12px;font-size:14px;color:#28a745;">
+                                <span>🛵 Frais de livraison</span>
+                                <span>Offert</span>
+                            </div>
+                            <?php endif; ?>
+                            <?php if (!empty($order['promoCode']) && !empty($order['discount']) && $order['discount'] > 0): ?>
+                            <div style="display:flex;justify-content:space-between;padding:7px 12px;background:#fff3cd;font-size:14px;color:#856404;">
+                                <span>🏷 Code promo <strong><?= htmlspecialchars($order['promoCode']) ?></strong></span>
+                                <span>-<?= number_format($order['discount'], 2, ',', ' ') ?>€</span>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                        <?php else: ?>
                         <?php if (!empty($order['promoCode']) && !empty($order['discount']) && $order['discount'] > 0): ?>
                         <div style="display:flex;justify-content:space-between;padding:6px 12px;background:#fff3cd;border-radius:6px;margin-bottom:6px;font-size:14px;color:#856404;">
                             <span>🏷 Code promo <strong><?= htmlspecialchars($order['promoCode']) ?></strong></span>
                             <span>-<?= number_format($order['discount'], 2, ',', ' ') ?>€</span>
                         </div>
+                        <?php endif; ?>
                         <?php endif; ?>
                         <div class="total">
                             TOTAL: <?= number_format($order['total'], 2, ',', ' ') ?>€
@@ -707,27 +842,27 @@ $debugFile = __DIR__ . '/debug-order.txt';
         location.reload();
     };
 
-    // ── Init : lire le dernier ID connu ───────────────────────
+    // ── Init : lire le count connu ───────────────────────────
     fetch('orders-log.php?action=check')
         .then(r => r.json())
-        .then(d => { lastKnownId = d.lastId; })
+        .then(d => { lastKnownId = d.lastOrderNum; })
         .catch(() => {});
 
-    // ── Polling toutes les 5 minutes ──────────────────────────
+    // ── Polling toutes les 30 secondes ────────────────────────
     function poll() {
         fetch('orders-log.php?action=check')
             .then(r => r.json())
             .then(data => {
-                if (lastKnownId !== null && data.lastId !== lastKnownId) {
-                    lastKnownId = data.lastId;
-                    showAlarm('Nouvelle commande reçue');
+                if (lastKnownId !== null && data.lastOrderNum !== lastKnownId) {
+                    lastKnownId = data.lastOrderNum;
+                    showAlarm('Nouvelle commande reçue !');
                 }
             })
             .catch(() => {});
     }
 
     poll(); // vérification immédiate au chargement
-    setInterval(poll, 30 * 1000); // toutes les 30 secondes
+    let pollIntervalId = setInterval(poll, 30 * 1000); // toutes les 30 secondes
 
     // ── Bouton installer comme app (PWA) ─────────────────────
     let deferredPrompt = null;
@@ -761,5 +896,77 @@ $debugFile = __DIR__ . '/debug-order.txt';
 })();
 </script>
 
+<script>
+// ── Wake Lock + Mode Restaurant ──────────────────────────────
+let wakeLock = null;
+let restaurantMode = false;
+let fastPollId = null;
+
+async function toggleRestaurantMode() {
+    const btn = document.getElementById('wakeLockBtn');
+    const status = document.getElementById('wakeLockStatus');
+
+    if (!restaurantMode) {
+        // Activer
+        restaurantMode = true;
+        btn.textContent = '🟢 Mode Restaurant (Actif)';
+        btn.style.background = '#28a745';
+        status.style.display = 'block';
+
+        // Demander permission notification
+        if (Notification.permission !== 'granted') {
+            await Notification.requestPermission();
+        }
+
+        // Déverrouiller l'audio (nécessite un geste utilisateur)
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination);
+            g.gain.setValueAtTime(0.001, ctx.currentTime);
+            o.start(); o.stop(ctx.currentTime + 0.1);
+        } catch(e) {}
+
+        // Wake Lock : empêcher l'écran de s'éteindre
+        if ('wakeLock' in navigator) {
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('Wake Lock actif');
+                wakeLock.addEventListener('release', () => {
+                    // Re-acquérir si on est toujours en mode restaurant et page visible
+                    if (restaurantMode && document.visibilityState === 'visible') {
+                        navigator.wakeLock.request('screen').then(wl => wakeLock = wl).catch(() => {});
+                    }
+                });
+            } catch(e) {
+                console.log('Wake Lock non supporté:', e.message);
+            }
+        }
+
+        // Polling toutes les 15s en mode restaurant (au lieu de 30s)
+        clearInterval(pollIntervalId);
+        fastPollId = setInterval(poll, 15 * 1000);
+
+    } else {
+        // Désactiver
+        restaurantMode = false;
+        btn.textContent = '🔴 Mode Restaurant (Activer)';
+        btn.style.background = '#FF6600';
+        status.style.display = 'none';
+
+        if (wakeLock) { wakeLock.release(); wakeLock = null; }
+        clearInterval(fastPollId);
+        pollIntervalId = setInterval(poll, 30 * 1000);
+    }
+}
+
+// Re-acquérir le wake lock quand la page redevient visible
+document.addEventListener('visibilitychange', () => {
+    if (restaurantMode && document.visibilityState === 'visible' && !wakeLock && 'wakeLock' in navigator) {
+        navigator.wakeLock.request('screen').then(wl => { wakeLock = wl; }).catch(() => {});
+    }
+});
+</script>
 </body>
 </html>

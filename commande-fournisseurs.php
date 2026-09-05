@@ -36,7 +36,14 @@ $suppliers = [
             ['name' => 'Coca-Cola 1,5 L', 'price' => 17.20],
             ['name' => 'Coca-Cola 33 cl X24', 'price' => 24.70],
             ['name' => 'Coca-Cola 50 cl X24', 'price' => 26.40],
-            ['name' => 'Desperados boites 33cl X24', 'price' => 44.16],
+            ['name' => 'COT Barquette 33 cl X24', 'price' => 14.72],
+            ['name' => 'COT PET 33 cl CITRON X10', 'price' => 5.50],
+            ['name' => 'COT PET 33 cl AMERICAIN X10', 'price' => 5.50],
+            ['name' => 'COT PET 33 cl FRUITALO X10', 'price' => 5.50],
+            ['name' => 'COT PET 33 cl ANANAS X10', 'price' => 5.50],
+            ['name' => 'COT PET 33 cl GRENADINE X10', 'price' => 5.50],
+            ['name' => 'COT PET 1,5 L AMERICAIN X6', 'price' => 11.60],
+            ['name' => 'Desperados bouteilles 33cl X24', 'price' => 44.16],
             ['name' => 'Desperados boites 50cl X24', 'price' => 52.08],
             ['name' => 'Dodo 33 cl X24', 'price' => 19.91],
             ['name' => 'Edena plate 1,5 L X8', 'price' => 5.95],
@@ -53,6 +60,7 @@ $suppliers = [
             ['name' => 'Pokka Thé Melon 50cl', 'price' => 30.09],
             ['name' => 'Pokka Thé Pêche 50cl', 'price' => 30.09],
             ['name' => 'Sambo 33 cl X24', 'price' => 19.91],
+            ['name' => 'Volcanik 50 cl', 'price' => 5.78],
         ]
     ],
     'EDG' => [
@@ -72,7 +80,6 @@ $suppliers = [
             ['name' => 'Boîte pizza 26 (x100)', 'price' => 19],
             ['name' => 'Boîte pizza 33 (x100)', 'price' => 22],
             ['name' => 'Boîte pizza 40 (x100)', 'price' => 35],
-            ['name' => 'Boîte pizza DWK 26H4 (x100)', 'price' => 19],
             ['name' => 'Farine T55 1kg', 'price' => 0.97],
             ['name' => 'Farine Tipo 00 1kg', 'price' => 1.00],
             ['name' => 'Pots sauce 25ml (x100)', 'price' => 4.50],
@@ -134,7 +141,6 @@ $suppliers = [
             ['name' => 'Pulpe d\'ail pot 1kg', 'price' => 4.25],
             ['name' => 'Raclette tranches 15g x500g surg', 'price' => 0],
             ['name' => 'Reblochon tranché 500g', 'price' => 13.98],
-            ['name' => 'Reblochon tranches 15/20g x500g surg', 'price' => 0],
             ['name' => 'Sacs poubelles 200L (rouleau)', 'price' => 4.563],
             ['name' => 'Sambo Tropical BTE 33clx24', 'price' => 22.58],
             ['name' => 'Sarcive de volaille 2kg', 'price' => 23.25],
@@ -183,42 +189,105 @@ $suppliers = [
     ],
 ];
 
+// ========================================
+// ARTICLES PERSONNALISÉS (persistance)
+// ========================================
+// Les articles ajoutés via "Ajouter un article hors liste" sont enregistrés ici
+// pour réapparaître dans le catalogue du fournisseur aux prochaines commandes.
+define('CUSTOM_PRODUCTS_FILE', __DIR__ . '/fournisseurs-articles-perso.json');
+
+function loadCustomProducts() {
+    if (!file_exists(CUSTOM_PRODUCTS_FILE)) {
+        return [];
+    }
+    $data = json_decode(file_get_contents(CUSTOM_PRODUCTS_FILE), true);
+    return is_array($data) ? $data : [];
+}
+
+// Enregistre un article dans le catalogue persistant. Retourne true s'il vient
+// d'être ajouté, false s'il existait déjà (pas de doublon créé).
+function saveCustomProduct($supplierName, $name, $price) {
+    $customProducts = loadCustomProducts();
+    if (!isset($customProducts[$supplierName])) {
+        $customProducts[$supplierName] = [];
+    }
+    foreach ($customProducts[$supplierName] as $existing) {
+        if (mb_strtolower(trim($existing['name'])) === mb_strtolower(trim($name))) {
+            return false; // déjà enregistré
+        }
+    }
+    $customProducts[$supplierName][] = ['name' => $name, 'price' => $price];
+    file_put_contents(CUSTOM_PRODUCTS_FILE, json_encode($customProducts, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    return true;
+}
+
+// Fusionner les articles personnalisés enregistrés précédemment dans le catalogue
+foreach (loadCustomProducts() as $supplierName => $products) {
+    if (isset($suppliers[$supplierName])) {
+        foreach ($products as $p) {
+            $suppliers[$supplierName]['products'][] = $p;
+        }
+    }
+}
+
 // Traitement de l'envoi de commande
 if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_order'])) {
     $supplierName = $_POST['supplier'];
     $orders = $_POST['quantities'] ?? [];
-    
-    if (!empty($orders)) {
-        // Filtrer les quantités non nulles
-        $orderedItems = [];
-        $total = 0;
-        
-        foreach ($orders as $productIndex => $quantity) {
-            if ($quantity > 0) {
-                $product = $suppliers[$supplierName]['products'][$productIndex];
-                $subtotal = $product['price'] * $quantity;
-                $orderedItems[] = [
-                    'name' => $product['name'],
-                    'quantity' => $quantity,
-                    'price' => $product['price'],
-                    'subtotal' => $subtotal
-                ];
-                $total += $subtotal;
-            }
+    $customNames = $_POST['custom_name'] ?? [];
+    $customPrices = $_POST['custom_price'] ?? [];
+    $customQtys = $_POST['custom_qty'] ?? [];
+
+    // Filtrer les quantités non nulles (produits de la liste fournisseur)
+    $orderedItems = [];
+    $total = 0;
+
+    foreach ($orders as $productIndex => $quantity) {
+        if ($quantity > 0) {
+            $product = $suppliers[$supplierName]['products'][$productIndex];
+            $subtotal = $product['price'] * $quantity;
+            $orderedItems[] = [
+                'name' => $product['name'],
+                'quantity' => $quantity,
+                'price' => $product['price'],
+                'subtotal' => $subtotal
+            ];
+            $total += $subtotal;
         }
-        
-        if (!empty($orderedItems)) {
-            // Récupérer les commentaires
-            $comments = $_POST['comments'] ?? '';
-            
-            // Envoyer l'email à contact@pizzaclub.re
-            $success = sendOrderEmail($supplierName, $suppliers[$supplierName]['email'], $orderedItems, $total, $comments);
-            if ($success) {
-                $successMessage = "✅ Commande envoyée sur contact@pizzaclub.re !";
-            } else {
-                $errorMessage = "❌ Erreur lors de l'envoi de la commande.";
-            }
+    }
+
+    // Articles ajoutés manuellement (hors liste du fournisseur)
+    // Ils sont aussi enregistrés dans le catalogue pour réapparaître la prochaine fois.
+    foreach ($customNames as $i => $customName) {
+        $customName = trim($customName);
+        $qty = (int)($customQtys[$i] ?? 0);
+        if ($customName !== '' && $qty > 0) {
+            $price = (float)str_replace(',', '.', $customPrices[$i] ?? 0);
+            $subtotal = $price * $qty;
+            $isNewProduct = saveCustomProduct($supplierName, $customName, $price);
+            $orderedItems[] = [
+                'name' => $customName . ($isNewProduct ? ' (nouvel article - ajouté au catalogue)' : ''),
+                'quantity' => $qty,
+                'price' => $price,
+                'subtotal' => $subtotal
+            ];
+            $total += $subtotal;
         }
+    }
+
+    if (!empty($orderedItems)) {
+        // Récupérer les commentaires
+        $comments = $_POST['comments'] ?? '';
+
+        // Envoyer l'email à contact@pizzaclub.re
+        $success = sendOrderEmail($supplierName, $suppliers[$supplierName]['email'], $orderedItems, $total, $comments);
+        if ($success) {
+            $successMessage = "✅ Commande envoyée sur contact@pizzaclub.re !";
+        } else {
+            $errorMessage = "❌ Erreur lors de l'envoi de la commande.";
+        }
+    } else {
+        $errorMessage = "❌ Aucun article sélectionné ou ajouté.";
     }
 }
 
@@ -294,8 +363,7 @@ function sendOrderEmail($supplierName, $email, $items, $total, $comments = '') {
         </div>
         <div class='footer'>
             <p>Pizza Club - La Réunion<br>📞 0262 XX XX XX | 📧 contact@pizzaclub.re</p>
-    // Envoyer à contact@pizzaclub.re au lieu de l'email du fournisseur
-    return mail('contact@pizzaclub.re'
+        </div>
     </body>
     </html>
     ";
@@ -518,6 +586,74 @@ function sendOrderEmail($supplierName, $email, $items, $total, $comments = '') {
             font-size: 16px;
         }
 
+        .custom-products {
+            margin-top: 10px;
+        }
+
+        .custom-product-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #fff8e6;
+            border: 1px dashed #ffc107;
+            border-radius: 8px;
+        }
+
+        .custom-product-row .custom-name-input {
+            flex: 2;
+            min-width: 0;
+        }
+
+        .custom-product-row .custom-price-input {
+            flex: 1;
+            width: 90px;
+        }
+
+        .custom-product-row .custom-qty-input {
+            width: 65px;
+        }
+
+        .custom-product-row input {
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .btn-remove-custom {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .btn-remove-custom:hover {
+            background: #c82333;
+        }
+
+        .btn-add-custom {
+            width: 100%;
+            padding: 10px;
+            background: white;
+            color: #667eea;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn-add-custom:hover {
+            background: #f0f2ff;
+        }
+
         .total-section {
             margin-top: 20px;
             padding: 20px;
@@ -676,6 +812,16 @@ function sendOrderEmail($supplierName, $email, $items, $total, $comments = '') {
                                 <?php endforeach; ?>
                             </div>
 
+                            <!-- Articles ajoutés manuellement (hors liste fournisseur) -->
+                            <div class="custom-products" id="custom-products-<?= $safeId ?>"></div>
+
+                            <button type="button" class="btn-add-custom" onclick="addCustomProductRow('<?= $safeId ?>', '<?= $name ?>')">
+                                <i class="fas fa-plus"></i> Ajouter un article hors liste
+                            </button>
+                            <p style="font-size: 12px; color: #999; text-align: center; margin-top: 6px;">
+                                L'article sera automatiquement ajouté au catalogue de ce fournisseur pour les prochaines commandes.
+                            </p>
+
                             <div class="total-section" id="total-<?= $safeId ?>">
                                 <div class="total-label">Total</div>
                                 <div class="total-amount">0,00 €</div>
@@ -703,11 +849,29 @@ function sendOrderEmail($supplierName, $email, $items, $total, $comments = '') {
         </div>
 
         <script>
+            // Ajoute une ligne d'article libre (non présent dans la liste du fournisseur)
+            function addCustomProductRow(safeId, supplierName) {
+                const container = document.getElementById(`custom-products-${safeId}`);
+                if (!container) return;
+
+                const row = document.createElement('div');
+                row.className = 'custom-product-row';
+                row.innerHTML = `
+                    <input type="text" name="custom_name[]" placeholder="Nom de l'article" class="custom-name-input" required>
+                    <input type="number" name="custom_price[]" placeholder="Prix €" step="0.01" min="0" class="custom-price-input" oninput="updateTotal('${supplierName}')">
+                    <input type="number" name="custom_qty[]" placeholder="Qté" min="1" value="1" class="custom-qty-input" oninput="updateTotal('${supplierName}')">
+                    <button type="button" class="btn-remove-custom" title="Supprimer cet article" onclick="this.closest('.custom-product-row').remove(); updateTotal('${supplierName}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(row);
+            }
+
             function updateTotal(supplier) {
                 // Trouver la carte du fournisseur
                 const card = document.querySelector(`.supplier-card[data-supplier="${supplier}"]`);
                 if (!card) return;
-                
+
                 const inputs = card.querySelectorAll('.quantity-input');
                 let total = 0;
 
@@ -715,6 +879,13 @@ function sendOrderEmail($supplierName, $email, $items, $total, $comments = '') {
                     const quantity = parseInt(input.value) || 0;
                     const price = parseFloat(input.dataset.price) || 0;
                     total += quantity * price;
+                });
+
+                // Ajouter les articles hors liste
+                card.querySelectorAll('.custom-product-row').forEach(row => {
+                    const qty = parseInt(row.querySelector('.custom-qty-input')?.value) || 0;
+                    const price = parseFloat(row.querySelector('.custom-price-input')?.value) || 0;
+                    total += qty * price;
                 });
 
                 // Créer un ID sûr (même logique que PHP)

@@ -895,10 +895,41 @@ const EXTRAS = {
 // DONNÉES DES BOISSONS
 // ========================================
 const BOISSONS_DATA = [
-    { id: 1, name: 'Coca-Cola', size: '33cl', price: 2.00 },
-    { id: 2, name: 'Thé Pêche', size: '33cl', price: 2.00 },
-    { id: 3, name: 'Thé Melon', size: '33cl', price: 2.00 },
-    { id: 4, name: 'Sambo', size: '33cl', price: 2.00 },
-    { id: 5, name: 'Edena', size: '33cl', price: 2.00 },
-    { id: 6, name: 'Cilaos', size: '33cl', price: 2.00 }
+    { id: 1,  name: 'Coca-Cola',  size: '33cl', price: 2.00 },
+    { id: 7,  name: 'Coca-Cola',  size: '50cl', price: 2.50 },
+    { id: 10,  name: 'Coca-Cola',  size: '1,5l', price: 4.00 },
+    { id: 2,  name: 'Thé Pêche',  size: '33cl', price: 2.00 },
+    { id: 8,  name: 'Thé Pêche',  size: '50cl', price: 2.50 },
+    { id: 3,  name: 'Thé Melon',  size: '33cl', price: 2.00 },
+    { id: 9,  name: 'Thé Melon',  size: '50cl', price: 2.50 },
+    { id: 4,  name: 'Sambo',      size: '33cl', price: 2.00 },
+    { id: 5,  name: 'Edena',      size: '50cl', price: 1.50 },
+    { id: 11,  name: 'Edena',      size: '1,5l', price: 2.50 },
+    { id: 6,  name: 'Cilaos',     size: '50cl', price: 1.80 }
+];
+
+// ========================================
+// DONNÉES DES SANDWICHS
+// ========================================
+const SANDWICHES_DATA = [
+    // ── AMÉRICAIN ──────────────────────────────────────────────────────────
+    { id: 501, name: 'Américain Jambon',   base: 'Jambon',  type: 'americain', price: 5.00, image: 'img/americain_dwich.png', description: 'Pain baguette • Crème • Origan • Salade • Tomate • Mozzarella • Jambon • 2 sauces au choix',   needsCustomization: true },
+    { id: 502, name: 'Américain Sarcive',  base: 'Sarcive', type: 'americain', price: 6.00, image: 'img/americain_dwich.png', description: 'Pain baguette • Crème • Origan • Salade • Tomate • Mozzarella • Sarcive • 2 sauces au choix',  needsCustomization: true },
+    { id: 503, name: 'Américain Merguez',  base: 'Merguez', type: 'americain', price: 6.00, image: 'img/americain_dwich.png', description: 'Pain baguette • Crème • Origan • Salade • Tomate • Mozzarella • Merguez • 2 sauces au choix',  needsCustomization: true },
+    { id: 504, name: 'Américain Thon',     base: 'Thon',    type: 'americain', price: 6.00, image: 'img/americain_dwich.png', description: 'Pain baguette • Crème • Origan • Salade • Tomate • Mozzarella • Thon • 2 sauces au choix',    needsCustomization: true },
+    { id: 505, name: 'Américain Poulet',   base: 'Poulet',  type: 'americain', price: 6.00, image: 'img/americain_dwich.png', description: 'Pain baguette • Crème • Origan • Salade • Tomate • Mozzarella • Poulet • 2 sauces au choix',  needsCustomization: true },
+    { id: 506, name: 'Américain Saumon',      base: 'Saumon',      type: 'americain', price: 6.80, image: 'img/americain_dwich.png', description: 'Pain baguette • Crème • Origan • Salade • Tomate • Mozzarella • Saumon • 2 sauces au choix',      needsCustomization: true },
+    { id: 507, name: 'Américain Trois fromages',         base: 'Trois fromages', type: 'americain', price: 6.80, image: 'img/americain_dwich.png', description: 'Pain baguette • Crème • Origan • Salade • Tomate • Mozzarella • Bœuf • 2 sauces au choix',         needsCustomization: true },
+    { id: 508, name: 'Américain Saucisse',     base: 'Saucisse',    type: 'americain', price: 6.00, image: 'img/americain_dwich.png', description: 'Pain baguette • Crème • Origan • Salade • Tomate • Mozzarella • Saucisse • 2 sauces au choix',   needsCustomization: true },
+    { id: 509, name: 'Américain Végétarien',   base: 'Végétarien',  type: 'americain', price: 6.00, image: 'img/americain_dwich.png', description: 'Pain baguette • Crème • Origan • Salade • Tomate • Mozzarella • Légumes • 2 sauces au choix',     needsCustomization: true },
+    // ── GRATINÉ ────────────────────────────────────────────────────────────
+    { id: 511, name: 'Gratiné Jambon',     base: 'Jambon',  type: 'gratine',   price: 4.00, image: 'img/americain_dwich.png', description: 'Pain baguette chaud • Crème • Origan • Fromage fondu • Jambon • 2 sauces au choix',   needsCustomization: true },
+    { id: 512, name: 'Gratiné Sarcive',    base: 'Sarcive', type: 'gratine',   price: 5.00, image: 'img/americain_dwich.png', description: 'Pain baguette chaud • Crème • Origan • Fromage fondu • Sarcive • 2 sauces au choix',  needsCustomization: true },
+    { id: 513, name: 'Gratiné Merguez',    base: 'Merguez', type: 'gratine',   price: 5.00, image: 'img/americain_dwich.png', description: 'Pain baguette chaud • Crème • Origan • Fromage fondu • Merguez • 2 sauces au choix',  needsCustomization: true },
+    { id: 514, name: 'Gratiné Thon',       base: 'Thon',    type: 'gratine',   price: 5.00, image: 'img/americain_dwich.png', description: 'Pain baguette chaud • Crème • Origan • Fromage fondu • Thon • 2 sauces au choix',    needsCustomization: true },
+    { id: 515, name: 'Gratiné Poulet',     base: 'Poulet',  type: 'gratine',   price: 5.00, image: 'img/americain_dwich.png', description: 'Pain baguette chaud • Crème • Origan • Fromage fondu • Poulet • 2 sauces au choix',  needsCustomization: true },
+    { id: 516, name: 'Gratiné Saumon',        base: 'Saumon',      type: 'gratine',   price: 6.00, image: 'img/americain_dwich.png', description: 'Pain baguette chaud • Crème • Origan • Fromage fondu • Saumon • 2 sauces au choix',        needsCustomization: true },
+    { id: 517, name: 'Gratiné Trois fromages',           base: 'Trois fromages', type: 'gratine',   price: 6.00, image: 'img/americain_dwich.png', description: 'Pain baguette chaud • Crème • Origan • Fromage fondu • Mozza, chèvre et bleue • 2 sauces au choix', needsCustomization: true },
+    { id: 518, name: 'Gratiné Saucisse',       base: 'Saucisse',    type: 'gratine',   price: 5.00, image: 'img/americain_dwich.png', description: 'Pain baguette chaud • Crème • Origan • Fromage fondu • Saucisse • 2 sauces au choix',      needsCustomization: true },
+    { id: 519, name: 'Gratiné Végétarien',     base: 'Végétarien',  type: 'gratine',   price: 5.00, image: 'img/americain_dwich.png', description: 'Pain baguette chaud • Crème • Origan • Fromage fondu • Légumes • 2 sauces au choix',        needsCustomization: true },
 ];

@@ -779,8 +779,22 @@ if (file_exists(JSON_FILE)) {
                 <!-- Fermeture anticipée -->
                 <div class="closure-card emergency">
                     <h2><i class="fas fa-clock"></i> Fermeture Anticipée</h2>
-                    <p>Fermer les commandes <strong>maintenant</strong> pour le reste de la journée (ex: départ anticipé, problème technique).</p>
+                    <p>Fermer les commandes <strong>maintenant</strong> (ex: départ anticipé, problème technique).</p>
                     <div class="closure-form">
+                        <div class="form-group">
+                            <label>Service à fermer *</label>
+                            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px;">
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:normal;">
+                                    <input type="radio" name="emergency-service" value="midi"> 🌞 Service du midi (11h–14h)
+                                </label>
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:normal;">
+                                    <input type="radio" name="emergency-service" value="soir"> 🌙 Service du soir (18h–21h)
+                                </label>
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:normal;">
+                                    <input type="radio" name="emergency-service" value="all" checked> 📅 Toute la journée
+                                </label>
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label for="emergency-reason">Raison de la fermeture (optionnel)</label>
                             <input type="text" id="emergency-reason" placeholder="Ex: Départ anticipé, problème technique...">
@@ -804,14 +818,23 @@ if (file_exists(JSON_FILE)) {
                             <label for="closure-reason">Raison de la fermeture *</label>
                             <input type="text" id="closure-reason" placeholder="Ex: Noël, Congés annuels, Événement spécial..." required>
                         </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label for="closure-service">Service à fermer *</label>
+                            <select id="closure-service" onchange="updateClosureTimes()" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:15px;">
+                                <option value="all">📅 Toute la journée</option>
+                                <option value="midi">🌞 Service du midi (11h–14h)</option>
+                                <option value="soir">🌙 Service du soir (18h–21h)</option>
+                                <option value="custom">🕐 Horaires personnalisés</option>
+                            </select>
+                        </div>
+                        <div id="custom-times" style="display:none; grid-template-columns: 1fr 1fr; gap: 15px;">
                             <div class="form-group">
-                                <label for="closure-start-time">Heure de début (optionnel)</label>
-                                <input type="time" id="closure-start-time" placeholder="Laisser vide pour toute la journée">
+                                <label for="closure-start-time">Heure de début</label>
+                                <input type="time" id="closure-start-time">
                             </div>
                             <div class="form-group">
-                                <label for="closure-end-time">Heure de fin (optionnel)</label>
-                                <input type="time" id="closure-end-time" placeholder="Laisser vide pour toute la journée">
+                                <label for="closure-end-time">Heure de fin</label>
+                                <input type="time" id="closure-end-time">
                             </div>
                         </div>
                         <button class="btn btn-add-closure" onclick="addScheduledClosure()">
@@ -1130,13 +1153,18 @@ if (file_exists(JSON_FILE)) {
         // Fermeture anticipée (maintenant)
         function closeNow() {
             const reason = document.getElementById('emergency-reason').value || 'Fermeture anticipée';
+            const service = document.querySelector('input[name="emergency-service"]:checked')?.value || 'all';
+            const serviceLabel = service === 'midi' ? 'le service du midi (11h–14h)'
+                               : service === 'soir' ? 'le service du soir (18h–21h)'
+                               : 'toute la journée';
             
-            if (confirm('⚠️ Confirmer la fermeture des commandes MAINTENANT ?\n\nLes clients ne pourront plus commander pour aujourd\'hui.')) {
+            if (confirm(`⚠️ Confirmer la fermeture des commandes pour ${serviceLabel} ?\n\nLes clients ne pourront plus commander pour ce créneau.`)) {
                 const now = new Date();
                 unavailability.closures.emergency = {
                     date: now.toISOString().split('T')[0],
                     time: now.toTimeString().split(' ')[0],
                     reason: reason,
+                    service: service,
                     timestamp: now.toISOString()
                 };
                 
@@ -1144,7 +1172,28 @@ if (file_exists(JSON_FILE)) {
                 loadClosures();
                 document.getElementById('emergency-reason').value = '';
                 
-                alert('✅ Commandes fermées avec succès !\n\nLes clients verront un message indiquant que le restaurant est fermé.');
+                alert(`✅ Commandes fermées pour ${serviceLabel} !\n\nLes clients verront un message de fermeture.`);
+            }
+        }
+
+        // Mettre à jour les heures selon le service choisi
+        function updateClosureTimes() {
+            const service = document.getElementById('closure-service').value;
+            const customDiv = document.getElementById('custom-times');
+            const startInput = document.getElementById('closure-start-time');
+            const endInput = document.getElementById('closure-end-time');
+            
+            if (service === 'midi') {
+                startInput.value = '11:00'; endInput.value = '14:00';
+                customDiv.style.display = 'none';
+            } else if (service === 'soir') {
+                startInput.value = '18:00'; endInput.value = '21:00';
+                customDiv.style.display = 'none';
+            } else if (service === 'all') {
+                startInput.value = ''; endInput.value = '';
+                customDiv.style.display = 'none';
+            } else {
+                customDiv.style.display = 'grid';
             }
         }
 
@@ -1152,6 +1201,7 @@ if (file_exists(JSON_FILE)) {
         function addScheduledClosure() {
             const date = document.getElementById('closure-date').value;
             const reason = document.getElementById('closure-reason').value;
+            const service = document.getElementById('closure-service').value;
             const startTime = document.getElementById('closure-start-time').value;
             const endTime = document.getElementById('closure-end-time').value;
             
@@ -1170,13 +1220,24 @@ if (file_exists(JSON_FILE)) {
                 unavailability.closures.scheduled = unavailability.closures.scheduled.filter(c => c.date !== date);
             }
             
+            // Calcul des startTime/endTime selon le service
+            let resolvedStart = null;
+            let resolvedEnd = null;
+            if (service === 'midi') { resolvedStart = '11:00:00'; resolvedEnd = '14:00:00'; }
+            else if (service === 'soir') { resolvedStart = '18:00:00'; resolvedEnd = '21:00:00'; }
+            else if (service === 'custom') {
+                resolvedStart = startTime ? startTime + ':00' : null;
+                resolvedEnd = endTime ? endTime + ':00' : null;
+            }
+
             const closure = {
                 id: Date.now(),
                 date: date,
                 reason: reason,
-                startTime: startTime || null,
-                endTime: endTime || null,
-                fullDay: !startTime && !endTime,
+                service: service,
+                startTime: resolvedStart,
+                endTime: resolvedEnd,
+                fullDay: service === 'all',
                 createdAt: new Date().toISOString()
             };
             
@@ -1189,7 +1250,9 @@ if (file_exists(JSON_FILE)) {
             // Réinitialiser le formulaire
             document.getElementById('closure-date').value = '';
             document.getElementById('closure-reason').value = '';
+            document.getElementById('closure-service').value = 'all';
             document.getElementById('closure-start-time').value = '';
+            document.getElementById('custom-times').style.display = 'none';
             document.getElementById('closure-end-time').value = '';
             
             alert('✅ Fermeture programmée avec succès !');
@@ -1225,12 +1288,16 @@ if (file_exists(JSON_FILE)) {
             if (unavailability.closures.emergency) {
                 const emergency = unavailability.closures.emergency;
                 const emergencyDate = new Date(emergency.timestamp);
+                const serviceLabel = emergency.service === 'midi' ? '🌞 Service du midi (11h–14h)'
+                                   : emergency.service === 'soir' ? '🌙 Service du soir (18h–21h)'
+                                   : '📅 Toute la journée';
                 
                 list.innerHTML += `
                     <div class="closure-item emergency">
                         <div class="closure-info">
                             <h4>🚨 FERMETURE D'URGENCE EN COURS</h4>
                             <p><strong>Depuis:</strong> ${emergencyDate.toLocaleDateString('fr-FR')} à ${emergency.time}</p>
+                            <p><strong>Service:</strong> ${serviceLabel}</p>
                             <p><strong>Raison:</strong> ${emergency.reason}</p>
                         </div>
                         <span class="closure-badge badge-emergency">ACTIF</span>
@@ -1250,16 +1317,17 @@ if (file_exists(JSON_FILE)) {
                     
                     if (isPast) return; // Ne pas afficher les fermetures passées
                     
-                    const timeInfo = closure.fullDay 
-                        ? 'Toute la journée' 
-                        : `De ${closure.startTime || '00:00'} à ${closure.endTime || '23:59'}`;
+                    const serviceLabel = closure.service === 'midi' ? '🌞 Service du midi (11h–14h)'
+                                       : closure.service === 'soir' ? '🌙 Service du soir (18h–21h)'
+                                       : closure.fullDay ? '📅 Toute la journée'
+                                       : `🕐 De ${closure.startTime?.slice(0,5) || '00:00'} à ${closure.endTime?.slice(0,5) || '23:59'}`;
                     
                     list.innerHTML += `
                         <div class="closure-item ${isToday ? 'active' : ''}">
                             <div class="closure-info">
                                 <h4>${closure.reason}</h4>
                                 <p><strong>Date:</strong> ${closureDate.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                                <p><strong>Horaires:</strong> ${timeInfo}</p>
+                                <p><strong>Service:</strong> ${serviceLabel}</p>
                             </div>
                             <span class="closure-badge ${isToday ? 'badge-active' : 'badge-future'}">
                                 ${isToday ? 'AUJOURD\'HUI' : 'À VENIR'}

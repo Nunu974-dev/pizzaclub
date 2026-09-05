@@ -1,0 +1,24 @@
+User-agent: *
+Allow: /
+
+# Bloquer les fichiers admin et outils internes
+Disallow: /admin-dashboard.php
+Disallow: /admin-dashboard-v2.php
+Disallow: /admin-indispos-manager.php
+Disallow: /orders-log.php
+Disallow: /inventory-manager.php
+Disallow: /promo-manager.php
+Disallow: /send-order.php
+Disallow: /get-unavailability.php
+Disallow: /validate-promo.php
+Disallow: /check-closure.php
+Disallow: /orders.json
+Disallow: /inventory.json
+Disallow: /unavailability.json
+Disallow: /promo-codes.json
+Disallow: /temperatures.json
+Disallow: /backups/
+Disallow: /config/
+
+# Sitemap
+Sitemap: https://www.pizzaclub.re/sitemap.xml

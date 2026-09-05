@@ -212,22 +212,24 @@ foreach ($orderData['items'] as $item) {
     if ($item['type'] === 'formule') {
         // FORMULE MIDI - Détails de la pizza choisie
         if (isset($custom['pizza']) && !empty($custom['pizza'])) {
+            $pizzaCust = $custom['pizzaCustomization'] ?? [];
             $itemsList .= "\n  ▶ Pizza: " . $custom['pizza'];
             
             // Taille de la pizza
-            if (!empty($custom['pizzaSize'])) {
-                $pizzaSizeLabel = ($custom['pizzaSize'] === 'moyenne') ? '33cm' : '40cm';
+            if (!empty($pizzaCust['size'])) {
+                $pizzaSizeLabel = ($pizzaCust['size'] === 'moyenne') ? '33cm' : '40cm';
                 $itemsList .= " (" . $pizzaSizeLabel . ")";
             }
             
             // Base de la pizza
-            if (!empty($custom['pizzaBase'])) {
-                $baseLabel = ($custom['pizzaBase'] === 'creme') ? 'Crème' : 'Tomate';
+            if (!empty($pizzaCust['base'])) {
+                $baseLabel = ($pizzaCust['base'] === 'creme') ? 'Crème' : 'Tomate';
                 $itemsList .= "\n    Base: " . $baseLabel;
             }
             
             // Ingrédients ajoutés à la pizza
-            if (!empty($custom['pizzaAdded']) && is_array($custom['pizzaAdded']) && count($custom['pizzaAdded']) > 0) {
+            $pizzaAdded = $pizzaCust['addedIngredients'] ?? [];
+            if (!empty($pizzaAdded) && is_array($pizzaAdded) && count($pizzaAdded) > 0) {
                 $names = [
                     'champignons' => 'Champignons', 'olives' => 'Olives', 'poivrons' => 'Poivrons',
                     'oignons' => 'Oignons', 'tomates' => 'Tomates', 'pommesDeTerre' => 'Pommes de terre',
@@ -240,12 +242,13 @@ foreach ($orderData['items'] as $item) {
                 ];
                 $addedNames = array_map(function($key) use ($names) {
                     return $names[$key] ?? $key;
-                }, $custom['pizzaAdded']);
+                }, $pizzaAdded);
                 $itemsList .= "\n    ➕ AJOUTS: " . implode(', ', $addedNames);
             }
             
             // Ingrédients retirés de la pizza
-            if (!empty($custom['pizzaRemoved']) && is_array($custom['pizzaRemoved']) && count($custom['pizzaRemoved']) > 0) {
+            $pizzaRemoved = $pizzaCust['removedIngredients'] ?? [];
+            if (!empty($pizzaRemoved) && is_array($pizzaRemoved) && count($pizzaRemoved) > 0) {
                 $names = [
                     'champignons' => 'Champignons', 'olives' => 'Olives', 'poivrons' => 'Poivrons',
                     'oignons' => 'Oignons', 'tomates' => 'Tomates', 'pommesDeTerre' => 'Pommes de terre',
@@ -258,7 +261,7 @@ foreach ($orderData['items'] as $item) {
                 ];
                 $removedNames = array_map(function($key) use ($names) {
                     return $names[$key] ?? $key;
-                }, $custom['pizzaRemoved']);
+                }, $pizzaRemoved);
                 $itemsList .= "\n    ➖ RETRAITS: " . implode(', ', $removedNames);
             }
             
@@ -268,79 +271,54 @@ foreach ($orderData['items'] as $item) {
             }
         }
         // FORMULE PÂTES/SALADE - Détails du plat principal
-        elseif (isset($custom['pate']) && !empty($custom['pate'])) {
-            $itemsList .= "\n  ▶ Pâte: " . $custom['pate'];
+        elseif (isset($custom['mainItem']) && is_array($custom['mainItem'])) {
+            $mainItem = $custom['mainItem'];
+            $mainCust = $mainItem['customization'] ?? [];
             
-            // Taille de la pâte
-            if (!empty($custom['pateSize'])) {
-                $pateSizeLabel = ($custom['pateSize'] === 'L') ? 'Large' : 'XL';
-                $itemsList .= " (" . $pateSizeLabel . ")";
-            }
-            
-            // Base de la pâte
-            if (!empty($custom['pateBase'])) {
-                $itemsList .= "\n    Base: " . $custom['pateBase'];
-            }
-            
-            // Suppléments de la pâte
-            if (!empty($custom['pateSupplements']) && is_array($custom['pateSupplements']) && count($custom['pateSupplements']) > 0) {
-                $names = [
-                    'champignons' => 'Champignons', 'olives' => 'Olives', 'poivrons' => 'Poivrons',
-                    'oignons' => 'Oignons', 'tomates' => 'Tomates', 'pommesDeTerre' => 'Pommes de terre',
-                    'mais' => 'Maïs', 'grosPiment' => 'Gros piment', 'fromage' => 'Fromage',
-                    'chevre' => 'Chèvre', 'gorgonzola' => 'Gorgonzola', 'parmesan' => 'Parmesan',
-                    'jambon' => 'Jambon', 'poulet' => 'Poulet', 'merguez' => 'Merguez',
-                    'chorizo' => 'Chorizo', 'boeuf' => 'Bœuf', 'lardons' => 'Lardons',
-                    'thon' => 'Thon', 'anchois' => 'Anchois', 'crevettes' => 'Crevettes',
-                    'saumon' => 'Saumon', 'oeuf' => 'Œuf', 'miel' => 'Miel'
-                ];
-                $supplementNames = array_map(function($key) use ($names) {
-                    return $names[$key] ?? $key;
-                }, $custom['pateSupplements']);
-                $itemsList .= "\n    ➕ Suppléments: " . implode(', ', $supplementNames);
-            }
-            
-            // Boisson
-            if (!empty($custom['boisson'])) {
-                $itemsList .= "\n  ▶ Boisson: " . $custom['boisson'];
-            }
-            
-            // Dessert
-            if (!empty($custom['dessert'])) {
-                $itemsList .= "\n  ▶ Dessert: " . $custom['dessert'];
-            }
-        }
-        elseif (isset($custom['salade']) && !empty($custom['salade'])) {
-            $itemsList .= "\n  ▶ Salade: " . $custom['salade'];
-            
-            // Options de la salade
-            if (!empty($custom['saladeOptions']) && is_array($custom['saladeOptions']) && count($custom['saladeOptions']) > 0) {
-                $optionLabels = [];
-                foreach ($custom['saladeOptions'] as $opt) {
-                    if ($opt === 'pain') $optionLabels[] = 'Avec pain';
-                    elseif ($opt === 'vinaigrette-sup') $optionLabels[] = 'Vinaigrette supplémentaire';
+            if ($mainItem['type'] === 'pate') {
+                $itemsList .= "\n  ▶ Pâte: " . $mainItem['name'];
+                
+                // Taille de la pâte
+                if (!empty($mainCust['size'])) {
+                    $pateSizeLabel = ($mainCust['size'] === 'L') ? 'Large' : 'XL';
+                    $itemsList .= " (" . $pateSizeLabel . ")";
                 }
-                if (count($optionLabels) > 0) {
-                    $itemsList .= "\n    Options: " . implode(', ', $optionLabels);
+                
+                // Base de la pâte
+                if (!empty($mainCust['base'])) {
+                    $itemsList .= "\n    Base: " . $mainCust['base'];
                 }
-            }
-            
-            // Suppléments de la salade
-            if (!empty($custom['saladeSupplements']) && is_array($custom['saladeSupplements']) && count($custom['saladeSupplements']) > 0) {
-                $names = [
-                    'champignons' => 'Champignons', 'olives' => 'Olives', 'poivrons' => 'Poivrons',
-                    'oignons' => 'Oignons', 'tomates' => 'Tomates', 'pommesDeTerre' => 'Pommes de terre',
-                    'mais' => 'Maïs', 'grosPiment' => 'Gros piment', 'fromage' => 'Fromage',
-                    'chevre' => 'Chèvre', 'gorgonzola' => 'Gorgonzola', 'parmesan' => 'Parmesan',
-                    'jambon' => 'Jambon', 'poulet' => 'Poulet', 'merguez' => 'Merguez',
-                    'chorizo' => 'Chorizo', 'boeuf' => 'Bœuf', 'lardons' => 'Lardons',
-                    'thon' => 'Thon', 'anchois' => 'Anchois', 'crevettes' => 'Crevettes',
-                    'saumon' => 'Saumon', 'oeuf' => 'Œuf', 'miel' => 'Miel'
-                ];
-                $supplementNames = array_map(function($key) use ($names) {
-                    return $names[$key] ?? $key;
-                }, $custom['saladeSupplements']);
-                $itemsList .= "\n    ➕ Suppléments: " . implode(', ', $supplementNames);
+                
+                // Suppléments de la pâte (noms déjà traduits par le JS)
+                if (!empty($mainCust['supplements']) && is_array($mainCust['supplements']) && count($mainCust['supplements']) > 0) {
+                    $itemsList .= "\n    ➕ Suppléments: " . implode(', ', $mainCust['supplements']);
+                }
+            } else {
+                // Salade
+                $itemsList .= "\n  ▶ Salade: " . $mainItem['name'];
+                
+                // Base de la salade
+                if (!empty($mainCust['base'])) {
+                    $itemsList .= "\n    Base: " . $mainCust['base'];
+                }
+                
+                // Options de la salade
+                if (!empty($mainCust['options']) && is_array($mainCust['options']) && count($mainCust['options']) > 0) {
+                    $optionLabels = [];
+                    foreach ($mainCust['options'] as $opt) {
+                        if ($opt === 'pain') $optionLabels[] = 'Avec pain';
+                        elseif ($opt === 'vinaigrette-sup') $optionLabels[] = 'Vinaigrette supplémentaire';
+                        else $optionLabels[] = $opt;
+                    }
+                    if (count($optionLabels) > 0) {
+                        $itemsList .= "\n    Options: " . implode(', ', $optionLabels);
+                    }
+                }
+                
+                // Suppléments de la salade (noms déjà traduits par le JS)
+                if (!empty($mainCust['supplements']) && is_array($mainCust['supplements']) && count($mainCust['supplements']) > 0) {
+                    $itemsList .= "\n    ➕ Suppléments: " . implode(', ', $mainCust['supplements']);
+                }
             }
             
             // Boisson
@@ -954,6 +932,12 @@ try {
 
     $ntfyMessage = "📋 {$orderNum}\n👤 {$firstName} {$lastName} - {$phone}\n{$mode}\n\n{$itemsText}\n\n💰 TOTAL : {$total}€";
 
+    // Ajouter le créneau horaire si commande programmée
+    if (!empty($orderData['scheduledDate']) && isset($orderData['scheduledTime'])) {
+        $scheduledHour = (int)$orderData['scheduledTime'];
+        $ntfyMessage .= "\n⏰ PROGRAMMÉE : " . $orderData['scheduledDate'] . " · " . $scheduledHour . "h00-" . ($scheduledHour+1) . "h00";
+    }
+
     $ch = curl_init(NTFY_SERVER . '/' . NTFY_TOPIC);
     curl_setopt_array($ch, [
         CURLOPT_POST           => true,
@@ -962,8 +946,9 @@ try {
         CURLOPT_TIMEOUT        => 5,
         CURLOPT_HTTPHEADER     => [
             'Title: 🍕 NOUVELLE COMMANDE !',
-            'Tags: bell,rotating_light',
-            'Priority: urgent',
+            'Tags: bell,rotating_light,mega',
+            'Priority: max',
+            'X-Sound: default',
             'Content-Type: text/plain; charset=utf-8',
         ],
     ]);

@@ -4,7 +4,7 @@
 .whatsapp-float {
     position: fixed;
     bottom: 20px;
-    right: 20px;
+    right: 80px;
     width: 60px;
     height: 60px;
     background-color: #25D366;
@@ -33,7 +33,7 @@
 @media (max-width: 768px) {
     .whatsapp-float {
         bottom: 15px;
-        right: 15px;
+        right: 35px;
         width: 56px;
         height: 56px;
     }
@@ -81,8 +81,12 @@ body {
     font-family: 'Poppins', sans-serif;
     color: var(--text-dark);
     line-height: 1.6;
-    overflow-x: hidden;
     background-color: var(--secondary-color);
+    overflow-x: hidden;
+}
+
+html {
+    overflow-x: hidden;
 }
 
 .container {
@@ -145,6 +149,7 @@ input, textarea, select {
     display: flex;
     align-items: center;
     gap: 12px;
+    padding-left: 8px;
 }
 
 .logo {
@@ -161,6 +166,7 @@ input, textarea, select {
     display: flex;
     gap: 2rem;
     align-items: center;
+    margin-left: 2.5rem;
 }
 
 .nav-link {
@@ -1840,7 +1846,7 @@ label:has(input[type="radio"]:checked) {
     .nav-menu {
         position: fixed;
         top: 80px;
-        left: -100%;
+        left: 0;
         width: 100%;
         height: calc(100vh - 80px); /* Hauteur complète moins le header */
         background: var(--secondary-color);
@@ -1848,13 +1854,15 @@ label:has(input[type="radio"]:checked) {
         padding: 2rem;
         padding-bottom: 4rem; /* Espace en bas pour scroll complet */
         box-shadow: var(--shadow-md);
-        transition: var(--transition);
+        transition: transform 0.3s ease;
         overflow-y: auto; /* Permettre le scroll vertical */
         -webkit-overflow-scrolling: touch; /* Smooth scroll iOS */
+        transform: translateX(-100%);
+        margin-left: 0; /* Reset du margin desktop (2.5rem) qui créait un overflow de 40px → bandeau gauche sur iOS */
     }
 
     .nav-menu.active {
-        left: 0;
+        transform: translateX(0);
     }
 
     .nav-toggle {
@@ -1863,6 +1871,7 @@ label:has(input[type="radio"]:checked) {
 
     .hero {
         min-height: 80vh;
+        padding-top: 80px;
     }
 
     .menu-grid {
@@ -1879,11 +1888,13 @@ label:has(input[type="radio"]:checked) {
 
     .cart-sidebar {
         width: 100%;
-        right: -100%;
+        right: 0;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
     }
 
     .cart-sidebar.active {
-        right: 0;
+        transform: translateX(0);
     }
 
     .modal-content {

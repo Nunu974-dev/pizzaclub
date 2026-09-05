@@ -5,12 +5,25 @@
  * Peut être inclus comme module (require_once) ou appelé directement comme API
  */
 
+// Fuseau horaire La Réunion (UTC+4) - indispensable ici car ce fichier est aussi
+// appelé directement comme API (fetch côté client), sans passer par un autre
+// script qui définirait déjà le fuseau. Sans ça, "aujourd'hui" est calculé selon
+// le fuseau par défaut du serveur, ce qui peut décaler la date d'un jour et faire
+// apparaître le lendemain comme fermé (ou l'inverse) selon l'heure.
+if (function_exists('date_default_timezone_set')) {
+    date_default_timezone_set('Indian/Reunion');
+}
+
 // Ne définir JSON_FILE que s'il n'est pas déjà défini
 if (!defined('JSON_FILE')) {
     define('JSON_FILE', __DIR__ . '/unavailability.json');
 }
 
 function isRestaurantClosed() {
+    // Accepter une date/heure spécifique à vérifier (pour les commandes programmées)
+    $checkDateParam = $_GET['checkDate'] ?? null;
+    $checkTimeParam = $_GET['checkTime'] ?? null;
+
     if (!file_exists(JSON_FILE)) {
         return [
             'isClosed' => false,
@@ -27,10 +40,23 @@ function isRestaurantClosed() {
         ];
     }
     
-    $now = new DateTime();
-    $today = $now->format('Y-m-d');
-    $currentTime = $now->format('H:i:s');
-    $dayOfWeek = (int)$now->format('N'); // 1 = Lundi, 7 = Dimanche
+    // Si on vérifie une date/heure future (commande programmée), utiliser ces valeurs
+    if ($checkDateParam && $checkTimeParam) {
+        $checkDT = DateTime::createFromFormat('Y-m-d H:i', $checkDateParam . ' ' . $checkTimeParam);
+        if (!$checkDT) {
+            return ['isClosed' => false, 'reason' => null];
+        }
+        $today       = $checkDateParam;
+        $currentTime = $checkDT->format('H:i:s');
+        $currentHour = (int)$checkDT->format('G');
+        $dayOfWeek   = (int)$checkDT->format('N');
+    } else {
+        $now         = new DateTime();
+        $today       = $now->format('Y-m-d');
+        $currentTime = $now->format('H:i:s');
+        $currentHour = (int)date('G');
+        $dayOfWeek   = (int)$now->format('N');
+    }
     
     // ========================================
     // JOURS DE FERMETURE RÉGULIERS
@@ -47,7 +73,6 @@ function isRestaurantClosed() {
     
     // Dimanche midi = fermeture (N = 7) - uniquement avant 17h
     if ($dayOfWeek === 7) {
-        $currentHour = (int)date('G');
         if ($currentHour < 17) {
             return [
                 'isClosed' => true,
@@ -62,15 +87,30 @@ function isRestaurantClosed() {
     if (isset($data['closures']['emergency']) && $data['closures']['emergency'] !== null) {
         $emergency = $data['closures']['emergency'];
         $emergencyDate = $emergency['date'];
+        $emergencyService = $emergency['service'] ?? 'all';
         
-        // Si la fermeture d'urgence est pour aujourd'hui
         if ($emergencyDate === $today) {
-            return [
-                'isClosed' => true,
-                'reason' => $emergency['reason'],
-                'type' => 'emergency',
-                'message' => '🚨 Restaurant fermé : ' . $emergency['reason']
-            ];
+            $isClosed = false;
+            $serviceMsg = '';
+            if ($emergencyService === 'all') {
+                $isClosed = true;
+                $serviceMsg = 'pour aujourd\'hui';
+            } elseif ($emergencyService === 'midi' && $currentHour >= 11 && $currentHour < 14) {
+                $isClosed = true;
+                $serviceMsg = 'pour le service du midi';
+            } elseif ($emergencyService === 'soir' && $currentHour >= 18 && $currentHour < 21) {
+                $isClosed = true;
+                $serviceMsg = 'pour le service du soir';
+            }
+            if ($isClosed) {
+                return [
+                    'isClosed'       => true,
+                    'reason'         => $emergency['reason'],
+                    'type'           => 'emergency',
+                    'service'        => $emergencyService,
+                    'message'        => '🚨 Restaurant fermé ' . $serviceMsg . ' : ' . $emergency['reason']
+                ];
+            }
         }
     }
     
@@ -113,8 +153,8 @@ function isRestaurantClosed() {
     // Midi: 11h-14h | Soir: 18h-21h
     // ========================================
     
-    $currentHour = (int)date('G');
-    $currentMinute = (int)date('i');
+    // $currentHour est déjà défini plus haut
+    $currentMinute = $checkDateParam ? (int)(new DateTime($checkDateParam . ' ' . $checkTimeParam))->format('i') : (int)date('i');
     $currentTotalMinutes = ($currentHour * 60) + $currentMinute;
     
     // Vérifier si on est pendant les heures de fermeture (entre 14h et 18h)
@@ -156,35 +196,35 @@ function isRestaurantClosed() {
     $deliveryMode = $_GET['deliveryMode'] ?? $_POST['deliveryMode'] ?? $GLOBALS['_deliveryMode'] ?? 'livraison';
     $isDelivery = ($deliveryMode === 'livraison');
     
-    // Délais avant fermeture
-    $cutoffMinutes = $isDelivery ? 45 : 30;
-    
-    // Horaires de fermeture (14h midi, 21h soir)
-    $closingTimes = [
-        ['hour' => 14, 'minute' => 0],  // Fermeture midi
-        ['hour' => 21, 'minute' => 0],  // Fermeture soir
-    ];
-    
-    foreach ($closingTimes as $closing) {
-        $closingTotalMinutes = ($closing['hour'] * 60) + $closing['minute'];
-        $cutoffTime = $closingTotalMinutes - $cutoffMinutes;
+    // Le délai de coupure avant fermeture ne s'applique qu'aux commandes immédiates
+    if (!$checkDateParam) {
+        $cutoffMinutes = $isDelivery ? 45 : 30;
         
-        // Si on est dans la période de blocage avant fermeture
-        if ($currentTotalMinutes >= $cutoffTime && $currentTotalMinutes < $closingTotalMinutes) {
-            $closingTimeStr = sprintf("%02dh%02d", $closing['hour'], $closing['minute']);
-            $cutoffTimeHour = floor($cutoffTime / 60);
-            $cutoffTimeMin = $cutoffTime % 60;
-            $cutoffTimeStr = sprintf("%02dh%02d", $cutoffTimeHour, $cutoffTimeMin);
+        $closingTimes = [
+            ['hour' => 14, 'minute' => 0],
+            ['hour' => 21, 'minute' => 0],
+        ];
+        
+        foreach ($closingTimes as $closing) {
+            $closingTotalMinutes = ($closing['hour'] * 60) + $closing['minute'];
+            $cutoffTime = $closingTotalMinutes - $cutoffMinutes;
             
-            return [
-                'isClosed' => true,
-                'reason' => 'Délai avant fermeture',
-                'type' => 'cutoff',
-                'closingTime' => $closingTimeStr,
-                'cutoffTime' => $cutoffTimeStr,
-                'deliveryMode' => $deliveryMode,
-                'message' => "⏰ Commandes " . ($isDelivery ? 'en livraison' : 'à emporter') . " fermées (fermeture à $closingTimeStr). Réouverture prochaine !"
-            ];
+            if ($currentTotalMinutes >= $cutoffTime && $currentTotalMinutes < $closingTotalMinutes) {
+                $closingTimeStr = sprintf("%02dh%02d", $closing['hour'], $closing['minute']);
+                $cutoffTimeHour = floor($cutoffTime / 60);
+                $cutoffTimeMin = $cutoffTime % 60;
+                $cutoffTimeStr = sprintf("%02dh%02d", $cutoffTimeHour, $cutoffTimeMin);
+                
+                return [
+                    'isClosed' => true,
+                    'reason' => 'Délai avant fermeture',
+                    'type' => 'cutoff',
+                    'closingTime' => $closingTimeStr,
+                    'cutoffTime' => $cutoffTimeStr,
+                    'deliveryMode' => $deliveryMode,
+                    'message' => "⏰ Commandes " . ($isDelivery ? 'en livraison' : 'à emporter') . " fermées (fermeture à $closingTimeStr). Réouverture prochaine !"
+                ];
+            }
         }
     }
     

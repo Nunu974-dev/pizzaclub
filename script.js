@@ -71,6 +71,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderBuns();
     renderRolls();
     renderDesserts();
+    renderBoissons();
+    renderSandwiches();
     
     setupEventListeners();
     
@@ -232,6 +234,7 @@ function initApp() {
 // Chargement dynamique des indisponibilités depuis le serveur
 let DYNAMIC_UNAVAILABLE_ITEMS = {};
 let DYNAMIC_UNAVAILABLE_INGREDIENTS = {};
+let RESTAURANT_CLOSURE_STATUS = { isClosed: false, reason: null };
 
 // Chargement au démarrage
 async function loadUnavailability() {
@@ -260,6 +263,108 @@ function isIngredientUnavailable(ingredientKey) {
 
 function getAvailableIngredients(ingredientsList) {
     return Object.keys(ingredientsList).filter(key => !isIngredientUnavailable(key));
+}
+
+function normalizeIngredientKey(value) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+}
+
+function getCartItemAvailabilityInfo(item) {
+    if (!item || !item.type) return null;
+
+    switch (item.type) {
+        case 'pizza':
+            return { sourceType: 'pizza', sourceId: item.pizzaId };
+        case 'pate':
+            return { sourceType: 'pate', sourceId: item.pateId ?? item.itemId };
+        case 'salade':
+            return { sourceType: 'salade', sourceId: item.saladeId ?? item.itemId };
+        case 'bun':
+            return { sourceType: 'bun', sourceId: item.bunId ?? item.itemId };
+        case 'roll':
+            return { sourceType: 'roll', sourceId: item.rollId ?? item.itemId };
+        case 'dessert':
+            return { sourceType: 'dessert', sourceId: item.itemId };
+        case 'boisson':
+            return { sourceType: 'boisson', sourceId: item.boissonId ?? item.itemId };
+        case 'sandwich':
+            return { sourceType: 'sandwich', sourceId: item.sandwichId ?? item.itemId };
+        default:
+            return null;
+    }
+}
+
+function collectItemIngredientKeys(item) {
+    const keys = [];
+    const c = item?.customization || {};
+
+    if (Array.isArray(c.addedIngredients)) {
+        keys.push(...c.addedIngredients);
+    }
+    if (Array.isArray(c.ingredients)) {
+        keys.push(...c.ingredients);
+    }
+    if (c.ingredients && Array.isArray(c.ingredients.added)) {
+        keys.push(...c.ingredients.added);
+    }
+    if (c.pizzaCustomization) {
+        const pc = c.pizzaCustomization;
+        if (Array.isArray(pc.addedIngredients)) {
+            keys.push(...pc.addedIngredients);
+        }
+        if (pc.ingredients && Array.isArray(pc.ingredients.added)) {
+            keys.push(...pc.ingredients.added);
+        }
+    }
+
+    return keys.filter(Boolean);
+}
+
+function validateCartAgainstCurrentRules() {
+    const unavailableItems = [];
+    const unavailableIngredients = [];
+    const seenItems = new Set();
+    const seenIngredients = new Set();
+
+    const unavailableIngredientNormalized = new Set(
+        Object.keys(DYNAMIC_UNAVAILABLE_INGREDIENTS || {})
+            .filter(key => DYNAMIC_UNAVAILABLE_INGREDIENTS[key] === true)
+            .map(normalizeIngredientKey)
+    );
+
+    cart.forEach(item => {
+        const info = getCartItemAvailabilityInfo(item);
+        if (info && info.sourceId != null && isItemUnavailable(info.sourceId, info.sourceType)) {
+            const label = item.name || `${info.sourceType} #${info.sourceId}`;
+            if (!seenItems.has(label)) {
+                unavailableItems.push(label);
+                seenItems.add(label);
+            }
+        }
+
+        const ingredientKeys = collectItemIngredientKeys(item);
+        ingredientKeys.forEach(ingredientKey => {
+            const normalized = normalizeIngredientKey(ingredientKey);
+            const isUnavailable =
+                isIngredientUnavailable(ingredientKey) ||
+                unavailableIngredientNormalized.has(normalized);
+
+            if (isUnavailable && !seenIngredients.has(normalized)) {
+                unavailableIngredients.push(String(ingredientKey));
+                seenIngredients.add(normalized);
+            }
+        });
+    });
+
+    return {
+        isValid: unavailableItems.length === 0 && unavailableIngredients.length === 0,
+        unavailableItems,
+        unavailableIngredients
+    };
 }
 
 // ========================================
@@ -301,8 +406,7 @@ function setupEventListeners() {
                 targetSection = document.getElementById('menu');
             } else {
                 targetSection = document.getElementById(category);
-            }
-            
+            }            
             if (targetSection) {
                 // Calculer l'offset pour compenser header + filtres
                 const headerHeight = 80; // Hauteur du header
@@ -383,6 +487,7 @@ function setupEventListeners() {
             closePromoModal();
             closeFormuleMidiModal();
             closeMenuPatesSaladeModal();
+            closeSandwichCustomizeModal();
             // Ne pas fermer deliveryTimeModal sur overlay click (obligatoire)
         }
     });
@@ -566,6 +671,208 @@ function renderDesserts() {
         const card = createSimpleCard(item, 'dessert');
         dessertsGrid.appendChild(card);
     });
+}
+
+// ========================================
+// RENDU DES BOISSONS
+// ========================================
+function renderBoissons() {
+    const grid = document.getElementById('boissonsGrid');
+    if (!grid || !BOISSONS_DATA) return;
+
+    // Grouper par nom
+    const groups = {};
+    BOISSONS_DATA.forEach(b => {
+        if (!groups[b.name]) groups[b.name] = [];
+        groups[b.name].push(b);
+    });
+
+    grid.innerHTML = '';
+    Object.entries(groups).forEach(([name, variants]) => {
+        const card = document.createElement('div');
+        card.className = 'pizza-card';
+
+        // Si une seule taille : bouton direct
+        let actionsHtml;
+        if (variants.length === 1) {
+            const b = variants[0];
+            actionsHtml = `
+                <div class="pizza-price">${b.price.toFixed(2)}€ <small style="color:#888;font-size:0.75em;">${b.size}</small></div>
+                <div class="pizza-actions">
+                    <button class="btn btn-primary btn-block" onclick="addBoissonToCart(${b.id})">
+                        <i class="fas fa-shopping-cart"></i> Ajouter
+                    </button>
+                </div>`;
+        } else {
+            // Plusieurs tailles : boutons de choix
+            const btns = variants.map(b =>
+                `<button class="btn btn-primary" style="flex:1;" onclick="addBoissonToCart(${b.id})">
+                    ${b.size} &mdash; ${b.price.toFixed(2)}€
+                </button>`
+            ).join('');
+            actionsHtml = `
+                <div class="pizza-price" style="font-size:0.85em;color:#888;">Choisir une taille</div>
+                <div class="pizza-actions" style="display:flex;gap:6px;flex-wrap:wrap;">
+                    ${btns}
+                </div>`;
+        }
+
+        card.innerHTML = `
+            <div class="pizza-content" style="padding:20px;">
+                <div class="pizza-header">
+                    <h3 class="pizza-title"><i class="fas fa-glass-whiskey" style="color:#1a73e8;margin-right:6px;"></i>${name}</h3>
+                </div>
+                ${actionsHtml}
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function addBoissonToCart(boissonId) {
+    if (cart.length === 0 && !deliveryTimeSet) {
+        pendingCartAction = () => addBoissonToCart(boissonId);
+        openDeliveryTimeModal();
+        return;
+    }
+    const boisson = BOISSONS_DATA.find(b => b.id === boissonId);
+    if (!boisson) return;
+
+    const cartItem = {
+        id: Date.now(),
+        type: 'boisson',
+        boissonId: boisson.id,
+        name: `${boisson.name} (${boisson.size})`,
+        basePrice: boisson.price,
+        quantity: 1,
+        customization: {},
+        totalPrice: boisson.price
+    };
+    cart.push(cartItem);
+    saveCartToStorage();
+    updateCartUI();
+    showNotification(`${boisson.name} ajouté au panier`);
+    setTimeout(() => openCart(), 400);
+}
+
+// ========================================
+// RENDU DES SANDWICHS
+// ========================================
+function renderSandwiches() {
+    const grid = document.getElementById('sandwichsGrid');
+    if (!grid || !SANDWICHES_DATA) return;
+
+    grid.innerHTML = '';
+    SANDWICHES_DATA.forEach(sandwich => {
+        const card = document.createElement('div');
+        card.className = 'pizza-card';
+        card.innerHTML = `
+            <div class="pizza-image">
+                <img src="${sandwich.image}" alt="${sandwich.name}">
+            </div>
+            <div class="pizza-content">
+                <div class="pizza-header">
+                    <h3 class="pizza-title">${sandwich.name}</h3>
+                    <p class="pizza-ingredients">${sandwich.description}</p>
+                </div>
+                <div class="pizza-footer">
+                    <div class="pizza-price">${sandwich.price.toFixed(2)}€</div>
+                    <div class="pizza-actions">
+                        <button class="btn btn-primary btn-block" onclick="openSandwichCustomizeModal(${sandwich.id})">
+                            <i class="fas fa-bread-slice"></i> Choisir mes sauces
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+// ── Modal sandwich ──────────────────────────────────────────
+let currentSandwich = null;
+
+function openSandwichCustomizeModal(sandwichId) {
+    const sandwich = SANDWICHES_DATA.find(s => s.id === sandwichId);
+    if (!sandwich) return;
+    currentSandwich = sandwich;
+
+    document.getElementById('sandwichModalTitle').textContent = sandwich.name;
+    // Afficher la base fixe
+    const baseDisplay = document.getElementById('sandwichBaseDisplay');
+    if (baseDisplay) baseDisplay.textContent = sandwich.base;
+    document.querySelectorAll('.sandwich-sauce-cb').forEach(cb => { cb.checked = false; cb.disabled = false; });
+    document.getElementById('sandwichQty').value = 1;
+    document.getElementById('sandwichSauceWarning').style.display = 'none';
+
+    // Setup sauce listeners
+    document.querySelectorAll('.sandwich-sauce-cb').forEach(cb => {
+        cb.addEventListener('change', function() {
+            const checked = document.querySelectorAll('.sandwich-sauce-cb:checked').length;
+            document.querySelectorAll('.sandwich-sauce-cb').forEach(c => {
+                if (!c.checked) c.disabled = checked >= 2;
+            });
+            updateSandwichPrice();
+        });
+    });
+
+    updateSandwichPrice();
+    openModal(document.getElementById('sandwichCustomizeModal'));
+}
+
+function closeSandwichCustomizeModal() {
+    const m = document.getElementById('sandwichCustomizeModal');
+    if (m) m.classList.remove('active');
+    currentSandwich = null;
+}
+
+function changeSandwichQty(delta) {
+    const input = document.getElementById('sandwichQty');
+    const val = parseInt(input.value) + delta;
+    if (val >= 1 && val <= 10) { input.value = val; updateSandwichPrice(); }
+}
+
+function updateSandwichPrice() {
+    if (!currentSandwich) return;
+    const qty = parseInt(document.getElementById('sandwichQty').value) || 1;
+    const total = currentSandwich.price * qty;
+    document.getElementById('sandwichPrice').textContent = `${total.toFixed(2)}€`;
+}
+
+function addSandwichToCart() {
+    if (!currentSandwich) return;
+
+    if (cart.length === 0 && !deliveryTimeSet) {
+        pendingCartAction = () => addSandwichToCart();
+        openDeliveryTimeModal();
+        return;
+    }
+
+    const selectedSauces = Array.from(document.querySelectorAll('.sandwich-sauce-cb:checked')).map(cb => cb.value);
+    if (selectedSauces.length !== 2) {
+        document.getElementById('sandwichSauceWarning').style.display = 'block';
+        return;
+    }
+
+    const qty = parseInt(document.getElementById('sandwichQty').value) || 1;
+    const unitPrice = currentSandwich.price;
+
+    const cartItem = {
+        id: Date.now(),
+        type: 'sandwich',
+        sandwichId: currentSandwich.id,
+        name: currentSandwich.name,
+        basePrice: unitPrice,
+        quantity: qty,
+        customization: { base: currentSandwich.base, sauces: selectedSauces, type: currentSandwich.type },
+        totalPrice: unitPrice * qty
+    };
+    cart.push(cartItem);
+    saveCartToStorage();
+    updateCartUI();
+    closeSandwichCustomizeModal();
+    showNotification(`${currentSandwich.name} ajouté au panier`);
+    setTimeout(() => openCart(), 400);
 }
 
 function createSimpleCard(item, type) {
@@ -1140,21 +1447,53 @@ function createCartItemElement(item) {
         }
         detailsHTML = `<div class="cart-item-details">${details.join(' • ')}</div>`;
     }
+    // Gestion pour les sandwichs personnalisés
+    else if (item.type === 'sandwich' && item.customization) {
+        const details = [];
+        if (item.customization.base) details.push(`Base: ${item.customization.base}`);
+        if (item.customization.sauces && item.customization.sauces.length > 0) {
+            details.push(`Sauces: ${item.customization.sauces.join(', ')}`);
+        }
+        detailsHTML = `<div class="cart-item-details">${details.join(' • ')}</div>`;
+    }
     // Gestion pour les formules personnalisées
     else if (item.type === 'formule' && item.customization) {
         const details = [];
-        if (item.customization.pizza) {
-            details.push(`Pizza: ${item.customization.pizza}`);
+        const c = item.customization;
+        
+        // Formule midi (pizza)
+        if (c.pizza) {
+            let pizzaLabel = `🍕 ${c.pizza}`;
+            if (c.pizzaCustomization?.size) {
+                pizzaLabel += ` (${c.pizzaCustomization.size === 'moyenne' ? '33cm' : '40cm'})`;
+            }
+            details.push(pizzaLabel);
+            if (c.pizzaCustomization?.ingredients?.added?.length > 0) {
+                details.push(`➕ ${c.pizzaCustomization.ingredients.added.join(', ')}`);
+            }
+            if (c.pizzaCustomization?.ingredients?.removed?.length > 0) {
+                details.push(`❌ ${c.pizzaCustomization.ingredients.removed.join(', ')}`);
+            }
         }
-        if (item.customization.mainItem) {
-            details.push(item.customization.mainItem);
+        
+        // Formule pâtes/salade
+        if (c.mainItem) {
+            if (typeof c.mainItem === 'object') {
+                const emoji = c.mainItem.type === 'pate' ? '🍝' : '🥗';
+                let label = `${emoji} ${c.mainItem.name}`;
+                if (c.mainItem.customization?.size) label += ` (${c.mainItem.customization.size})`;
+                if (c.mainItem.customization?.base) label += ` - ${c.mainItem.customization.base}`;
+                details.push(label);
+                if (c.mainItem.customization?.supplements?.length > 0) {
+                    details.push(`➕ ${c.mainItem.customization.supplements.join(', ')}`);
+                }
+            } else {
+                details.push(c.mainItem);
+            }
         }
-        if (item.customization.dessert) {
-            details.push(`Dessert: ${item.customization.dessert}`);
-        }
-        if (item.customization.boisson) {
-            details.push(`Boisson: ${item.customization.boisson}`);
-        }
+        
+        if (c.boisson) details.push(`🥤 ${c.boisson}`);
+        if (c.dessert) details.push(`🍰 ${c.dessert}`);
         detailsHTML = `<div class="cart-item-details">${details.join(' • ')}</div>`;
     }
     // Gestion normale pour les autres pizzas personnalisées
@@ -3690,28 +4029,44 @@ function displayDeliveryTimeInfo() {
             </div>
         `;
     } else {
-        // Mode maintenant - Calculer l'heure estimée
-        const now = new Date();
+        // Mode maintenant
         const mode = document.querySelector('input[name="deliveryMode"]:checked')?.value || 'livraison';
-        const delayMinutes = mode === 'livraison' ? 60 : 20;
-        
-        const estimatedTime = new Date(now.getTime() + delayMinutes * 60000);
-        const estimatedHour = estimatedTime.getHours();
-        const estimatedMinutes = estimatedTime.getMinutes();
-        
-        const modeLabel = mode === 'livraison' ? 'livrée' : 'prête';
-        
-        displayDiv.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <i class="fas fa-bolt" style="font-size: 2rem; color: #FF9800;"></i>
-                <div>
-                    <p style="margin: 0; font-weight: 600;">Commande ${modeLabel} dès que possible</p>
-                    <p style="margin: 5px 0 0 0; color: #666;">
-                        Préparation immédiate - Estimée vers <strong>${estimatedHour}h${estimatedMinutes < 10 ? '0' + estimatedMinutes : estimatedMinutes}</strong>
-                    </p>
+
+        if (mode === 'livraison') {
+            // Pas d'heure précise annoncée : on rappelle que la commande sera confirmée
+            // par téléphone et que le délai dépend des commandes en cours
+            displayDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <i class="fas fa-phone-volume" style="font-size: 2rem; color: #FF9800;"></i>
+                    <div>
+                        <p style="margin: 0; font-weight: 600;">Livraison dès que possible</p>
+                        <p style="margin: 5px 0 0 0; color: #666;">
+                            Nous vous <strong>appellerons pour confirmer</strong> votre commande.<br>
+                            Comptez un <strong>minimum d'1h</strong> d'attente, variable selon le nombre de commandes en cours.
+                        </p>
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        } else {
+            // À emporter - une estimation reste pertinente ici
+            const now = new Date();
+            const delayMinutes = 20;
+            const estimatedTime = new Date(now.getTime() + delayMinutes * 60000);
+            const estimatedHour = estimatedTime.getHours();
+            const estimatedMinutes = estimatedTime.getMinutes();
+
+            displayDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <i class="fas fa-bolt" style="font-size: 2rem; color: #FF9800;"></i>
+                    <div>
+                        <p style="margin: 0; font-weight: 600;">Commande prête dès que possible</p>
+                        <p style="margin: 5px 0 0 0; color: #666;">
+                            Préparation immédiate - Estimée vers <strong>${estimatedHour}h${estimatedMinutes < 10 ? '0' + estimatedMinutes : estimatedMinutes}</strong>
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
     }
 }
 
@@ -3866,7 +4221,7 @@ function displayOrderSummary() {
                     ${deliveredAreas.join(' • ')}
                 </p>
                 <p style="margin: 0; font-size: 12px; color: #d32f2f; font-weight: 600;">
-                    ❌ Non desservis : Mont-Vert-les-Bas, Mont-Vert-les-Hauts, Grand Bois
+                    ❌ Non desservis : Mont-Vert-les-Bas, Mont-Vert-les-Hauts,
                 </p>
                 <p style="margin: 10px 0 0 0; font-size: 11px; color: #666;">
                     ℹ️ Si vous avez un doute, nous vous contacterons pour confirmer.
@@ -3955,9 +4310,59 @@ function displayOrderSummary() {
             
             // BUNS & ROLLS
             else if (item.type === 'bun' || item.type === 'roll') {
-                if (c.supplements?.length > 0) {
-                    customizationHTML = `<br><small style="color: #28a745;">➕ SUPPLÉMENTS: ${c.supplements.join(', ')}</small>`;
+                if (c.ingredients?.length > 0) {
+                    customizationHTML = `<br><small>🥗 Ingrédients: ${c.ingredients.join(', ')}</small>`;
                 }
+                if (c.base) {
+                    const baseLabel = c.base === 'creme' ? 'Crème' : c.base === 'tomate' ? 'Tomate' : c.base;
+                    customizationHTML += `<br><small>Base: ${baseLabel}</small>`;
+                }
+                if (c.supplements?.length > 0) {
+                    customizationHTML += `<br><small style="color: #28a745;">➕ Suppléments: ${c.supplements.join(', ')}</small>`;
+                }
+            }
+            
+            // FORMULE MIDI (pizza)
+            else if (item.type === 'formule' && c.pizza) {
+                customizationHTML = `<br><small>🍕 ${c.pizza}`;
+                if (c.pizzaCustomization?.size) {
+                    const sizeLabel = c.pizzaCustomization.size === 'moyenne' ? '33cm' : '40cm';
+                    customizationHTML += ` (${sizeLabel})`;
+                }
+                if (c.pizzaCustomization?.base && c.pizzaCustomization.base !== 'tomate') {
+                    customizationHTML += ` - Base ${c.pizzaCustomization.base}`;
+                }
+                customizationHTML += `</small>`;
+                if (c.pizzaCustomization?.ingredients?.added?.length > 0) {
+                    customizationHTML += `<br><small style="color:#28a745;">➕ ${c.pizzaCustomization.ingredients.added.join(', ')}</small>`;
+                }
+                if (c.pizzaCustomization?.ingredients?.removed?.length > 0) {
+                    customizationHTML += `<br><small style="color:#dc3545;">❌ ${c.pizzaCustomization.ingredients.removed.join(', ')}</small>`;
+                }
+                if (c.boisson) customizationHTML += `<br><small>🥤 ${c.boisson} 33cl</small>`;
+            }
+            
+            // FORMULE PÂTES/SALADE
+            else if (item.type === 'formule' && c.mainItem) {
+                if (typeof c.mainItem === 'object') {
+                    const emoji = c.mainItem.type === 'pate' ? '🍝' : '🥗';
+                    customizationHTML = `<br><small>${emoji} ${c.mainItem.name}`;
+                    if (c.mainItem.customization?.size) {
+                        customizationHTML += ` (${c.mainItem.customization.size})`;
+                    }
+                    if (c.mainItem.customization?.base) {
+                        customizationHTML += ` - Base ${c.mainItem.customization.base}`;
+                    }
+                    customizationHTML += `</small>`;
+                    if (c.mainItem.customization?.supplements?.length > 0) {
+                        customizationHTML += `<br><small style="color:#28a745;">➕ ${c.mainItem.customization.supplements.join(', ')}</small>`;
+                    }
+                } else {
+                    // Ancien format (string)
+                    customizationHTML = `<br><small>🍝 ${c.mainItem}</small>`;
+                }
+                if (c.boisson) customizationHTML += `<br><small>🥤 ${c.boisson}</small>`;
+                if (c.dessert) customizationHTML += `<br><small>🍰 ${c.dessert}</small>`;
             }
         }
         
@@ -4008,12 +4413,42 @@ async function submitOrder() {
     // Empêcher les clics multiples
     if (submitBtn.disabled) return;
     
+    // Sauvegarder le HTML du bouton AVANT le try (accessible dans catch)
+    const originalHTML = submitBtn.innerHTML;
+    
     try {
         // Activer l'état de chargement
         submitBtn.disabled = true;
         submitBtn.classList.add('loading');
-        const originalHTML = submitBtn.innerHTML;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi en cours...';
+
+        // Recharger les règles côté serveur avant validation finale
+        await loadUnavailability();
+        const availabilityValidation = validateCartAgainstCurrentRules();
+        if (!availabilityValidation.isValid) {
+            const hasItems = availabilityValidation.unavailableItems.length > 0;
+            const hasIngredients = availabilityValidation.unavailableIngredients.length > 0;
+
+            showNotification('Panier mis à jour: certains éléments sont indisponibles.', 'error');
+
+            let detailMessage = 'Votre panier contient des éléments devenus indisponibles.\n\n';
+            if (hasItems) {
+                detailMessage += `Produits indisponibles:\n- ${availabilityValidation.unavailableItems.join('\n- ')}\n\n`;
+            }
+            if (hasIngredients) {
+                detailMessage += `Ingrédients indisponibles:\n- ${availabilityValidation.unavailableIngredients.join('\n- ')}\n\n`;
+            }
+            detailMessage += 'Merci de vérifier votre panier avant de valider.';
+            alert(detailMessage);
+
+            closeCheckoutModal();
+            openCart(true);
+
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('loading');
+            submitBtn.innerHTML = originalHTML;
+            return;
+        }
         
         // Générer un numéro de commande
         orderNumber = generateOrderNumber();
@@ -4071,22 +4506,39 @@ async function submitOrder() {
 
     } catch (error) {
         console.error('Erreur lors de la soumission:', error);
-        showNotification('Erreur lors de l\'envoi de la commande. Veuillez réessayer.', 'error');
         
-        // RÉINITIALISER COMPLÈTEMENT LA SESSION EN CAS D'ERREUR
-        // Vider le panier et réinitialiser tous les états
-        clearCart();
-        
-        // Fermer le modal de commande
-        closeCheckoutModal();
-        
-        // Réactiver le bouton
+        // Réactiver le bouton dans tous les cas
         submitBtn.disabled = false;
         submitBtn.classList.remove('loading');
-        submitBtn.innerHTML = '<i class="fas fa-check"></i> Confirmer la commande';
+        submitBtn.innerHTML = originalHTML;
         
-        // Afficher un message explicite
-        console.log('🔄 Session réinitialisée suite à l\'erreur');
+        // Cas spécial : restaurant fermé (403)
+        if (error.status === 403) {
+            // Fermer le checkout mais GARDER le panier
+            closeCheckoutModal();
+            
+            // Forcer le mode programmé et rouvrir le modal d'heure
+            deliveryTimeSet = false;
+            deliveryTimeMode = 'programmee';
+            
+            // Petit délai puis ouvrir le modal en mode programmée
+            setTimeout(() => {
+                showNotification(error.message || '⏰ Les commandes sont fermées maintenant. Programmez votre commande pour plus tard.', 'error');
+                openDeliveryTimeModal();
+            }, 300);
+            
+        } else {
+            // Autre erreur
+            const isTimeout = error.name === 'AbortError';
+            const msg = isTimeout
+                ? 'Délai dépassé (réseau lent ?). Appelez le 0262 66 82 30'
+                : 'Erreur lors de l\'envoi. Appelez le 0262 66 82 30';
+            showNotification(msg, 'error');
+            closeCheckoutModal();
+            clearCart();
+        }
+        
+        console.log('🔄 Gestion erreur soumission terminée');
     }
 }
 
@@ -4098,18 +4550,21 @@ function generateOrderNumber() {
 
 async function sendOrderByEmail(orderData) {
     try {
-        // Envoyer la commande au serveur PHP
-        const response = await fetch('send-order.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(orderData)
-        });
-
-        // Vérifier si la réponse est OK
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        // Envoyer la commande au serveur PHP (timeout 30s pour mobile)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        let response;
+        try {
+            response = await fetch('send-order.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(orderData),
+                signal: controller.signal
+            });
+        } finally {
+            clearTimeout(timeoutId);
         }
 
         // Lire le texte brut pour déboguer
@@ -4124,6 +4579,13 @@ async function sendOrderByEmail(orderData) {
             console.error('❌ Erreur de parsing JSON:', parseError);
             console.error('📄 Contenu reçu:', text.substring(0, 500)); // Afficher les 500 premiers caractères
             throw new Error('Réponse invalide du serveur');
+        }
+
+        if (!response.ok) {
+            const serverError = new Error(result.error || `HTTP error! status: ${response.status}`);
+            serverError.status = response.status;
+            serverError.closureType = result.closureType || null;
+            throw serverError;
         }
 
         if (result.success) {
@@ -4277,6 +4739,15 @@ function formatOrderForEmail(orderData) {
             }
         }
         
+        // SANDWICHS
+        else if (item.type === 'sandwich' && item.customization) {
+            const c = item.customization;
+            if (c.base) itemText += `\n   🥖 BASE: ${c.base.toUpperCase()}`;
+            if (c.sauces && c.sauces.length > 0) {
+                itemText += `\n   🥫 SAUCES: ${c.sauces.join(' + ')}`;
+            }
+        }
+        
         // FORMULES
         else if (item.type === 'formule') {
             if (item.formuleType === 'midi' && item.customization) {
@@ -4402,10 +4873,19 @@ function showOrderConfirmation(orderData) {
     const orderNumberEl = document.getElementById('orderNumber');
     const estimatedTimeEl = document.getElementById('estimatedTime');
 
-    const mode = orderData.customer.deliveryMode === 'livraison' ? 'livrée' : 'prête';
-    messageEl.textContent = `Votre commande sera ${mode} dans environ ${orderData.estimatedTime}.`;
+    if (orderData.customer.deliveryMode === 'livraison') {
+        messageEl.textContent = `Votre commande sera livrée sous ${orderData.estimatedTime}.`;
+    } else {
+        messageEl.textContent = `Votre commande sera prête dans environ ${orderData.estimatedTime}.`;
+    }
     orderNumberEl.textContent = orderData.orderNumber;
     estimatedTimeEl.textContent = orderData.estimatedTime;
+
+    // Rappel d'appel de confirmation, uniquement pour les livraisons
+    const callNoticeEl = document.getElementById('confirmationCallNotice');
+    if (callNoticeEl) {
+        callNoticeEl.style.display = orderData.customer.deliveryMode === 'livraison' ? 'block' : 'none';
+    }
 
     openModal(modal);
 }
@@ -4961,37 +5441,69 @@ function isWithinOpeningHours() {
     return false;
 }
 
-function canOrderNow() {
+function canOrderNowLocally(deliveryMode = 'livraison') {
     const now = new Date();
     const currentDay = now.getDay(); // 0=dimanche, 1=lundi, etc.
-    const currentHour = now.getHours();
+    const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+    
+    // Coupure livraison = 45 min avant fermeture cuisine / emporter = 30 min
+    const cutoffMinutes = deliveryMode === 'livraison' ? 45 : 30;
     
     // Vérifier si le restaurant est fermé toute la journée (lundi)
     if (CONFIG.openingHours.closedDays && CONFIG.openingHours.closedDays.includes(currentDay)) {
-        return false; // Fermé toute la journée
+        return false;
     }
     
-    // Service midi : commande "maintenant" possible de 10h à 14h
-    if (currentHour >= (CONFIG.openingHours.midi.start - CONFIG.openingHours.preorderBuffer) && 
-        currentHour < CONFIG.openingHours.midi.end) {
-        // Vérifier si le midi est fermé ce jour (dimanche)
+    const midiStart = (CONFIG.openingHours.midi.start - CONFIG.openingHours.preorderBuffer) * 60;
+    const midiEnd   = CONFIG.openingHours.midi.end * 60 - cutoffMinutes;
+    const soirStart = (CONFIG.openingHours.soir.start - CONFIG.openingHours.preorderBuffer) * 60;
+    const soirEnd   = CONFIG.openingHours.soir.end * 60 - cutoffMinutes;
+    
+    // Service midi
+    if (currentTotalMinutes >= midiStart && currentTotalMinutes < midiEnd) {
         if (CONFIG.openingHours.closedMidi && CONFIG.openingHours.closedMidi.includes(currentDay)) {
-            return false; // Fermé le midi aujourd'hui
+            return false;
         }
         return true;
     }
     
-    // Service soir : commande "maintenant" possible de 17h à 21h
-    if (currentHour >= (CONFIG.openingHours.soir.start - CONFIG.openingHours.preorderBuffer) && 
-        currentHour < CONFIG.openingHours.soir.end) {
+    // Service soir
+    if (currentTotalMinutes >= soirStart && currentTotalMinutes < soirEnd) {
         return true;
     }
     
-    // Fermé : uniquement commande programmée
     return false;
 }
 
-function openDeliveryTimeModal() {
+async function getRestaurantClosureStatus(deliveryMode = 'livraison') {
+    try {
+        const response = await fetch(`check-closure.php?deliveryMode=${encodeURIComponent(deliveryMode)}`, {
+            cache: 'no-store'
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const status = await response.json();
+        RESTAURANT_CLOSURE_STATUS = status;
+        return status;
+    } catch (error) {
+        console.error('❌ Erreur vérification fermeture:', error);
+        const isClosed = !canOrderNowLocally(deliveryMode);
+        RESTAURANT_CLOSURE_STATUS = {
+            isClosed,
+            reason: isClosed ? 'Fermeture selon les horaires habituels' : null,
+            type: 'local_fallback',
+            message: isClosed
+                ? '🔒 Les commandes sont actuellement fermées. Vous pouvez programmer votre commande pour plus tard.'
+                : null
+        };
+        return RESTAURANT_CLOSURE_STATUS;
+    }
+}
+
+async function openDeliveryTimeModal() {
     const modal = document.getElementById('deliveryTimeModal');
     if (!modal) {
         console.error('Modal deliveryTimeModal not found');
@@ -5000,7 +5512,9 @@ function openDeliveryTimeModal() {
     
     console.log('Opening delivery time modal');
     
-    const canNow = canOrderNow();
+    const selectedMode = document.querySelector('input[name="deliveryMode"]:checked')?.value || 'livraison';
+    const closureStatus = await getRestaurantClosureStatus(selectedMode);
+    const canNow = !closureStatus.isClosed;
     const now = new Date();
     const currentDay = now.getDay();
     const currentHour = now.getHours();
@@ -5019,7 +5533,9 @@ function openDeliveryTimeModal() {
             // Personnaliser le message selon la situation
             const warningText = closedWarning.querySelector('p:last-child');
             if (warningText) {
-                if (isClosedAllDay) {
+                if (closureStatus.message) {
+                    warningText.innerHTML = `${closureStatus.message}<br>Vous pouvez programmer votre commande pour plus tard.`;
+                } else if (isClosedAllDay) {
                     warningText.innerHTML = 'Nous sommes fermés le lundi.<br>Vous pouvez programmer votre commande pour un autre jour.';
                 } else if (isClosedMidi) {
                     warningText.innerHTML = 'Nous sommes fermés le dimanche midi.<br>Vous pouvez commander pour ce soir (à partir de 17h) ou programmer pour un autre jour.';
@@ -5147,7 +5663,7 @@ function toggleGlobalScheduledTime() {
     }
 }
 
-function confirmDeliveryTime() {
+async function confirmDeliveryTime() {
     const selectedMode = document.querySelector('input[name="globalDeliveryTime"]:checked')?.value;
     
     console.log('confirmDeliveryTime called, mode:', selectedMode);
@@ -5183,6 +5699,24 @@ function confirmDeliveryTime() {
         if (!isValidHour) {
             showNotification('Veuillez choisir une heure pendant nos horaires d\'ouverture (11h-14h ou 18h-21h)', 'error');
             return;
+        }
+        
+        // Vérifier qu'il n'y a pas de fermeture programmée pour ce créneau
+        try {
+            const selectedMode2 = document.querySelector('input[name="deliveryMode"]:checked')?.value || 'livraison';
+            const closureCheck = await fetch(
+                `check-closure.php?deliveryMode=${encodeURIComponent(selectedMode2)}&checkDate=${encodeURIComponent(dateInput)}&checkTime=${encodeURIComponent(hourInput)}`,
+                { cache: 'no-store' }
+            );
+            if (closureCheck.ok) {
+                const closureStatus = await closureCheck.json();
+                if (closureStatus.isClosed && closureStatus.type !== 'closed_hours') {
+                    showNotification(closureStatus.message || 'Le restaurant est fermé à cet horaire. Choisissez un autre créneau.', 'error');
+                    return;
+                }
+            }
+        } catch (e) {
+            console.warn('Impossible de vérifier les fermetures programmées:', e);
         }
         
         scheduledDeliveryDate = dateInput;

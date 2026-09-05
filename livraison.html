@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Livraison - Pizza Club</title>
-    <meta name="description" content="Informations de livraison - Pizza Club">
+    <title>Livraison à domicile — Pizza Club Saint-Pierre, La Réunion</title>
+    <meta name="description" content="Pizza Club livre vos pizzas à domicile à Saint-Pierre et dans les communes alentour de La Réunion (974). Tarifs, zones de livraison et délais estimés.">
+    <link rel="canonical" href="https://www.pizzaclub.re/livraison.html">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,9 +22,21 @@
     <!-- HEADER / NAVBAR -->
     <header class="header" id="header">
         <nav class="navbar container">
-            <div class="nav-logo">
-                <a href="index.html"><img src="img/New logo noir 2022.png" alt="Pizza Club Logo" class="logo"></a>
-            </div>
+            <a href="index.html" class="nav-logo" style="cursor: pointer; text-decoration: none;">
+                <img src="img/Logonoir.png" alt="Pizza Club Logo" class="logo" id="mainLogo">
+                <script>
+                    (function() {
+                        const isMobile = window.innerWidth <= 768;
+                        const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                        const logo = document.getElementById('mainLogo');
+                        if (logo && isMobile && isDark) {
+                            const img = new Image();
+                            img.onload = function() { logo.src = 'img/Logoblanc.png'; };
+                            img.src = 'img/Logoblanc.png';
+                        }
+                    })();
+                </script>
+            </a>
             
             <ul class="nav-menu" id="navMenu">
                 <li class="nav-item"><a href="index.html#home" class="nav-link">Accueil</a></li>
@@ -33,15 +46,17 @@
                 <li class="nav-item"><a href="index.html#buns" class="nav-link">Buns</a></li>
                 <li class="nav-item"><a href="index.html#rolls" class="nav-link">Rolls</a></li>
                 <li class="nav-item"><a href="index.html#desserts" class="nav-link">Desserts</a></li>
+                <li class="nav-item"><a href="index.html#sandwichs" class="nav-link">Sandwichs</a></li>
+                <li class="nav-item"><a href="index.html#boissons" class="nav-link">Boissons</a></li>
                 <li class="nav-item"><a href="index.html#formules" class="nav-link">Formules</a></li>
                 <li class="nav-item"><a href="livraison.html" class="nav-link">Livraison</a></li>
                 <li class="nav-item"><a href="index.html#contact" class="nav-link">Contact</a></li>
             </ul>
             
             <div class="nav-actions">
-                <button class="btn-cart" onclick="window.location.href='index.html'">
+                <button class="btn-cart" id="btnCart" onclick="window.location.href='index.html'">
                     <i class="fas fa-shopping-cart"></i>
-                    <span class="cart-count">0</span>
+                    <span class="cart-count" id="cartCount">0</span>
                 </button>
                 <button class="nav-toggle" id="navToggle">
                     <i class="fas fa-bars"></i>
@@ -49,6 +64,61 @@
             </div>
         </nav>
     </header>
+
+    <!-- BOUTON FLOTTANT CARTE PDF -->
+    <a href="img/carte-pizza-club-2026.pdf" download="Carte_PizzaClub_2026.pdf"
+       id="floatingPdfBtn"
+       title="Télécharger la carte 2026 en PDF"
+       style="
+           position: fixed;
+           top: 62px;
+           right: 10px;
+           z-index: 1002;
+           display: flex;
+           align-items: center;
+           gap: 6px;
+           background: linear-gradient(135deg, #FF0000, #c62828);
+           color: white;
+           text-decoration: none;
+           padding: 7px 13px;
+           border-radius: 50px;
+           font-size: 12px;
+           font-weight: 700;
+           box-shadow: 0 4px 16px rgba(255,0,0,0.45);
+           white-space: nowrap;
+           transition: transform 0.2s, box-shadow 0.2s;
+           border: 3px solid white;
+       "
+       onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+        <i class="fas fa-file-pdf" style="font-size:14px;"></i>
+        <span id="floatingPdfLabel">Carte PDF</span>
+    </a>
+    <style>
+        @media (max-width: 600px) {
+            #floatingPdfLabel { display: none; }
+            #floatingPdfBtn { padding: 7px 10px; }
+        }
+    </style>
+
+    <script>
+        // Nav toggle mobile
+        const navToggle = document.getElementById('navToggle');
+        const navMenu = document.getElementById('navMenu');
+        if (navToggle) navToggle.addEventListener('click', () => navMenu.classList.toggle('active'));
+
+        // Aligner le bouton PDF sous le bouton panier
+        function alignPdfBtn() {
+            const cart = document.getElementById('btnCart');
+            const btn = document.getElementById('floatingPdfBtn');
+            if (cart && btn) {
+                const rect = cart.getBoundingClientRect();
+                const fromRight = window.innerWidth - rect.right;
+                btn.style.right = Math.max(4, fromRight) + 'px';
+            }
+        }
+        window.addEventListener('load', alignPdfBtn);
+        window.addEventListener('resize', alignPdfBtn);
+    </script>
 
     <!-- CONTENU PRINCIPAL -->
     <main style="padding-top: 100px; min-height: calc(100vh - 200px);">
@@ -69,19 +139,19 @@
                         🆓 Livraison GRATUITE
                     </p>
                     <p style="color: #F57C00; margin: 0;">
-                        Dans tous les secteurs desservis, sans minimum de commande
+                        Dans tous les secteurs desservis • Minimum de commande : <strong>10€</strong>
                     </p>
                 </div>
                 
                 <!-- Secteurs desservis -->
                 <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); padding: 2rem; border-radius: 12px; margin-bottom: 1.5rem; border-left: 5px solid #4caf50;">
                     <h3 style="color: #2e7d32; margin-bottom: 1.2rem; font-size: 1.3rem; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-check-circle"></i> ✅ Secteurs Livrés - Saint-Pierre (97410)
+                        <i class="fas fa-check-circle"></i> ✅ Secteurs Livrés — Saint-Pierre (97410)
                     </h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
                         <div style="background: rgba(255,255,255,0.8); padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-location-dot" style="color: #4caf50;"></i>
-                            <span style="color: #2e7d32; font-weight: 500;">Centre-Ville</span>
+                            <span style="color: #2e7d32; font-weight: 500;">Centre-ville Saint-Pierre</span>
                         </div>
                         <div style="background: rgba(255,255,255,0.8); padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-location-dot" style="color: #4caf50;"></i>
@@ -97,19 +167,35 @@
                         </div>
                         <div style="background: rgba(255,255,255,0.8); padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-location-dot" style="color: #4caf50;"></i>
-                            <span style="color: #2e7d32; font-weight: 500;">Centre Ouest</span>
+                            <span style="color: #2e7d32; font-weight: 500;">PK3</span>
                         </div>
                         <div style="background: rgba(255,255,255,0.8); padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-location-dot" style="color: #4caf50;"></i>
-                            <span style="color: #2e7d32; font-weight: 500;">Ligne Paradis (bas)</span>
+                            <span style="color: #2e7d32; font-weight: 500;">Terre Rouge</span>
                         </div>
                         <div style="background: rgba(255,255,255,0.8); padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-location-dot" style="color: #4caf50;"></i>
-                            <span style="color: #2e7d32; font-weight: 500;">Cité Jasmin</span>
+                            <span style="color: #2e7d32; font-weight: 500;">Bassin Plat</span>
                         </div>
                         <div style="background: rgba(255,255,255,0.8); padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-location-dot" style="color: #4caf50;"></i>
-                            <span style="color: #2e7d32; font-weight: 500;">Chemin Badamier</span>
+                            <span style="color: #2e7d32; font-weight: 500;">Basse Terre</span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.8); padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-location-dot" style="color: #4caf50;"></i>
+                            <span style="color: #2e7d32; font-weight: 500;">Ligne Paradis <small style="font-weight:400;">(bas uniquement)</small></span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.8); padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-location-dot" style="color: #4caf50;"></i>
+                            <span style="color: #2e7d32; font-weight: 500;">Badamier</span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.8); padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-location-dot" style="color: #4caf50;"></i>
+                            <span style="color: #2e7d32; font-weight: 500;">Jolie Fond</span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.8); padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-location-dot" style="color: #4caf50;"></i>
+                            <span style="color: #2e7d32; font-weight: 500;">Grand Bois</span>
                         </div>
                         <div style="background: rgba(255,255,255,0.8); padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-location-dot" style="color: #4caf50;"></i>
@@ -117,7 +203,19 @@
                         </div>
                         <div style="background: rgba(255,255,255,0.8); padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-location-dot" style="color: #4caf50;"></i>
-                            <span style="color: #2e7d32; font-weight: 500;">Ravine des Cabris</span>
+                            <span style="color: #2e7d32; font-weight: 500;">ZI 1</span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.8); padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-location-dot" style="color: #4caf50;"></i>
+                            <span style="color: #2e7d32; font-weight: 500;">ZI 2</span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.8); padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-location-dot" style="color: #4caf50;"></i>
+                            <span style="color: #2e7d32; font-weight: 500;">ZI 3</span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.8); padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-location-dot" style="color: #4caf50;"></i>
+                            <span style="color: #2e7d32; font-weight: 500;">ZI 4</span>
                         </div>
                     </div>
                 </div>
@@ -125,21 +223,16 @@
                 <!-- Secteurs NON desservis -->
                 <div style="background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); padding: 2rem; border-radius: 12px; margin-bottom: 1.5rem; border-left: 5px solid #f44336;">
                     <h3 style="color: #c62828; margin-bottom: 1.2rem; font-size: 1.3rem; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-times-circle"></i> ❌ Secteurs NON Livrés
+                        <i class="fas fa-times-circle"></i> ❌ Zones Exclues
                     </h3>
                     <p style="color: #d32f2f; margin-bottom: 1rem; font-weight: 600;">
                         Ces quartiers ne sont pas desservis par notre service de livraison :
                     </p>
                     <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem;">
-                        <span style="background: rgba(255,255,255,0.8); padding: 10px 20px; border-radius: 8px; color: #c62828; font-weight: 600;">
-                            🚫 Mont-Vert-les-Bas
-                        </span>
-                        <span style="background: rgba(255,255,255,0.8); padding: 10px 20px; border-radius: 8px; color: #c62828; font-weight: 600;">
-                            🚫 Mont-Vert-les-Hauts
-                        </span>
-                        <span style="background: rgba(255,255,255,0.8); padding: 10px 20px; border-radius: 8px; color: #c62828; font-weight: 600;">
-                            🚫 Grand Bois
-                        </span>
+                        <span style="background: rgba(255,255,255,0.8); padding: 10px 20px; border-radius: 8px; color: #c62828; font-weight: 600;">🚫 Bois d'Olives</span>
+                        <span style="background: rgba(255,255,255,0.8); padding: 10px 20px; border-radius: 8px; color: #c62828; font-weight: 600;">🚫 Ligne Paradis Haut</span>
+                        <span style="background: rgba(255,255,255,0.8); padding: 10px 20px; border-radius: 8px; color: #c62828; font-weight: 600;">🚫 Mont Vert les Bas</span>
+                        <span style="background: rgba(255,255,255,0.8); padding: 10px 20px; border-radius: 8px; color: #c62828; font-weight: 600;">🚫 Mont Vert les Hauts</span>
                     </div>
                     <div style="background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px; margin-top: 15px;">
                         <p style="color: #666; margin: 0; font-size: 0.95rem;">
@@ -180,12 +273,12 @@
                     </div>
                     <div style="background: #fff3e0; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #ff9800;">
                         <h3 style="color: #e65100; margin-bottom: 0.5rem; font-size: 1.1rem;">🌙 Le Soir</h3>
-                        <p style="color: #555; margin: 0;">17h00 - 21h00</p>
+                        <p style="color: #555; margin: 0;">18h00 - 21h00</p>
                         <p style="color: #666; font-size: 0.9rem; margin-top: 0.5rem;">Mardi au jeudi & dimanche</p>
                     </div>
                     <div style="background: #f3e5f5; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #9c27b0;">
                         <h3 style="color: #6a1b9a; margin-bottom: 0.5rem; font-size: 1.1rem;">🎉 Week-end</h3>
-                        <p style="color: #555; margin: 0;">17h00 - 22h00</p>
+                        <p style="color: #555; margin: 0;">18h00 - 22h00</p>
                         <p style="color: #666; font-size: 0.9rem; margin-top: 0.5rem;">Vendredi & samedi soir</p>
                     </div>
                 </div>
@@ -305,16 +398,16 @@
         </div>
     </footer>
 
-    <script>
-        // Navigation mobile
-        const navToggle = document.getElementById('navToggle');
-        const navMenu = document.getElementById('navMenu');
-        
-        if (navToggle) {
-            navToggle.addEventListener('click', () => {
-                navMenu.classList.toggle('active');
-            });
-        }
-    </script>
+    <!-- Widget WhatsApp -->
+    <a href="https://wa.me/262692620062?text=Bonjour%20Pizza%20Club%20!%20" 
+       class="whatsapp-float" 
+       target="_blank" 
+       rel="noopener noreferrer"
+       aria-label="Contactez-nous sur WhatsApp">
+        <svg viewBox="0 0 32 32" fill="currentColor">
+            <path d="M16 0c-8.837 0-16 7.163-16 16 0 2.825 0.737 5.487 2.025 7.788l-2.025 7.212 7.412-1.975c2.238 1.175 4.788 1.863 7.513 1.863 8.837 0 16-7.163 16-16s-7.163-16-16-16zM16 29.213c-2.537 0-4.937-0.675-7-1.85l-0.5-0.288-4.537 1.213 1.225-4.35-0.325-0.525c-1.288-2.088-2.025-4.55-2.025-7.2 0-7.513 6.1-13.613 13.613-13.613s13.613 6.1 13.613 13.613c0 7.513-6.1 13.613-13.613 13.613zM21.238 18.038c-0.363-0.188-2.15-1.063-2.488-1.175-0.338-0.125-0.588-0.188-0.838 0.188s-0.963 1.175-1.175 1.425c-0.212 0.25-0.425 0.275-0.787 0.1-0.363-0.188-1.537-0.563-2.925-1.8-1.075-0.963-1.8-2.15-2.013-2.513s-0.025-0.575 0.163-0.763c0.163-0.163 0.363-0.425 0.55-0.637 0.188-0.212 0.25-0.363 0.375-0.612 0.125-0.25 0.063-0.463-0.025-0.65-0.087-0.188-0.838-2.012-1.15-2.763-0.3-0.725-0.612-0.625-0.838-0.638-0.213-0.012-0.463-0.012-0.713-0.012s-0.65 0.1-0.988 0.463c-0.338 0.363-1.287 1.263-1.287 3.088s1.325 3.588 1.512 3.838c0.188 0.25 2.6 4.05 6.363 5.575 0.888 0.363 1.587 0.588 2.125 0.75 0.9 0.287 1.713 0.237 2.363 0.15 0.725-0.113 2.15-0.875 2.463-1.725 0.3-0.85 0.3-1.575 0.212-1.725-0.087-0.15-0.338-0.238-0.713-0.425z"/>
+        </svg>
+    </a>
+
 </body>
 </html>

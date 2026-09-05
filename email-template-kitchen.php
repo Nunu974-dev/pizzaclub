@@ -112,6 +112,8 @@ function getKitchenEmailTemplate($orderData) {
                                         case 'roll': $productType = '[ROLL] '; break;
                                         case 'dessert': $productType = '[DESSERT] '; break;
                                         case 'formule': $productType = '[FORMULE] '; break;
+                                        case 'sandwich': $productType = '[SANDWICH] '; break;
+                                        case 'boisson': $productType = '[BOISSON] '; break;
                                     }
                                 }
                                 ?>
@@ -121,32 +123,35 @@ function getKitchenEmailTemplate($orderData) {
                             <?php if ($item['type'] === 'formule'): ?>
                                 <!-- FORMULES -->
                                 <?php if (isset($custom['pizza'])): ?>
+                                    <?php $pizzaCust = $custom['pizzaCustomization'] ?? []; ?>
                                     <div class="item-detail">
                                         <span class="item-detail-label">🍕 Pizza :</span>
                                         <span class="item-detail-value"><?= htmlspecialchars($custom['pizza']) ?></span>
                                     </div>
-                                    <?php if (!empty($custom['pizzaSize'])): ?>
+                                    <?php if (!empty($pizzaCust['size'])): ?>
                                         <div class="item-detail">
                                             <span class="item-detail-label">📏 Taille :</span>
-                                            <span class="item-detail-value"><?= $custom['pizzaSize'] === 'moyenne' ? '33cm' : '40cm' ?></span>
+                                            <span class="item-detail-value"><?= $pizzaCust['size'] === 'moyenne' ? '33cm' : '40cm' ?></span>
                                         </div>
                                     <?php endif; ?>
-                                    <?php if (!empty($custom['pizzaBase'])): ?>
+                                    <?php if (!empty($pizzaCust['base'])): ?>
                                         <div class="item-detail">
                                             <span class="item-detail-label">🍕 Base :</span>
-                                            <span class="item-detail-value"><?= $custom['pizzaBase'] === 'creme' ? 'Crème' : 'Tomate' ?></span>
+                                            <span class="item-detail-value"><?= $pizzaCust['base'] === 'creme' ? 'Crème' : 'Tomate' ?></span>
                                         </div>
                                     <?php endif; ?>
-                                    <?php if (!empty($custom['pizzaAdded'])): ?>
+                                    <?php $addedIngredients = $pizzaCust['addedIngredients'] ?? []; ?>
+                                    <?php if (!empty($addedIngredients) && is_array($addedIngredients)): ?>
                                         <div class="item-detail">
                                             <span class="item-detail-label">➕ Ajouts :</span>
-                                            <span class="item-detail-value"><?= htmlspecialchars(implode(', ', $custom['pizzaAdded'])) ?></span>
+                                            <span class="item-detail-value"><?= htmlspecialchars(implode(', ', $addedIngredients)) ?></span>
                                         </div>
                                     <?php endif; ?>
-                                    <?php if (!empty($custom['pizzaRemoved'])): ?>
+                                    <?php $removedIngredients = $pizzaCust['removedIngredients'] ?? []; ?>
+                                    <?php if (!empty($removedIngredients) && is_array($removedIngredients)): ?>
                                         <div class="item-detail">
                                             <span class="item-detail-label">❌ Retraits :</span>
-                                            <span class="item-detail-value"><?= htmlspecialchars(implode(', ', $custom['pizzaRemoved'])) ?></span>
+                                            <span class="item-detail-value"><?= htmlspecialchars(implode(', ', $removedIngredients)) ?></span>
                                         </div>
                                     <?php endif; ?>
                                     <?php if (!empty($custom['boisson'])): ?>
@@ -220,6 +225,30 @@ function getKitchenEmailTemplate($orderData) {
                                     <?php endif; ?>
                                 <?php endif; ?>
                                 
+                            <?php elseif ($item['type'] === 'sandwich'): ?>
+                                <!-- SANDWICH -->
+                                <?php if (!empty($custom['base'])): ?>
+                                    <div class="item-detail">
+                                        <span class="item-detail-label">🥖 Base :</span>
+                                        <span class="item-detail-value"><?= htmlspecialchars(ucfirst($custom['base'])) ?></span>
+                                    </div>
+                                <?php endif; ?>
+                                <?php if (!empty($custom['sauces']) && is_array($custom['sauces'])): ?>
+                                    <div class="item-detail">
+                                        <span class="item-detail-label">🥫 Sauces :</span>
+                                        <span class="item-detail-value"><?= htmlspecialchars(implode(' + ', array_map('ucfirst', $custom['sauces']))) ?></span>
+                                    </div>
+                                <?php endif; ?>
+                                <?php if (!empty($custom['type'])): ?>
+                                    <div class="item-detail">
+                                        <span class="item-detail-label">🔥 Type :</span>
+                                        <span class="item-detail-value"><?= $custom['type'] === 'gratine' ? 'Gratiné (chaud)' : 'Américain (froid)' ?></span>
+                                    </div>
+                                <?php endif; ?>
+                                
+                            <?php elseif ($item['type'] === 'boisson'): ?>
+                                <!-- BOISSON - rien de spécial à afficher -->
+                            
                             <?php else: ?>
                                 <!-- PRODUITS INDIVIDUELS (PIZZAS, PÂTES, SALADES, etc.) -->
                                 

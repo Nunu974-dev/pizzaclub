@@ -56,24 +56,29 @@ function getClientEmailTemplate($orderData) {
                         📍 À retirer au : 43 Rue Four à Chaux, 97410 Saint-Pierre
                     <?php endif; ?>
                     <br>⏱️ <strong>Temps estimé : <?= htmlspecialchars($orderData['estimatedTime']) ?></strong>
-                    
-                    <?php 
+
+                    <?php
                     $isScheduled = !empty($orderData['scheduledDate']) && $orderData['scheduledTime'] !== null;
-                    if ($isScheduled): 
+                    if ($isScheduled):
                         $scheduledHour = (int)$orderData['scheduledTime'];
                         $deliveryStart = $scheduledHour . ':00';
                         $deliveryEnd = ($scheduledHour + 1) . ':00';
-                        $period = ($scheduledHour < 16) ? 'MIDI' : 'SOIR';
-                        $firstDeliveryTime = ($scheduledHour < 16) ? '11:45' : '18:45';
                     ?>
                         <br>
                         <strong style="color: #FF6600;">📅 Livraison programmée :</strong><br>
                         <span style="color: #666;">Date : <?= htmlspecialchars($orderData['scheduledDate']) ?></span><br>
-                        <span style="color: #666;">Créneau : <?= $deliveryStart ?> - <?= $deliveryEnd ?></span><br>
-                        <span style="font-size: 12px; color: #999;">ℹ️ Première livraison <?= $period ?> : <?= $firstDeliveryTime ?></span>
+                        <span style="color: #666;">Créneau : <?= $deliveryStart ?> - <?= $deliveryEnd ?></span>
                     <?php else: ?>
                         <br>
                         <strong style="color: #28a745;">⚡ Commande IMMÉDIATE</strong>
+                    <?php endif; ?>
+
+                    <?php if ($orderData['customer']['deliveryMode'] === 'livraison'): ?>
+                        <br><br>
+                        <div style="background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 6px; padding: 10px; color: #856404; font-size: 13px;">
+                            📞 <strong>Nous vous appellerons pour confirmer votre commande.</strong><br>
+                            Comptez un minimum d'1h d'attente, variable selon les commandes en cours.
+                        </div>
                     <?php endif; ?>
                 </div>
                 
@@ -290,11 +295,11 @@ function getClientEmailTemplate($orderData) {
                                         <?php if (isset($custom['pizzaCustomization']['base']) && $custom['pizzaCustomization']['base'] !== 'tomate'): ?>
                                             - Base <?= htmlspecialchars($custom['pizzaCustomization']['base']) ?>
                                         <?php endif; ?>
-                                        <?php if (!empty($custom['pizzaCustomization']['ingredients']['added'])): ?>
-                                            <br>&nbsp;&nbsp;✓ Ajouts: <?= htmlspecialchars(implode(', ', $custom['pizzaCustomization']['ingredients']['added'])) ?>
+                                        <?php if (!empty($custom['pizzaCustomization']['addedIngredients'])): ?>
+                                            <br>&nbsp;&nbsp;✓ Ajouts: <?= htmlspecialchars(implode(', ', $custom['pizzaCustomization']['addedIngredients'])) ?>
                                         <?php endif; ?>
-                                        <?php if (!empty($custom['pizzaCustomization']['ingredients']['removed'])): ?>
-                                            <br>&nbsp;&nbsp;✗ Retraits: <?= htmlspecialchars(implode(', ', $custom['pizzaCustomization']['ingredients']['removed'])) ?>
+                                        <?php if (!empty($custom['pizzaCustomization']['removedIngredients'])): ?>
+                                            <br>&nbsp;&nbsp;✗ Retraits: <?= htmlspecialchars(implode(', ', $custom['pizzaCustomization']['removedIngredients'])) ?>
                                         <?php endif; ?>
                                     <?php endif; ?>
                                     <br>🥤 <?= htmlspecialchars($custom['boisson']) ?> 33cl</small>

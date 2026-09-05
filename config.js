@@ -22,7 +22,7 @@ const CONFIG = {
         fee: 0, // Livraison GRATUITE à La Réunion
         freeDeliveryThreshold: 0, // Toujours gratuit
         estimatedTime: {
-            livraison: '45-60 min',
+            livraison: 'minimum 1h (selon les commandes en cours)',
             emporter: '15-20 min'
         },
         // Zones de livraison (codes postaux acceptés)
@@ -42,8 +42,7 @@ const CONFIG = {
                     'Mont Vert les Bas',
                     'Mont-Vert-les-Hauts', 
                     'Mont Vert les Hauts',
-                    'Grand Bois',
-                    'Grand-Bois',
+         
                     'Montvert',
                     'Mont Vert'
                 ],
@@ -52,11 +51,10 @@ const CONFIG = {
                     'mont vert',
                     'montvert',
                     'mont-vert',
-                    'grand bois',
-                    'grand-bois'
+    
                 ],
                 // Message personnalisé
-                message: '🚫 Nous ne livrons pas à Mont-Vert et Grand Bois. Secteurs desservis : Terre-Sainte, Ravine Blanche, Casabona, Centre-Ville, Ligne Paradis (bas), Cité Jasmin, Chemin Badamier, etc.'
+                message: '🚫 Nous ne livrons pas à Mont-Vert. Secteurs desservis : Terre-Sainte, Ravine Blanche, Casabona, Centre-Ville, Ligne Paradis (bas), Cité Jasmin, Chemin Badamier, etc.'
             }
         },
         
@@ -74,7 +72,8 @@ const CONFIG = {
                 'Chemin Badamier',
                 'Bois d\'Olives (limite)',
                 'Pierrefonds (proche centre)',
-                'Ravine des Cabris (limite 97410)'
+                'Saint Pierre',
+                'Grand Bois',
             ]
         },
         

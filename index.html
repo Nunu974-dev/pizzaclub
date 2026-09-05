@@ -3,9 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pizza Club - Commandez vos pizzas en ligne</title>
-    <meta name="description" content="Commandez vos pizzas en livraison ou à emporter - Pizza Club">
+    <title>Pizza Club Saint-Pierre Réunion — Pizzas, Pâtes, Livraison &amp; À emporter</title>
+    <meta name="description" content="Pizza Club à Saint-Pierre, La Réunion (974). Commandez vos pizzas artisanales, pâtes, salades, buns et rolls en livraison à domicile ou à emporter. 43 Rue du Four à Chaux — 02 62 66 82 30.">
+    <link rel="canonical" href="https://www.pizzaclub.re/">
+    <!-- Open Graph -->
+    <meta property="og:type" content="restaurant">
+    <meta property="og:title" content="Pizza Club Saint-Pierre — Livraison &amp; À emporter, La Réunion">
+    <meta property="og:description" content="Pizzas artisanales, pâtes, salades, buns et rolls livrés à domicile ou à emporter. Saint-Pierre, La Réunion.">
+    <meta property="og:url" content="https://www.pizzaclub.re/">
+    <meta property="og:image" content="https://www.pizzaclub.re/img/Logonoir.png">
+    <meta property="og:locale" content="fr_FR">
     
+    <!-- JSON-LD : Données structurées SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Restaurant",
+          "@id": "https://www.pizzaclub.re/#restaurant",
+          "name": "Pizza Club",
+          "url": "https://www.pizzaclub.re/",
+          "telephone": "+262262668230",
+          "email": "contact@pizzaclub.re",
+          "image": "https://www.pizzaclub.re/img/Logonoir.png",
+          "logo": "https://www.pizzaclub.re/img/Logonoir.png",
+          "priceRange": "€€",
+          "servesCuisine": ["Pizza", "Pâtes", "Salades", "Buns", "Rolls"],
+          "hasMenu": "https://www.pizzaclub.re/#menu",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "43 Rue du Four à Chaux",
+            "addressLocality": "Saint-Pierre",
+            "postalCode": "97410",
+            "addressRegion": "La Réunion",
+            "addressCountry": "RE"
+          },
+          "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": -21.338,
+            "longitude": 55.478
+          },
+          "openingHoursSpecification": [
+            {"@type": "OpeningHoursSpecification", "dayOfWeek": ["Tuesday","Wednesday","Thursday"], "opens": "11:00", "closes": "14:00"},
+            {"@type": "OpeningHoursSpecification", "dayOfWeek": ["Tuesday","Wednesday","Thursday"], "opens": "18:00", "closes": "21:00"},
+            {"@type": "OpeningHoursSpecification", "dayOfWeek": ["Friday","Saturday"], "opens": "11:00", "closes": "14:00"},
+            {"@type": "OpeningHoursSpecification", "dayOfWeek": ["Friday","Saturday"], "opens": "18:00", "closes": "22:00"},
+            {"@type": "OpeningHoursSpecification", "dayOfWeek": ["Sunday"], "opens": "18:00", "closes": "21:00"}
+          ],
+          "sameAs": [
+            "https://www.facebook.com/pizzaclub974",
+            "https://instagram.com/pizzaclub974"
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://www.pizzaclub.re/#website",
+          "url": "https://www.pizzaclub.re/",
+          "name": "Pizza Club",
+          "description": "Pizzas artisanales, pâtes, salades, buns et rolls — livraison et à emporter à Saint-Pierre, La Réunion",
+          "inLanguage": "fr-FR",
+          "publisher": {"@id": "https://www.pizzaclub.re/#restaurant"}
+        },
+        {
+          "@type": "ItemList",
+          "name": "Navigation Pizza Club",
+          "itemListElement": [
+            {
+              "@type": "SiteNavigationElement",
+              "position": 1,
+              "name": "Commander en ligne",
+              "description": "Passez votre commande de pizzas en livraison ou à emporter",
+              "url": "https://www.pizzaclub.re/#commander"
+            },
+            {
+              "@type": "SiteNavigationElement",
+              "position": 2,
+              "name": "Notre Menu",
+              "description": "Pizzas, pâtes, salades, buns et rolls",
+              "url": "https://www.pizzaclub.re/#menu"
+            },
+            {
+              "@type": "SiteNavigationElement",
+              "position": 3,
+              "name": "Livraison",
+              "description": "Zones et tarifs de livraison à domicile",
+              "url": "https://www.pizzaclub.re/livraison.html"
+            },
+            {
+              "@type": "SiteNavigationElement",
+              "position": 4,
+              "name": "Contact",
+              "description": "Adresse, horaires et téléphone",
+              "url": "https://www.pizzaclub.re/#contact"
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+
     <!-- Favicon adaptatif (mode clair/sombre) -->
     <link rel="icon" type="image/png" href="img/favicon.ico" media="(prefers-color-scheme: light)">
     <link rel="icon" type="image/png" href="img/favicon blan.ico" media="(prefers-color-scheme: dark)">
@@ -20,7 +117,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- CSS -->
-    <link rel="stylesheet" href="style.css?v=20251125e">
+    <link rel="stylesheet" href="style.css?v=20260415">
+    <!-- Fix critique mobile : nav-menu margin-left reset -->
+    <style>
+        @media (max-width: 768px) {
+            .nav-menu {
+                margin-left: 0 !important;
+            }
+        }
+    </style>
     
     <!-- Script critique : forcer scroll en haut IMMÉDIATEMENT -->
     <script>
@@ -40,26 +145,6 @@
         <nav class="navbar container">
             <a href="#home" class="nav-logo" style="cursor: pointer; text-decoration: none;">
                 <img src="img/Logonoir.png" alt="Pizza Club Logo" class="logo" id="mainLogo">
-                <script>
-                    // Charger logo blanc sur mobile en mode sombre
-                    (function() {
-                        const isMobile = window.innerWidth <= 768;
-                        const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-                        const logo = document.getElementById('mainLogo');
-                        
-                        if (logo && isMobile && isDark) {
-                            // Précharger l'image avant de l'afficher
-                            const img = new Image();
-                            img.onload = function() {
-                                logo.src = 'img/Logoblanc.png';
-                            };
-                            img.onerror = function() {
-                                console.error('Logo blanc non trouvé, utilisation du logo noir');
-                            };
-                            img.src = 'img/Logoblanc.png';
-                        }
-                    })();
-                </script>
             </a>
             
             <ul class="nav-menu" id="navMenu">
@@ -70,6 +155,8 @@
                 <li class="nav-item"><a href="#buns" class="nav-link">Buns</a></li>
                 <li class="nav-item"><a href="#rolls" class="nav-link">Rolls</a></li>
                 <li class="nav-item"><a href="#desserts" class="nav-link">Desserts</a></li>
+                <li class="nav-item"><a href="#sandwichs" class="nav-link">Sandwichs</a></li>
+                <li class="nav-item"><a href="#boissons" class="nav-link">Boissons</a></li>
                 <li class="nav-item"><a href="#formules" class="nav-link">Formules</a></li>
                 <li class="nav-item"><a href="livraison.html" class="nav-link">Livraison</a></li>
                 <li class="nav-item"><a href="#contact" class="nav-link">Contact</a></li>
@@ -87,6 +174,208 @@
         </nav>
     </header>
 
+    <!-- BOUTON FLOTTANT CARTE PDF (sous le panier) -->
+    <a href="img/carte-pizza-club-2026.pdf" download="Carte_PizzaClub_2026.pdf"
+       id="floatingPdfBtn"
+       title="Télécharger la carte 2026 en PDF"
+       style="
+           position: fixed;
+           top: 62px;
+           right: 10px;
+           z-index: 1002;
+           display: flex;
+           align-items: center;
+           gap: 6px;
+           background: linear-gradient(135deg, #FF0000, #c62828);
+           color: white;
+           text-decoration: none;
+           padding: 7px 13px;
+           border-radius: 50px;
+           font-size: 12px;
+           font-weight: 700;
+           box-shadow: 0 4px 16px rgba(255,0,0,0.45);
+           white-space: nowrap;
+           transition: transform 0.2s, box-shadow 0.2s;
+           border: 3px solid white;
+       "
+       onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+        <i class="fas fa-file-pdf" style="font-size:14px;"></i>
+        <span id="floatingPdfLabel">Carte PDF</span>
+    </a>
+    <style>
+        @media (max-width: 600px) {
+            #floatingPdfLabel { display: none; }
+            #floatingPdfBtn { padding: 7px 10px; }
+        }
+    </style>
+    <script>
+        // Aligner le bouton PDF sous le bouton panier
+        function alignPdfBtn() {
+            const cart = document.getElementById('btnCart');
+            const btn = document.getElementById('floatingPdfBtn');
+            if (cart && btn) {
+                const rect = cart.getBoundingClientRect();
+                const fromRight = window.innerWidth - rect.right;
+                btn.style.right = Math.max(4, fromRight) + 'px';
+            }
+        }
+        window.addEventListener('load', alignPdfBtn);
+        window.addEventListener('resize', alignPdfBtn);
+    </script>
+
+    <!-- POPUP DERNIÈRES ACTUS FACEBOOK -->
+    <div id="fbNewsPopupOverlay" aria-hidden="true" role="dialog" aria-label="Dernières actualités Facebook" style="
+        display:none; position:fixed; inset:0; z-index:99999;
+        background:rgba(0,0,0,0.6); backdrop-filter:blur(5px);
+        align-items:center; justify-content:center; padding:16px;
+    ">
+        <div style="
+            background:#fff; border-radius:20px; padding:0; max-width:380px; width:100%;
+            box-shadow:0 24px 70px rgba(0,0,0,0.45); overflow:hidden;
+            animation:popupSlideIn 0.4s cubic-bezier(.34,1.56,.64,1);
+        ">
+            <!-- Header Facebook -->
+            <div style="background:linear-gradient(135deg,#1877F2,#0d5abf);padding:18px 20px;display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="white" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M32 16C32 7.163 24.837 0 16 0S0 7.163 0 16c0 7.986 5.851 14.604 13.5 15.806V20.625H9.438V16H13.5v-3.525c0-4.01 2.389-6.225 6.044-6.225 1.75 0 3.581.313 3.581.313v3.938h-2.018c-1.988 0-2.607 1.233-2.607 2.498V16h4.438l-.709 4.625H18.5v11.181C26.149 30.604 32 23.986 32 16z"/>
+                    </svg>
+                    <div>
+                        <div style="color:white;font-weight:800;font-size:16px;line-height:1.2;">Nos dernières actus</div>
+                        <div style="color:rgba(255,255,255,0.8);font-size:12px;">Pizza Club Saint-Pierre 🍕</div>
+                    </div>
+                </div>
+                <button onclick="closeFbPopup()" aria-label="Fermer" style="
+                    background:rgba(255,255,255,0.2); border:none; border-radius:50%;
+                    width:32px; height:32px; cursor:pointer; display:flex; align-items:center;
+                    justify-content:center; color:white; font-size:18px; line-height:1;
+                    transition:background 0.2s; flex-shrink:0;
+                " onmouseover="this.style.background='rgba(255,255,255,0.35)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">×</button>
+            </div>
+            <!-- Embed Facebook Page -->
+            <div style="overflow:hidden;line-height:0;background:#f0f2f5;">
+                <iframe
+                    src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2Fpizzaclub974&tabs=timeline&width=380&height=420&small_header=true&adapt_container_width=true&hide_cover=false&show_facepile=false"
+                    width="380"
+                    height="420"
+                    style="border:none;overflow:hidden;display:block;max-width:100%;"
+                    scrolling="yes"
+                    frameborder="0"
+                    allowfullscreen="true"
+                    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                    title="Fil d'actualités Facebook Pizza Club"
+                    loading="lazy">
+                </iframe>
+            </div>
+            <!-- Footer -->
+            <div style="padding:14px 20px;display:flex;gap:10px;align-items:center;background:#fff;border-top:1px solid #e4e6ea;">
+                <a href="https://www.facebook.com/pizzaclub974" target="_blank" rel="noopener noreferrer" style="
+                    flex:1; background:linear-gradient(135deg,#1877F2,#0d5abf); color:white;
+                    text-decoration:none; padding:11px 16px; border-radius:10px;
+                    font-size:14px; font-weight:700; text-align:center;
+                    transition:opacity 0.2s;
+                " onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                    <svg width="16" height="16" viewBox="0 0 32 32" fill="white" style="vertical-align:middle;margin-right:6px;margin-bottom:2px;"><path d="M32 16C32 7.163 24.837 0 16 0S0 7.163 0 16c0 7.986 5.851 14.604 13.5 15.806V20.625H9.438V16H13.5v-3.525c0-4.01 2.389-6.225 6.044-6.225 1.75 0 3.581.313 3.581.313v3.938h-2.018c-1.988 0-2.607 1.233-2.607 2.498V16h4.438l-.709 4.625H18.5v11.181C26.149 30.604 32 23.986 32 16z"/></svg>
+                    Voir notre page Facebook
+                </a>
+                <button onclick="closeFbPopup()" style="
+                    background:none; border:1px solid #e4e6ea; color:#65676b;
+                    font-size:13px; cursor:pointer; padding:10px 14px; border-radius:10px;
+                    transition:background 0.2s; white-space:nowrap;
+                " onmouseover="this.style.background='#f0f2f5'" onmouseout="this.style.background='none'">Fermer</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        function closeFbPopup() {
+            const overlay = document.getElementById('fbNewsPopupOverlay');
+            overlay.style.opacity = '0';
+            overlay.style.transition = 'opacity 0.3s';
+            setTimeout(() => { overlay.style.display = 'none'; overlay.setAttribute('aria-hidden','true'); }, 300);
+        }
+        // Afficher une seule fois par session
+        (function() {
+            if (!sessionStorage.getItem('fbPopupShown')) {
+                setTimeout(function() {
+                    const overlay = document.getElementById('fbNewsPopupOverlay');
+                    overlay.style.display = 'flex';
+                    overlay.removeAttribute('aria-hidden');
+                    overlay.addEventListener('click', function(e) {
+                        if (e.target === overlay) closeFbPopup();
+                    });
+                    sessionStorage.setItem('fbPopupShown', '1');
+                }, 1500);
+            }
+        })();
+    </script>
+
+    <!-- POPUP TÉLÉCHARGEMENT CARTE PDF -->
+    <div id="pdfPopupOverlay" aria-hidden="true" role="presentation" style="
+        display:none; position:fixed; inset:0; z-index:99998;
+        background:rgba(0,0,0,0.55); backdrop-filter:blur(4px);
+        align-items:center; justify-content:center;
+    ">
+        <div style="
+            background:#fff; border-radius:20px; padding:0; max-width:380px; width:90%;
+            box-shadow:0 20px 60px rgba(0,0,0,0.4); overflow:hidden;
+            animation:popupSlideIn 0.4s cubic-bezier(.34,1.56,.64,1);
+        ">
+            <!-- Header rouge -->
+            <div style="background:linear-gradient(135deg,#FF0000,#c62828);padding:24px 24px 18px;text-align:center;">
+                <div style="font-size:48px;margin-bottom:8px;">🍕</div>
+                <h2 style="color:white;margin:0;font-size:22px;font-weight:800;letter-spacing:-0.5px;">Notre Carte 2026 est là !</h2>
+                <p style="color:rgba(255,255,255,0.85);margin:6px 0 0;font-size:14px;">Toutes nos nouveautés en un coup d'œil</p>
+            </div>
+            <!-- Corps -->
+            <div style="padding:24px;text-align:center;">
+                <p style="color:#555;font-size:15px;margin:0 0 20px;line-height:1.5;">
+                    Découvrez nos pizzas, pâtes, salades, buns, rolls et toutes nos nouvelles spécialités !
+                </p>
+                <a href="img/carte-pizza-club-2026.pdf" download="Carte_PizzaClub_2026.pdf"
+                   onclick="closePdfPopup()"
+                   style="
+                    display:block; background:linear-gradient(135deg,#FF0000,#c62828);
+                    color:white; text-decoration:none; padding:14px 20px;
+                    border-radius:12px; font-size:16px; font-weight:700;
+                    box-shadow:0 4px 14px rgba(255,0,0,0.35); margin-bottom:12px;
+                    transition:transform 0.2s;
+                   "
+                   onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+                    <i class="fas fa-download" style="margin-right:8px;"></i> Télécharger la carte PDF
+                </a>
+                <button onclick="closePdfPopup()" style="
+                    background:none; border:none; color:#aaa; font-size:13px;
+                    cursor:pointer; padding:6px; text-decoration:underline;
+                ">Non merci, je commande directement</button>
+            </div>
+        </div>
+    </div>
+    <style>
+        @keyframes popupSlideIn {
+            from { opacity:0; transform:scale(0.8) translateY(30px); }
+            to   { opacity:1; transform:scale(1) translateY(0); }
+        }
+    </style>
+    <script>
+        function closePdfPopup() {
+            const overlay = document.getElementById('pdfPopupOverlay');
+            overlay.style.opacity = '0';
+            overlay.style.transition = 'opacity 0.3s';
+            setTimeout(() => { overlay.style.display = 'none'; }, 300);
+        }
+
+        // Afficher le popup après 2.5s à chaque chargement de page
+        (function() {
+            setTimeout(function() {
+                const overlay = document.getElementById('pdfPopupOverlay');
+                overlay.style.display = 'flex';
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === overlay) closePdfPopup();
+                });
+            }, 2500);
+        })();
+    </script>
+
     <!-- HERO SECTION -->
     <section class="hero" id="home">
         <div class="hero-overlay"></div>
@@ -101,7 +390,7 @@
                 <a href="#menu" class="btn btn-primary">Commander maintenant</a>
                 <a href="#formules" class="btn btn-secondary">Voir nos formules</a>
             </div>
-            
+
             <div class="hero-features">
                 <div class="feature-item">
                     <i class="fas fa-clock"></i>
@@ -118,6 +407,7 @@
             </div>
         </div>
     </section>
+
 
     <!-- Navigation Catégories Principales (GLOBAL - en dehors des sections) -->
     <div class="main-categories">
@@ -144,6 +434,14 @@
         <button class="category-btn" data-category="desserts">
             <i class="fas fa-ice-cream"></i>
             <span>Desserts</span>
+        </button>
+        <button class="category-btn" data-category="sandwichs">
+            <i class="fas fa-bread-slice"></i>
+            <span>Sandwichs</span>
+        </button>
+        <button class="category-btn" data-category="boissons">
+            <i class="fas fa-glass-whiskey"></i>
+            <span>Boissons</span>
         </button>
     </div>
 
@@ -234,6 +532,35 @@
             </div>
             <div class="menu-grid" id="dessertsGrid">
                 <!-- Les desserts seront générés dynamiquement par JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- SANDWICHS -->
+    <section class="menu-section" id="sandwichs">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title"><i class="fas fa-bread-slice"></i> Nos Sandwichs</h2>
+                <p class="section-subtitle">Américain & Gratiné, à personnaliser</p>
+            </div>
+            <div style="text-align:center;margin-bottom:20px;">
+                <img src="img/Carte Sandwich.png" alt="Carte sandwichs" style="max-width:100%;max-height:400px;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.15);">
+            </div>
+            <div class="menu-grid" id="sandwichsGrid">
+                <!-- Généré dynamiquement par JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- BOISSONS -->
+    <section class="menu-section" id="boissons">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title"><i class="fas fa-glass-whiskey"></i> Boissons</h2>
+                <p class="section-subtitle">Canettes 33cl fraîches</p>
+            </div>
+            <div class="menu-grid" id="boissonsGrid">
+                <!-- Généré dynamiquement par JavaScript -->
             </div>
         </div>
     </section>
@@ -716,6 +1043,64 @@
     </div>
 
     <!-- MODAL PERSONNALISATION L'AMÉRICAINE -->
+    <!-- MODAL PERSONNALISATION SANDWICH -->
+    <div class="modal" id="sandwichCustomizeModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="sandwichModalTitle">Personnaliser le Sandwich</h3>
+                <button class="modal-close" onclick="closeSandwichCustomizeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Base affichée (fixée par la carte) -->
+                <div class="customize-section">
+                    <h4>Base sélectionnée</h4>
+                    <div id="sandwichBaseDisplay" style="
+                        display:inline-block; background:#fff3cd; border:1px solid #ffc107;
+                        color:#856404; border-radius:8px; padding:8px 16px;
+                        font-weight:700; font-size:15px;
+                    "></div>
+                </div>
+
+                <!-- Sauces (2 choix) -->
+                <div class="customize-section">
+                    <h4>Choisir 2 sauces</h4>
+                    <div class="ingredients-add" id="sandwichSauces">
+                        <label class="ingredient-checkbox"><input type="checkbox" value="tunisienne" class="sandwich-sauce-cb"><span>Tunisienne</span></label>
+                        <label class="ingredient-checkbox"><input type="checkbox" value="barbecue" class="sandwich-sauce-cb"><span>Barbecue</span></label>
+                        <label class="ingredient-checkbox"><input type="checkbox" value="algerienne" class="sandwich-sauce-cb"><span>Algérienne</span></label>
+                        <label class="ingredient-checkbox"><input type="checkbox" value="brazil" class="sandwich-sauce-cb"><span>Brazil</span></label>
+                        <label class="ingredient-checkbox"><input type="checkbox" value="ketchup" class="sandwich-sauce-cb"><span>Ketchup</span></label>
+                        <label class="ingredient-checkbox"><input type="checkbox" value="mayonnaise" class="sandwich-sauce-cb"><span>Mayonnaise</span></label>
+                    </div>
+                    <p id="sandwichSauceWarning" style="color:red;display:none;margin-top:8px;">Veuillez sélectionner exactement 2 sauces</p>
+                </div>
+
+                <!-- Quantité -->
+                <div class="customize-section">
+                    <h4>Quantité</h4>
+                    <div class="quantity-controls">
+                        <button class="qty-btn" onclick="changeSandwichQty(-1)">-</button>
+                        <input type="number" id="sandwichQty" value="1" min="1" max="10" readonly style="width:50px;text-align:center;font-size:18px;border:1px solid #ddd;border-radius:4px;padding:5px;">
+                        <button class="qty-btn" onclick="changeSandwichQty(1)">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-price">
+                    <span>Prix total :</span>
+                    <span id="sandwichPrice">7.00€</span>
+                </div>
+                <button class="btn btn-primary" onclick="addSandwichToCart()">
+                    <i class="fas fa-shopping-cart"></i> Ajouter au panier
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PERSONNALISATION PIZZA AMERICAINE -->
     <div class="modal" id="americaineCustomizeModal">
         <div class="modal-overlay"></div>
         <div class="modal-content">
@@ -1789,7 +2174,7 @@
                             <div class="option-card">
                                 <i class="fas fa-truck"></i>
                                 <span>Livraison</span>
-                                <small>30-60 min</small>
+                                <small>min. 1h</small>
                             </div>
                         </label>
                         <label class="delivery-option">
@@ -1811,11 +2196,11 @@
                     </div>
 
                     <!-- Cadre jaune informatif -->
-                    <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 15px; margin-top: 25px;">
-                        <p style="margin: 0; color: #856404; font-size: 14px; text-align: center;">
-                            ⏱️ <strong>Temps de préparation estimé :</strong><br>
-                            🛵 Livraison environ 60 minutes • 🏃 À emporter environ 20 minutes<br>
-                            <small style="font-size: 11px; opacity: 0.85;">Ces délais sont indicatifs et peuvent varier selon l'affluence</small>
+                    <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 18px; margin-top: 25px;">
+                        <p style="margin: 0; color: #856404; font-size: 15px; text-align: center; line-height: 1.6;">
+                            📞 <strong>Nous vous appellerons pour confirmer votre commande.</strong><br>
+                            🛵 <strong>Livraison : minimum 1h d'attente</strong>, selon le nombre de commandes en cours • 🏃 À emporter environ 20 minutes<br>
+                            <small style="font-size: 11.5px; opacity: 0.85;">Ces délais sont indicatifs et peuvent varier selon l'affluence</small>
                         </p>
                     </div>
 
@@ -1955,6 +2340,10 @@
                 <p class="confirmation-details">
                     Numéro de commande: <strong id="orderNumber"></strong><br>
                     Temps estimé: <strong id="estimatedTime"></strong>
+                </p>
+                <p id="confirmationCallNotice" style="display: none; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 12px; margin-top: 15px; color: #856404; font-size: 14px;">
+                    📞 <strong>Nous allons vous appeler pour confirmer votre commande.</strong><br>
+                    Comptez un minimum d'1h d'attente, variable selon les commandes en cours.
                 </p>
             </div>
             <div class="modal-footer">
