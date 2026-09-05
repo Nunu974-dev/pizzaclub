@@ -725,9 +725,41 @@ function sendOrderEmail($supplierName, $email, $items, $total, $comments = '') {
             }
         }
 
+        .mobile-supplier-selector {
+            display: none;
+        }
+
+        .mobile-supplier-selector select {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #667eea;
+            background: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
         @media (max-width: 768px) {
             .suppliers-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .mobile-supplier-selector {
+                display: block;
+                margin-bottom: 20px;
+            }
+
+            /* Sur mobile : un seul fournisseur affiché à la fois, choisi via le menu déroulant */
+            .suppliers-grid .supplier-card {
+                display: none;
+            }
+
+            .suppliers-grid .supplier-card.active-mobile {
+                display: block;
             }
         }
     </style>
@@ -773,12 +805,21 @@ function sendOrderEmail($supplierName, $email, $items, $total, $comments = '') {
                 </form>
             </div>
 
+            <!-- Sélecteur de fournisseur (visible uniquement sur mobile) -->
+            <div class="mobile-supplier-selector">
+                <select id="mobileSupplierSelect" onchange="selectSupplierMobile(this.value)">
+                    <?php foreach ($suppliers as $name => $supplier): ?>
+                        <option value="<?= htmlspecialchars($name) ?>"><?= htmlspecialchars($name) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
             <div class="suppliers-grid">
-                <?php foreach ($suppliers as $name => $supplier): 
+                <?php foreach ($suppliers as $name => $supplier):
                     // Créer un ID valide sans espaces
                     $safeId = str_replace(' ', '-', strtolower($name));
                 ?>
-                    <div class="supplier-card" data-supplier="<?= htmlspecialchars($name) ?>">
+                    <div class="supplier-card<?= $name === array_key_first($suppliers) ? ' active-mobile' : '' ?>" data-supplier="<?= htmlspecialchars($name) ?>">
                         <form method="POST">
                             <input type="hidden" name="supplier" value="<?= $name ?>">
                             <input type="hidden" name="send_order" value="1">
@@ -849,6 +890,13 @@ function sendOrderEmail($supplierName, $email, $items, $total, $comments = '') {
         </div>
 
         <script>
+            // Sur mobile : n'afficher que le fournisseur choisi dans le menu déroulant
+            function selectSupplierMobile(supplierName) {
+                document.querySelectorAll('.supplier-card').forEach(card => {
+                    card.classList.toggle('active-mobile', card.dataset.supplier === supplierName);
+                });
+            }
+
             // Ajoute une ligne d'article libre (non présent dans la liste du fournisseur)
             function addCustomProductRow(safeId, supplierName) {
                 const container = document.getElementById(`custom-products-${safeId}`);
