@@ -335,7 +335,33 @@ $debugFile = __DIR__ . '/debug-order.txt';
             border-radius: 5px;
             margin: 15px 0;
         }
-        .mode-badge { 
+        .schedule-banner {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 16px;
+            text-align: center;
+        }
+        .schedule-today {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+        }
+        .schedule-future {
+            background: #f8d7da;
+            border: 3px solid #dc3545;
+            color: #721c24;
+            font-size: 18px;
+        }
+        .schedule-sub {
+            display: block;
+            font-weight: normal;
+            font-size: 13px;
+            margin-top: 8px;
+            opacity: 0.85;
+        }
+        .mode-badge {
             display: inline-block;
             padding: 5px 15px;
             background: #FFC107;
@@ -418,17 +444,38 @@ $debugFile = __DIR__ . '/debug-order.txt';
                         
                         <span class="mode-badge"><?= $deliveryMode ?></span>
                         
-                        <?php 
+                        <?php
                         // Vérifier si c'est une commande programmée
                         $isScheduled = !empty($order['scheduledDate']) && isset($order['scheduledTime']);
+
+                        if ($isScheduled) {
+                            $scheduledDateObj = new DateTime($order['scheduledDate']);
+                            $todayObj = new DateTime('today');
+                            $diffDays = (int)$todayObj->diff($scheduledDateObj)->format('%r%a');
+                            $isForToday = ($diffDays === 0);
+
+                            if ($isForToday) {
+                                $dayLabel = "AUJOURD'HUI";
+                            } elseif ($diffDays === 1) {
+                                $dayLabel = "DEMAIN";
+                            } else {
+                                $dayLabel = strtoupper($scheduledDateObj->format('d/m/Y'));
+                            }
+
+                            $scheduledHour = (int)$order['scheduledTime'];
+                            $period = $scheduledHour < 16 ? 'MIDI' : 'SOIR';
+                        }
                         ?>
-                        
+
                         <?php if ($isScheduled): ?>
-                            <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; margin: 15px 0; border-radius: 5px;">
-                                <strong style="color: #856404;">⏰ COMMANDE PROGRAMMÉE</strong><br>
-                                <span style="color: #856404;">
-                                    📅 Date: <?= htmlspecialchars($order['scheduledDate']) ?><br>
-                                    🕐 Créneau: <?= (int)$order['scheduledTime'] ?>:00 - <?= ((int)$order['scheduledTime'] + 1) ?>:00
+                            <div class="schedule-banner <?= $isForToday ? 'schedule-today' : 'schedule-future' ?>">
+                                <?php if ($isForToday): ?>
+                                    ✅ POUR AUJOURD'HUI — SERVICE DU <?= $period ?>
+                                <?php else: ?>
+                                    🚨 NE PAS PRÉPARER MAINTENANT — POUR <?= htmlspecialchars($dayLabel) ?>, SERVICE DU <?= $period ?>
+                                <?php endif; ?>
+                                <span class="schedule-sub">
+                                    📅 <?= htmlspecialchars($scheduledDateObj->format('d/m/Y')) ?> · 🕐 Créneau <?= $scheduledHour ?>h00 - <?= $scheduledHour + 1 ?>h00
                                 </span>
                             </div>
                         <?php else: ?>

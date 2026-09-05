@@ -52,21 +52,41 @@ function getKitchenEmailTemplate($orderData) {
             <div class="content">
                 <div class="section" style="background-color: #fff3cd; border: 2px solid #ffc107;">
                     <h3 style="color: #856404;">⏰ HORAIRE DE LIVRAISON</h3>
-                    <?php 
+                    <?php
                     $isScheduled = !empty($orderData['scheduledDate']) && $orderData['scheduledTime'] !== null;
-                    if ($isScheduled): 
-                        // Déterminer le créneau de livraison (45 min après ouverture)
+                    if ($isScheduled):
                         $scheduledHour = (int)$orderData['scheduledTime'];
                         $deliveryStart = $scheduledHour . ':00';
                         $deliveryEnd = ($scheduledHour + 1) . ':00';
-                        
+
                         // Déterminer si c'est le midi ou le soir
                         $period = ($scheduledHour < 16) ? 'MIDI' : 'SOIR';
-                        $firstDeliveryTime = ($scheduledHour < 16) ? '11:45' : '18:45';
+
+                        // Déterminer si c'est pour aujourd'hui, demain, ou plus tard
+                        $scheduledDateObj = new DateTime($orderData['scheduledDate']);
+                        $todayObj = new DateTime('today');
+                        $diffDays = (int)$todayObj->diff($scheduledDateObj)->format('%r%a');
+                        $isForToday = ($diffDays === 0);
+
+                        if ($isForToday) {
+                            $dayLabel = "AUJOURD'HUI";
+                        } elseif ($diffDays === 1) {
+                            $dayLabel = "DEMAIN";
+                        } else {
+                            $dayLabel = strtoupper($scheduledDateObj->format('d/m/Y'));
+                        }
                     ?>
-                        <p style="margin: 0; color: #856404;"><strong>📅 Date :</strong> <?= htmlspecialchars($orderData['scheduledDate']) ?></p>
+                        <?php if ($isForToday): ?>
+                            <p style="margin: 0; padding: 12px; background-color: #d4edda; border: 2px solid #28a745; color: #155724; font-size: 18px; font-weight: bold; text-align: center;">
+                                ✅ POUR AUJOURD'HUI — SERVICE DU <?= $period ?>
+                            </p>
+                        <?php else: ?>
+                            <p style="margin: 0; padding: 12px; background-color: #f8d7da; border: 3px solid #dc3545; color: #721c24; font-size: 20px; font-weight: bold; text-align: center;">
+                                🚨 NE PAS PRÉPARER MAINTENANT<br>POUR <?= htmlspecialchars($dayLabel) ?> — SERVICE DU <?= $period ?>
+                            </p>
+                        <?php endif; ?>
+                        <p style="margin: 12px 0 0 0; color: #856404;"><strong>📅 Date :</strong> <?= htmlspecialchars($scheduledDateObj->format('d/m/Y')) ?> (<?= htmlspecialchars($dayLabel) ?>)</p>
                         <p style="margin: 10px 0 0 0; color: #856404;"><strong>🕐 Créneau demandé :</strong> <?= $deliveryStart ?> - <?= $deliveryEnd ?></p>
-                        <p style="margin: 10px 0 0 0; color: #856404; font-size: 13px;"><em>ℹ️ Première livraison <?= $period ?> : <?= $firstDeliveryTime ?></em></p>
                     <?php else: ?>
                         <p style="margin: 0; color: #28a745;"><strong>⚡ Commande IMMÉDIATE</strong></p>
                         <p style="margin: 10px 0 0 0; color: #666;"><em>À préparer et livrer dès que possible</em></p>
