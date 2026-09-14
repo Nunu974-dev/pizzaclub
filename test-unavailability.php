@@ -53,7 +53,8 @@ if (is_writable($file)) {
         'ingredients' => [],
         'closures' => [
             'emergency' => null,
-            'scheduled' => []
+            'scheduled' => [],
+            'vacations' => []
         ],
         'lastUpdate' => date('c'),
         'test' => 'Test effectué le ' . date('d/m/Y H:i:s')

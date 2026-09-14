@@ -59,6 +59,37 @@ function isRestaurantClosed() {
     }
     
     // ========================================
+    // FERMETURE VACANCES (période de date à date)
+    // ========================================
+    // Couvre tous les services (midi + soir) pour toute la période, quel que
+    // soit le jour de la semaine. Réouverture automatique le lendemain de la
+    // date de fin, sans action manuelle nécessaire.
+    if (isset($data['closures']['vacations']) && is_array($data['closures']['vacations'])) {
+        foreach ($data['closures']['vacations'] as $vacation) {
+            if (empty($vacation['startDate']) || empty($vacation['endDate'])) {
+                continue;
+            }
+            if ($today >= $vacation['startDate'] && $today <= $vacation['endDate']) {
+                $reason = $vacation['reason'] ?: 'Congés';
+                $reopenDT = DateTime::createFromFormat('Y-m-d', $vacation['endDate']);
+                $reopenLabel = '';
+                if ($reopenDT) {
+                    $reopenDT->modify('+1 day');
+                    $reopenLabel = ' Réouverture le ' . $reopenDT->format('d/m/Y') . '.';
+                }
+                return [
+                    'isClosed'  => true,
+                    'reason'    => $reason,
+                    'type'      => 'vacation',
+                    'startDate' => $vacation['startDate'],
+                    'endDate'   => $vacation['endDate'],
+                    'message'   => '🔒 Commandes fermées : ' . $reason . '.' . $reopenLabel
+                ];
+            }
+        }
+    }
+
+    // ========================================
     // JOURS DE FERMETURE RÉGULIERS
     // ========================================
     // Lundi = jour de fermeture (N = 1)

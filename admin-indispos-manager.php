@@ -52,8 +52,13 @@ if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!isset($data['closures'])) {
                 $data['closures'] = [
                     'emergency' => null,
-                    'scheduled' => []
+                    'scheduled' => [],
+                    'vacations' => []
                 ];
+            }
+            // Anciennes sauvegardes sans le champ 'vacations' : le compléter
+            if (!isset($data['closures']['vacations'])) {
+                $data['closures']['vacations'] = [];
             }
             
             $jsonToSave = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
@@ -550,6 +555,20 @@ if (file_exists(JSON_FILE)) {
             border-left-color: #f44336;
         }
 
+        .closure-card.vacation h2 {
+            color: #00897b;
+        }
+
+        .closure-item.vacation {
+            background: #e0f2f1;
+            border-left-color: #00897b;
+        }
+
+        .badge-vacation {
+            background: #e0f2f1;
+            color: #00695c;
+        }
+
         .closure-info {
             flex: 1;
         }
@@ -805,6 +824,36 @@ if (file_exists(JSON_FILE)) {
                     </div>
                 </div>
 
+                <!-- Fermeture vacances (période de date à date) -->
+                <div class="closure-card vacation">
+                    <h2><i class="fas fa-umbrella-beach"></i> Fermeture Vacances (période)</h2>
+                    <p>Fermer les commandes en ligne sur une <strong>période de dates</strong> (ex: congés annuels). Bloque tous les services, midi et soir, chaque jour de la période. Réouverture automatique le lendemain de la date de fin, aucune action nécessaire.</p>
+                    <div class="closure-form">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+                            <div class="form-group">
+                                <label for="vacation-start">Date de début *</label>
+                                <input type="date" id="vacation-start" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="vacation-end">Date de fin *</label>
+                                <input type="date" id="vacation-end" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="vacation-reason">Raison (optionnel)</label>
+                            <input type="text" id="vacation-reason" placeholder="Ex: Congés annuels, Fermeture estivale...">
+                        </div>
+                        <button class="btn btn-add-closure" onclick="addVacationClosure()">
+                            <i class="fas fa-umbrella-beach"></i> Programmer ces vacances
+                        </button>
+                    </div>
+
+                    <!-- Liste des vacances programmées -->
+                    <div class="closures-list" id="vacations-list">
+                        <!-- Les périodes de vacances seront ajoutées ici dynamiquement -->
+                    </div>
+                </div>
+
                 <!-- Fermetures programmées -->
                 <div class="closure-card">
                     <h2><i class="fas fa-calendar-times"></i> Fermetures Programmées</h2>
@@ -869,8 +918,12 @@ if (file_exists(JSON_FILE)) {
         if (!unavailability.closures) {
             unavailability.closures = {
                 emergency: null, // Fermeture d'urgence en cours
-                scheduled: []    // Fermetures programmées
+                scheduled: [],   // Fermetures programmées (un jour précis)
+                vacations: []    // Fermetures vacances (période de date à date)
             };
+        }
+        if (!unavailability.closures.vacations) {
+            unavailability.closures.vacations = [];
         }
 
         // Initialisation au chargement
@@ -1267,6 +1320,58 @@ if (file_exists(JSON_FILE)) {
             }
         }
 
+        // Ajouter une fermeture vacances (période de date à date)
+        function addVacationClosure() {
+            const startDate = document.getElementById('vacation-start').value;
+            const endDate = document.getElementById('vacation-end').value;
+            const reason = document.getElementById('vacation-reason').value || 'Congés';
+
+            if (!startDate || !endDate) {
+                alert('❌ Veuillez indiquer une date de début et une date de fin.');
+                return;
+            }
+            if (endDate < startDate) {
+                alert('❌ La date de fin doit être postérieure ou égale à la date de début.');
+                return;
+            }
+
+            const startLabel = new Date(startDate).toLocaleDateString('fr-FR');
+            const endLabel = new Date(endDate).toLocaleDateString('fr-FR');
+            if (!confirm(`⚠️ Fermer les commandes en ligne du ${startLabel} au ${endLabel} inclus (midi et soir) ?\n\nLa réouverture se fera automatiquement le lendemain de la date de fin.`)) {
+                return;
+            }
+
+            const vacation = {
+                id: Date.now(),
+                startDate: startDate,
+                endDate: endDate,
+                reason: reason,
+                createdAt: new Date().toISOString()
+            };
+
+            unavailability.closures.vacations.push(vacation);
+            unavailability.closures.vacations.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+            saveChanges();
+            loadClosures();
+
+            // Réinitialiser le formulaire
+            document.getElementById('vacation-start').value = '';
+            document.getElementById('vacation-end').value = '';
+            document.getElementById('vacation-reason').value = '';
+
+            alert('✅ Fermeture vacances programmée avec succès !');
+        }
+
+        // Supprimer une fermeture vacances
+        function removeVacationClosure(id) {
+            if (confirm('❌ Supprimer cette période de vacances ?')) {
+                unavailability.closures.vacations = unavailability.closures.vacations.filter(v => v.id !== id);
+                saveChanges();
+                loadClosures();
+            }
+        }
+
         // Réactiver les commandes (annuler fermeture d'urgence)
         function reopenNow() {
             if (confirm('✅ Réactiver les commandes maintenant ?')) {
@@ -1277,13 +1382,56 @@ if (file_exists(JSON_FILE)) {
             }
         }
 
+        // Charger et afficher les fermetures vacances (période de date à date)
+        function loadVacations() {
+            const list = document.getElementById('vacations-list');
+            const today = new Date().toISOString().split('T')[0];
+
+            list.innerHTML = '';
+
+            const vacations = (unavailability.closures.vacations || [])
+                .filter(v => v.endDate >= today); // masquer les périodes déjà terminées
+
+            vacations.forEach(vacation => {
+                const isActive = vacation.startDate <= today && today <= vacation.endDate;
+                const startLabel = new Date(vacation.startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+                const endLabel = new Date(vacation.endDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+                list.innerHTML += `
+                    <div class="closure-item vacation">
+                        <div class="closure-info">
+                            <h4>🏖️ ${vacation.reason}</h4>
+                            <p><strong>Du:</strong> ${startLabel} <strong>au</strong> ${endLabel} (inclus)</p>
+                            <p><strong>Services:</strong> 📅 Midi et soir, tous les jours de la période</p>
+                        </div>
+                        <span class="closure-badge ${isActive ? 'badge-active' : 'badge-vacation'}">
+                            ${isActive ? 'EN COURS' : 'À VENIR'}
+                        </span>
+                        <button class="btn btn-remove" onclick="removeVacationClosure(${vacation.id})">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    </div>
+                `;
+            });
+
+            if (list.innerHTML === '') {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-umbrella-beach"></i>
+                        <p>Aucune fermeture vacances programmée</p>
+                    </div>
+                `;
+            }
+        }
+
         // Charger et afficher les fermetures
         function loadClosures() {
             const list = document.getElementById('closures-list');
             const today = new Date().toISOString().split('T')[0];
-            
+
+            loadVacations();
             list.innerHTML = '';
-            
+
             // Afficher la fermeture d'urgence si active
             if (unavailability.closures.emergency) {
                 const emergency = unavailability.closures.emergency;

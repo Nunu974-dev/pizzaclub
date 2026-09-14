@@ -36,6 +36,33 @@ Pour réactiver les commandes :
 
 ---
 
+## 🏖️ Fermeture Vacances (période de date à date)
+
+### Cas d'usage
+- Congés annuels sur plusieurs jours (ex: 1 semaine, 2 semaines)
+- Fermeture estivale
+- Toute période de fermeture continue connue à l'avance
+
+### Comment faire
+1. Accéder à l'interface admin : `https://www.pizzaclub.re/admin-indispos-manager.php`
+2. Aller dans l'onglet **"Fermetures"**
+3. Dans la section **"Fermeture Vacances (période)"** :
+   - **Date de début** et **Date de fin** (incluses toutes les deux)
+   - **Raison** (optionnel, ex: "Congés annuels")
+4. Cliquer sur **"Programmer ces vacances"** puis confirmer
+
+### Effet
+- Les commandes en ligne sont fermées **chaque jour de la période**, du matin au soir
+- Cela couvre **tous les services, midi et soir**, quel que soit le jour de la semaine
+- Les clients voient un message dédié (ex: "🔒 Commandes fermées : Congés annuels. Réouverture le 05/01/2026.")
+- **Réouverture automatique** le lendemain de la date de fin — aucune action nécessaire
+
+### Suppression / modification
+- Une période peut être supprimée à tout moment via **"Supprimer"** dans la liste
+- Pour modifier une période, la supprimer puis en recréer une nouvelle avec les bonnes dates
+
+---
+
 ## 📅 Fermetures Programmées
 
 ### Cas d'usage
@@ -137,6 +164,18 @@ fetch('check-closure.php')
 }
 ```
 
+**Restaurant fermé (vacances, période de date à date) :**
+```json
+{
+    "isClosed": true,
+    "reason": "Congés annuels",
+    "type": "vacation",
+    "startDate": "2025-12-24",
+    "endDate": "2026-01-04",
+    "message": "🔒 Commandes fermées : Congés annuels. Réouverture le 05/01/2026."
+}
+```
+
 ---
 
 ## 📁 Structure des données
@@ -162,6 +201,15 @@ Les fermetures sont enregistrées dans `unavailability.json` :
                 "startTime": null,
                 "endTime": null,
                 "fullDay": true,
+                "createdAt": "2025-12-01T10:00:00Z"
+            }
+        ],
+        "vacations": [
+            {
+                "id": 1703500800001,
+                "startDate": "2025-12-24",
+                "endDate": "2026-01-04",
+                "reason": "Congés annuels",
                 "createdAt": "2025-12-01T10:00:00Z"
             }
         ]
