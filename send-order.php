@@ -217,7 +217,7 @@ foreach ($orderData['items'] as $item) {
             
             // Taille de la pizza
             if (!empty($pizzaCust['size'])) {
-                $pizzaSizeLabel = ($pizzaCust['size'] === 'moyenne') ? '33cm' : '40cm';
+                $pizzaSizeLabel = ['petite' => '26cm', 'moyenne' => '33cm', 'grande' => '40cm'][$pizzaCust['size']] ?? $pizzaCust['size'];
                 $itemsList .= " (" . $pizzaSizeLabel . ")";
             }
             
@@ -340,6 +340,7 @@ foreach ($orderData['items'] as $item) {
         $sizeLabel = '';
         if (!empty($custom['size'])) {
             switch($custom['size']) {
+                case 'petite': $sizeLabel = '26cm'; break;
                 case 'moyenne': $sizeLabel = '33cm'; break;
                 case 'grande': $sizeLabel = '40cm'; break;
                 case 'L': $sizeLabel = 'Large'; break;
@@ -524,6 +525,9 @@ $message .= "──────────────────────�
 // TEMPS ET COMMENTAIRES
 $message .= "⏱️  Temps estimé: " . $orderData['estimatedTime'] . "\n";
 
+if (!empty($orderData['customer']['outOfSector'])) {
+    $message .= "\n⚠️ ADRESSE HORS SECTEUR - À CONFIRMER AVEC LE CLIENT\n";
+}
 if (!empty($orderData['customer']['comments'])) {
     $message .= "\n💬 COMMENTAIRE CLIENT:\n";
     $message .= "───────────────────────────────────────────\n";

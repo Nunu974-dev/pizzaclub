@@ -1343,7 +1343,7 @@ function createCartItemElement(item) {
         
         // Taille
         if (item.customization.size) {
-            const sizeLabel = item.customization.size === 'moyenne' ? '33cm' : '40cm';
+            const sizeLabel = sizeToCm(item.customization.size);
             details.push(`Taille: ${sizeLabel}`);
         }
         
@@ -1465,7 +1465,7 @@ function createCartItemElement(item) {
         if (c.pizza) {
             let pizzaLabel = `🍕 ${c.pizza}`;
             if (c.pizzaCustomization?.size) {
-                pizzaLabel += ` (${c.pizzaCustomization.size === 'moyenne' ? '33cm' : '40cm'})`;
+                pizzaLabel += ` (${sizeToCm(c.pizzaCustomization.size)})`;
             }
             details.push(pizzaLabel);
             if (c.pizzaCustomization?.ingredients?.added?.length > 0) {
@@ -1620,55 +1620,31 @@ function getDeliveryFee(subtotal) {
     return CONFIG.delivery.fee;
 }
 
+function sizeToCm(size) {
+    if (size === 'petite') return '26cm';
+    if (size === 'moyenne') return '33cm';
+    if (size === 'grande') return '40cm';
+    return size;
+}
+
 // ========================================
 // VALIDATION ZONE DE LIVRAISON
 // ========================================
+const OUT_OF_SECTOR_KEYWORDS = [
+    "bois d'olive", "bois d olive", "bois d’olive", "boisdolive",
+    'ligne paradis les hauts', 'ligne paradis hauts', 'paradis les hauts',
+    'mont vert', 'mont-vert', 'montvert',
+    'condé 400', 'conde 400', 'condé400', 'conde400',
+    'ligne des bambous', 'ligne bambous', 'ligne des bambou'
+];
+
+function isOutOfSector(address = '', city = '') {
+    const full = (address + ' ' + city).toLowerCase().replace(/\s+/g, ' ');
+    return OUT_OF_SECTOR_KEYWORDS.some(k => full.includes(k));
+}
+
 function isInDeliveryZone(postalCode, address = '', city = '') {
-    // Si pas de zones définies, accepter tout
-    if (!CONFIG.delivery.deliveryZones || CONFIG.delivery.deliveryZones.length === 0) {
-        return { isValid: true };
-    }
-    
-    // Nettoyer le code postal (enlever espaces)
-    const cleanPostalCode = postalCode.trim();
-    
-    // Vérifier si le code postal est dans la liste
-    if (!CONFIG.delivery.deliveryZones.includes(cleanPostalCode)) {
-        return { 
-            isValid: false, 
-            message: CONFIG.delivery.outOfZoneMessage + '\n\nZones desservies : ' + CONFIG.delivery.deliveryZones.join(', ')
-        };
-    }
-    
-    // Si le code postal est accepté, vérifier les exclusions de quartiers
-    if (CONFIG.delivery.excludedAreas && CONFIG.delivery.excludedAreas[cleanPostalCode]) {
-        const exclusions = CONFIG.delivery.excludedAreas[cleanPostalCode];
-        const fullAddress = (address + ' ' + city).toLowerCase();
-        
-        // Vérifier les mots-clés exclus dans l'adresse
-        if (exclusions.excludedKeywords) {
-            for (const keyword of exclusions.excludedKeywords) {
-                if (fullAddress.includes(keyword.toLowerCase())) {
-                    const message = exclusions.message || 
-                        `🚫 Nous ne livrons pas dans ce quartier.\n\n✅ Quartiers desservis :\n${(CONFIG.delivery.deliveredAreas[cleanPostalCode] || []).join('\n')}`;
-                    return { isValid: false, message };
-                }
-            }
-        }
-        
-        // Vérifier les noms de quartiers exclus
-        if (exclusions.excludedDistricts) {
-            for (const district of exclusions.excludedDistricts) {
-                if (fullAddress.includes(district.toLowerCase())) {
-                    const message = exclusions.message || 
-                        `🚫 Nous ne livrons pas dans ce quartier.\n\n✅ Quartiers desservis :\n${(CONFIG.delivery.deliveredAreas[cleanPostalCode] || []).join('\n')}`;
-                    return { isValid: false, message };
-                }
-            }
-        }
-    }
-    
-    // Tout est OK
+    // Toutes les adresses sont acceptées ; l'alerte hors secteur est gérée à la validation
     return { isValid: true };
 }
 
@@ -4141,11 +4117,13 @@ function validateCustomerForm() {
     const phone = document.getElementById('phone').value.trim();
     const email = document.getElementById('email').value.trim();
 
-    // Validation téléphone Réunion
-    // Formats acceptés: 0692XXXXXX, 0262XXXXXX, +262692XXXXXX, +262262XXXXXX
-    const phoneRegex = /^(\+262|0)(692|693|639|262)\d{6}$/;
-    if (!phoneRegex.test(phone)) {
-        showNotification('Numéro de téléphone invalide. Format attendu : 0692XXXXXX, 0262XXXXXX ou +262692XXXXXX', 'error');
+    // Validation téléphone France métropolitaine + DOM-TOM
+    // Espaces, points, tirets et parenthèses tolérés
+    // Formats acceptés: 0692123456, 06 92 12 34 56, 0612345678, +33612345678, +262692123456, 0033...
+    const phoneClean = phone.replace(/[\s.\-()]/g, '');
+    const phoneRegex = /^(?:0[1-9]\d{8}|(?:\+|00)(?:33|262|590|596|594|508|269)0?\d{9})$/;
+    if (!phoneRegex.test(phoneClean)) {
+        showNotification('Numéro de téléphone invalide. Exemples : 06 12 34 56 78, 0692 12 34 56 ou +33 6 12 34 56 78', 'error');
         document.getElementById('phone').focus();
         return false;
     }
@@ -4186,6 +4164,16 @@ function validateCustomerForm() {
             document.getElementById('address').focus();
             return false;
         }
+
+        // Alerte hors secteur (non bloquante : le client peut confirmer)
+        customerData.outOfSector = isOutOfSector(customerData.address, customerData.city);
+        if (customerData.outOfSector) {
+            const ok = confirm("⚠️ Votre adresse semble située hors de notre secteur de livraison (Bois d'Olive, Ligne Paradis les Hauts, Mont-Vert, Condé 400, Ligne des Bambous).\n\nLa livraison n'est pas garantie : nous vous contacterons pour confirmer.\n\nOK = continuer la commande\nAnnuler = modifier l'adresse ou choisir « À emporter »");
+            if (!ok) {
+                document.getElementById('address').focus();
+                return false;
+            }
+        }
     }
 
     // Sauvegarder dans localStorage (base client simulée)
@@ -4221,7 +4209,7 @@ function displayOrderSummary() {
                     ${deliveredAreas.join(' • ')}
                 </p>
                 <p style="margin: 0; font-size: 12px; color: #d32f2f; font-weight: 600;">
-                    ❌ Non desservis : Mont-Vert-les-Bas, Mont-Vert-les-Hauts,
+                    ❌ Hors secteur : Bois d'Olive, Ligne Paradis les Hauts, Mont-Vert (haut et bas), Condé 400, Ligne des Bambous
                 </p>
                 <p style="margin: 10px 0 0 0; font-size: 11px; color: #666;">
                     ℹ️ Si vous avez un doute, nous vous contacterons pour confirmer.
@@ -4252,7 +4240,7 @@ function displayOrderSummary() {
             
             // PIZZAS
             if (item.type === 'pizza') {
-                const sizeLabel = c.size === 'moyenne' ? '33cm' : c.size === 'grande' ? '40cm' : c.size;
+                const sizeLabel = sizeToCm(c.size);
                 customizationHTML = `<br><small>📏 TAILLE: ${sizeLabel || '(non spécifiée)'}</small>`;
                 
                 // BASE - toujours afficher
@@ -4326,7 +4314,7 @@ function displayOrderSummary() {
             else if (item.type === 'formule' && c.pizza) {
                 customizationHTML = `<br><small>🍕 ${c.pizza}`;
                 if (c.pizzaCustomization?.size) {
-                    const sizeLabel = c.pizzaCustomization.size === 'moyenne' ? '33cm' : '40cm';
+                    const sizeLabel = sizeToCm(c.pizzaCustomization.size);
                     customizationHTML += ` (${sizeLabel})`;
                 }
                 if (c.pizzaCustomization?.base && c.pizzaCustomization.base !== 'tomate') {
@@ -4851,7 +4839,7 @@ ${orderData.discount > 0 ? `   Réduction: -${orderData.discount.toFixed(2)}€\
 
 ⏱️ Temps estimé: ${orderData.estimatedTime}
 
-${orderData.customer.comments ? `💬 COMMENTAIRE CLIENT:\n   ${orderData.customer.comments}\n` : ''}
+${orderData.customer.outOfSector ? `⚠️ ADRESSE HORS SECTEUR - À CONFIRMER AVEC LE CLIENT\n` : ''}${orderData.customer.comments ? `💬 COMMENTAIRE CLIENT:\n   ${orderData.customer.comments}\n` : ''}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     `.trim();
 
