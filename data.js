@@ -895,17 +895,20 @@ const EXTRAS = {
 // DONNÉES DES BOISSONS
 // ========================================
 const BOISSONS_DATA = [
-    { id: 1,  name: 'Coca-Cola',  size: '33cl', price: 2.00 },
-    { id: 7,  name: 'Coca-Cola',  size: '50cl', price: 2.50 },
-    { id: 10,  name: 'Coca-Cola',  size: '1,5l', price: 4.00 },
-    { id: 2,  name: 'Thé Pêche',  size: '33cl', price: 2.00 },
-    { id: 8,  name: 'Thé Pêche',  size: '50cl', price: 2.50 },
-    { id: 3,  name: 'Thé Melon',  size: '33cl', price: 2.00 },
-    { id: 9,  name: 'Thé Melon',  size: '50cl', price: 2.50 },
-    { id: 4,  name: 'Sambo',      size: '33cl', price: 2.00 },
-    { id: 5,  name: 'Edena',      size: '50cl', price: 1.50 },
-    { id: 11,  name: 'Edena',      size: '1,5l', price: 2.50 },
-    { id: 6,  name: 'Cilaos',     size: '50cl', price: 1.80 }
+    { id: 1,  name: 'Coca-Cola',  size: '33cl', price: 2.00, image: 'img/boissons/Coca_cola.jpg' },
+    { id: 7,  name: 'Coca-Cola',  size: '50cl', price: 2.50, image: 'img/boissons/Coca_cola.jpg' },
+    { id: 10,  name: 'Coca-Cola',  size: '1,5l', price: 4.00, image: 'img/boissons/Coca_cola.jpg' },
+    { id: 2,  name: 'Thé Pêche', brand: 'Pokka',  size: '33cl', price: 2.00, image: 'img/boissons/Pokka_peche.jpg' },
+    { id: 8,  name: 'Thé Pêche', brand: 'Pokka',  size: '50cl', price: 2.50, image: 'img/boissons/Pokka_peche.jpg' },
+    { id: 3,  name: 'Thé Melon', brand: 'Pokka',  size: '33cl', price: 2.00, image: 'img/boissons/Pokka_melon.jpg' },
+    { id: 9,  name: 'Thé Melon', brand: 'Pokka',  size: '50cl', price: 2.50, image: 'img/boissons/Pokka_melon.jpg' },
+    { id: 4,  name: 'Sambo',      size: '33cl', price: 2.00, image: 'img/boissons/Sambo.jpg' },
+    { id: 5,  name: 'Edena',      size: '50cl', price: 1.50, image: 'img/boissons/Edena.jpg' },
+    { id: 11,  name: 'Edena',      size: '1,5l', price: 2.50, image: 'img/boissons/Edena.jpg' },
+    { id: 6,  name: 'Cilaos',     size: '50cl', price: 1.80, image: 'img/boissons/Cilaos.jpg' },
+    { id: 12, name: 'Orangina',   size: '50cl', price: 2.50, image: 'img/boissons/Orangina.jpg' },
+    { id: 13, name: 'Fanta Orange', size: '50cl', price: 2.50, image: 'img/boissons/Fanta_orange.jpg' },
+    { id: 14, name: 'Monster',    size: '50cl', price: 4.00, image: 'img/boissons/Monster.jpg' }
 ];
 
 // ========================================

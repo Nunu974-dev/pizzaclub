@@ -718,9 +718,11 @@ function renderBoissons() {
         }
 
         card.innerHTML = `
+            ${variants[0].image ? `<img src="${variants[0].image}" alt="${name}" loading="lazy" style="width:100%;height:160px;object-fit:contain;padding-top:12px;">` : ''}
             <div class="pizza-content" style="padding:20px;">
                 <div class="pizza-header">
                     <h3 class="pizza-title"><i class="fas fa-glass-whiskey" style="color:#1a73e8;margin-right:6px;"></i>${name}</h3>
+                    ${variants[0].brand ? `<small style="color:#888;">${variants[0].brand}</small>` : ''}
                 </div>
                 ${actionsHtml}
             </div>
