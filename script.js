@@ -183,6 +183,12 @@ function initApp() {
     console.log('initApp - savedMode:', savedMode, 'cart.length:', cart.length, 'savedDeliveryTimeSet:', savedDeliveryTimeSet, 'savedPromoApplied:', savedPromoApplied);
     
     // Une commande programmée sauvegardée dont le créneau est passé/invalide est abandonnée
+    // Un choix "maintenant" d'une visite précédente n'est plus valable (horaires/fermetures ont pu changer) :
+    // le panier est conservé mais on redemande maintenant/programmée.
+    if (cart.length > 0 && savedMode !== 'programmee') {
+        ['deliveryTimeMode', 'deliveryTimeSet'].forEach(k => localStorage.removeItem(k));
+        window.__staleSchedule = true;
+    }
     if (savedMode === 'programmee' && getScheduledSlotError(savedDate, parseInt(savedHour))) {
         ['deliveryTimeMode', 'deliveryTimeSet', 'scheduledDeliveryDate', 'scheduledDeliveryHour'].forEach(k => localStorage.removeItem(k));
         window.__staleSchedule = true;
@@ -3972,6 +3978,17 @@ function openCheckoutModal() {
         return;
     }
 
+    // Choix "maintenant" fait il y a longtemps : revérifier que le restaurant est toujours ouvert
+    if (deliveryTimeMode !== 'programmee' && !editingDeliveryTime) {
+        const m = document.querySelector('input[name="deliveryMode"]:checked')?.value || 'livraison';
+        getRestaurantClosureStatus(m).then(st => {
+            if (st.isClosed && document.getElementById('checkoutModal').classList.contains('active')) {
+                showNotification(st.message || '🔒 Les commandes sont fermées. Programmez votre commande.', 'error');
+                changeDeliveryTime();
+            }
+        });
+    }
+
     // Afficher les informations de livraison déjà définies
     displayDeliveryTimeInfo();
 
@@ -4986,12 +5003,24 @@ function closeCart() {
 // ========================================
 // STOCKAGE LOCAL
 // ========================================
+const CART_MAX_AGE_MS = 12 * 60 * 60 * 1000; // un panier abandonné plus de 12h est vidé
+
 function saveCartToStorage() {
     localStorage.setItem('pizzaclub_cart', JSON.stringify(cart));
+    localStorage.setItem('pizzaclub_cart_ts', String(Date.now()));
 }
 
 function loadCartFromStorage() {
-    const saved = localStorage.getItem('pizzaclub_cart');
+    let saved = localStorage.getItem('pizzaclub_cart');
+    const ts = parseInt(localStorage.getItem('pizzaclub_cart_ts'));
+    if (saved && !ts) {
+        localStorage.setItem('pizzaclub_cart_ts', String(Date.now())); // ancien panier sans horodatage : on démarre le compteur
+    } else if (saved && Date.now() - ts > CART_MAX_AGE_MS) {
+        // Vieux panier (prix, offres ou horaires périmés) : on repart de zéro
+        ['pizzaclub_cart', 'pizzaclub_cart_ts', 'deliveryTimeMode', 'deliveryTimeSet', 'scheduledDeliveryDate',
+         'scheduledDeliveryHour', 'promoApplied'].forEach(k => localStorage.removeItem(k));
+        saved = null;
+    }
     if (saved) {
         cart = JSON.parse(saved);
         updateCartUI();
@@ -5378,18 +5407,6 @@ function ensureDeliveryTimeSet(callback) {
     // Si l'heure est déjà définie, exécuter directement
     if (deliveryTimeSet) {
         console.log('Delivery time already set, executing callback');
-        callback();
-        return;
-    }
-    
-    // Si le panier n'est pas vide (chargé depuis localStorage), considérer que l'heure est définie
-    if (cart.length > 0) {
-        console.log('Cart not empty, using default mode');
-        // Utiliser l'heure actuelle par défaut si rien n'est sauvegardé
-        if (!deliveryTimeMode) {
-            deliveryTimeMode = 'maintenant';
-        }
-        deliveryTimeSet = true;
         callback();
         return;
     }
