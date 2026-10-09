@@ -182,8 +182,14 @@ function initApp() {
     
     console.log('initApp - savedMode:', savedMode, 'cart.length:', cart.length, 'savedDeliveryTimeSet:', savedDeliveryTimeSet, 'savedPromoApplied:', savedPromoApplied);
     
+    // Une commande programmée sauvegardée dont le créneau est passé/invalide est abandonnée
+    if (savedMode === 'programmee' && getScheduledSlotError(savedDate, parseInt(savedHour))) {
+        ['deliveryTimeMode', 'deliveryTimeSet', 'scheduledDeliveryDate', 'scheduledDeliveryHour'].forEach(k => localStorage.removeItem(k));
+        window.__staleSchedule = true;
+    }
+    
     // Si le panier est vide, réinitialiser deliveryTimeSet
-    if (cart.length === 0) {
+    if (cart.length === 0 || window.__staleSchedule) {
         console.log('Panier vide - réinitialisation de deliveryTimeSet');
         deliveryTimeSet = false;
         deliveryTimeMode = 'maintenant';
@@ -4048,6 +4054,15 @@ function displayDeliveryTimeInfo() {
     }
 }
 
+let editingDeliveryTime = false;
+
+function changeDeliveryTime() {
+    editingDeliveryTime = true;
+    closeCheckoutModal();
+    pendingCartAction = () => openCheckoutModal();
+    openDeliveryTimeModal();
+}
+
 function closeCheckoutModal() {
     document.getElementById('checkoutModal').classList.remove('active');
     currentStep = 1;
@@ -4454,6 +4469,20 @@ async function submitOrder() {
             discountAmount = Math.min(discountAmount, subtotalAmount);
         }
         const totalAmount = subtotalAmount + deliveryFeeAmount - discountAmount;
+        
+        if (deliveryTimeMode === 'programmee') {
+            const slotError = getScheduledSlotError(scheduledDeliveryDate, scheduledDeliveryHour);
+            if (slotError) {
+                showNotification(slotError, 'error');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+                submitBtn.innerHTML = originalHTML;
+                closeCheckoutModal();
+                deliveryTimeSet = false;
+                setTimeout(() => openDeliveryTimeModal(), 300);
+                return;
+            }
+        }
         
         const orderData = {
             orderNumber,
@@ -5607,6 +5636,14 @@ async function openDeliveryTimeModal() {
         console.log('Hour initialized to 19:00');
     }
     
+    // Modification d'un choix déjà validé : préremplir avec le choix actuel
+    if (editingDeliveryTime && deliveryTimeMode === 'programmee' && scheduledDeliveryDate && scheduledDeliveryHour !== null) {
+        if (programmeeRadio) programmeeRadio.checked = true;
+        if (scheduledSection) scheduledSection.style.display = 'block';
+        if (dateInput && scheduledDeliveryDate >= dateInput.min) dateInput.value = scheduledDeliveryDate;
+        if (hourInput) hourInput.value = String(scheduledDeliveryHour).padStart(2, '0') + ':00';
+    }
+    
     openModal(modal);
     console.log('Modal class active added');
 }
@@ -5653,6 +5690,26 @@ function toggleGlobalScheduledTime() {
     }
 }
 
+function getScheduledSlotError(dateStr, hour, minutes = 0) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr || '');
+    if (!m || hour === null || isNaN(hour)) return 'Veuillez sélectionner une date et une heure';
+    const y = +m[1], mo = +m[2] - 1, d = +m[3];
+    const day = new Date(y, mo, d, hour, minutes, 0, 0);
+    if (day.getMonth() !== mo || day.getDate() !== d) return 'Date invalide';
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (day < todayStart) return 'Impossible de choisir une date passée : choisissez aujourd\'hui ou une date ultérieure';
+    if (day <= now) return 'La date et l\'heure doivent être dans le futur';
+    const oh = CONFIG.openingHours;
+    const inMidi = hour >= oh.midi.start && hour < oh.midi.end;
+    const inSoir = hour >= oh.soir.start && hour < oh.soir.end;
+    if (!inMidi && !inSoir) return 'Veuillez choisir une heure pendant nos horaires de service (11h-14h ou 18h-21h)';
+    const dow = day.getDay();
+    if (oh.closedDays && oh.closedDays.includes(dow)) return 'Nous sommes fermés ce jour-là. Choisissez un autre jour';
+    if (inMidi && oh.closedMidi && oh.closedMidi.includes(dow)) return 'Nous sommes fermés ce jour le midi. Choisissez le soir ou un autre jour';
+    return null;
+}
+
 async function confirmDeliveryTime() {
     const selectedMode = document.querySelector('input[name="globalDeliveryTime"]:checked')?.value;
     
@@ -5669,25 +5726,11 @@ async function confirmDeliveryTime() {
             return;
         }
         
-        // Valider que la date/heure est dans le futur
+        // Valider date (pas passée), heure (futur + heures de service) et jours de fermeture
         const [hours, minutes] = hourInput.split(':');
-        const selectedDateTime = new Date(dateInput);
-        selectedDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        
-        const now = new Date();
-        
-        if (selectedDateTime <= now) {
-            showNotification('La date et l\'heure doivent être dans le futur', 'error');
-            return;
-        }
-        
-        // Vérifier que l'heure est dans les heures d'ouverture
-        const selectedHour = parseInt(hours);
-        const isValidHour = (selectedHour >= CONFIG.openingHours.midi.start && selectedHour < CONFIG.openingHours.midi.end) ||
-                           (selectedHour >= CONFIG.openingHours.soir.start && selectedHour < CONFIG.openingHours.soir.end);
-        
-        if (!isValidHour) {
-            showNotification('Veuillez choisir une heure pendant nos horaires d\'ouverture (11h-14h ou 18h-21h)', 'error');
+        const slotError = getScheduledSlotError(dateInput, parseInt(hours), parseInt(minutes) || 0);
+        if (slotError) {
+            showNotification(slotError, 'error');
             return;
         }
         
@@ -5753,6 +5796,15 @@ function confirmDeliveryChoice() {
     // Valider le choix
     deliveryTimeMode = document.querySelector('input[name="globalDeliveryTime"]:checked')?.value || 'maintenant';
     deliveryTimeSet = true;
+    editingDeliveryTime = false;
+    
+    // Mode "maintenant" : oublier une ancienne date programmée (sinon envoyée avec la commande)
+    if (deliveryTimeMode !== 'programmee') {
+        scheduledDeliveryDate = null;
+        scheduledDeliveryHour = null;
+        localStorage.removeItem('scheduledDeliveryDate');
+        localStorage.removeItem('scheduledDeliveryHour');
+    }
     
     console.log('Delivery choice confirmed - mode:', deliveryTimeMode);
     
@@ -5800,6 +5852,13 @@ function cancelDeliveryTime() {
     
     // Annuler l'action en attente
     pendingCartAction = null;
+    
+    // Modification annulée : on garde le choix actuel et on retourne à la commande
+    if (editingDeliveryTime) {
+        editingDeliveryTime = false;
+        openCheckoutModal();
+        return;
+    }
     
     showNotification('Action annulée', 'info');
 }

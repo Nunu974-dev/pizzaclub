@@ -106,9 +106,32 @@ function isScheduledDateValid($scheduledDate, $scheduledTime) {
         return ['valid' => true];
     }
     
-    $date = new DateTime($scheduledDate);
+    $date = DateTime::createFromFormat('Y-m-d', (string)$scheduledDate);
+    if (!$date || $date->format('Y-m-d') !== $scheduledDate) {
+        return ['valid' => false, 'message' => '⏰ Date de commande programmée invalide.'];
+    }
     $dayOfWeek = (int)$date->format('N'); // 1 = Lundi, 7 = Dimanche
-    
+
+    // Interdire les dates passées
+    $now = new DateTime();
+    if ($scheduledDate < $now->format('Y-m-d')) {
+        return ['valid' => false, 'message' => '⏰ Impossible de programmer une commande à une date passée. Choisissez aujourd\'hui ou une date ultérieure.'];
+    }
+
+    // Heure obligatoire, dans les heures de service (11h-14h ou 18h-21h)
+    if ($scheduledTime === null || $scheduledTime === '' || !is_numeric($scheduledTime)) {
+        return ['valid' => false, 'message' => '⏰ Heure de commande programmée manquante.'];
+    }
+    $h = (int)$scheduledTime;
+    if (!(($h >= 11 && $h < 14) || ($h >= 18 && $h < 21))) {
+        return ['valid' => false, 'message' => '⏰ Veuillez choisir une heure pendant nos horaires de service (11h-14h ou 18h-21h).'];
+    }
+
+    // Aujourd'hui : l'heure ne doit pas être déjà passée
+    if ($scheduledDate === $now->format('Y-m-d') && $h < (int)$now->format('G')) {
+        return ['valid' => false, 'message' => '⏰ Cette heure est déjà passée. Choisissez un créneau ultérieur.'];
+    }
+
     // Bloquer les lundis (fermé toute la journée)
     if ($dayOfWeek === 1) {
         return [
@@ -128,6 +151,15 @@ function isScheduledDateValid($scheduledDate, $scheduledTime) {
         }
     }
     
+    // Fermetures exceptionnelles / vacances sur ce créneau
+    $_GET['checkDate'] = $scheduledDate;
+    $_GET['checkTime'] = sprintf('%02d:00', $h);
+    $closure = isRestaurantClosed();
+    unset($_GET['checkDate'], $_GET['checkTime']);
+    if (!empty($closure['isClosed']) && ($closure['type'] ?? '') !== 'closed_hours') {
+        return ['valid' => false, 'message' => $closure['message'] ?? 'Le restaurant est fermé à cet horaire. Choisissez un autre créneau.'];
+    }
+
     return ['valid' => true];
 }
 
