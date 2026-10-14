@@ -652,6 +652,9 @@ $debugFile = __DIR__ . '/debug-order.txt';
                                                 if (!empty($custom['sauces']) && is_array($custom['sauces'])) {
                                                     echo "🥫 Sauces: " . htmlspecialchars(implode(' + ', array_map('ucfirst', $custom['sauces']))) . "<br>";
                                                 }
+                                                if (!empty($custom['options']) && is_array($custom['options'])) {
+                                                    echo "➕ Options: " . htmlspecialchars(implode(' + ', $custom['options'])) . "<br>";
+                                                }
                                                 if (!empty($custom['type'])) {
                                                     echo "🔥 " . ($custom['type'] === 'gratine' ? 'Gratiné (chaud)' : 'Américain (froid)') . "<br>";
                                                 }

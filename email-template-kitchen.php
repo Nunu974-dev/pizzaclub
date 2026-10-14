@@ -259,6 +259,12 @@ function getKitchenEmailTemplate($orderData) {
                                         <span class="item-detail-value"><?= htmlspecialchars(implode(' + ', array_map('ucfirst', $custom['sauces']))) ?></span>
                                     </div>
                                 <?php endif; ?>
+                                <?php if (!empty($custom['options']) && is_array($custom['options'])): ?>
+                                    <div class="item-detail">
+                                        <span class="item-detail-label">➕ Options :</span>
+                                        <span class="item-detail-value"><?= htmlspecialchars(implode(' + ', $custom['options'])) ?></span>
+                                    </div>
+                                <?php endif; ?>
                                 <?php if (!empty($custom['type'])): ?>
                                     <div class="item-detail">
                                         <span class="item-detail-label">🔥 Type :</span>

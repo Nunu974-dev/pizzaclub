@@ -817,6 +817,10 @@ function openSandwichCustomizeModal(sandwichId) {
     if (baseDisplay) baseDisplay.textContent = sandwich.base;
     document.querySelectorAll('.sandwich-sauce-cb').forEach(cb => { cb.checked = false; cb.disabled = false; });
     document.getElementById('sandwichQty').value = 1;
+    document.querySelectorAll('.sandwich-option-cb').forEach(cb => {
+        cb.checked = false;
+        cb.onchange = updateSandwichPrice;
+    });
     document.getElementById('sandwichSauceWarning').style.display = 'none';
 
     // Setup sauce listeners
@@ -846,10 +850,15 @@ function changeSandwichQty(delta) {
     if (val >= 1 && val <= 10) { input.value = val; updateSandwichPrice(); }
 }
 
+function getSandwichOptionsExtra() {
+    return Array.from(document.querySelectorAll('.sandwich-option-cb:checked'))
+        .reduce((sum, cb) => sum + (parseFloat(cb.dataset.price) || 0), 0);
+}
+
 function updateSandwichPrice() {
     if (!currentSandwich) return;
     const qty = parseInt(document.getElementById('sandwichQty').value) || 1;
-    const total = currentSandwich.price * qty;
+    const total = (currentSandwich.price + getSandwichOptionsExtra()) * qty;
     document.getElementById('sandwichPrice').textContent = `${total.toFixed(2)}€`;
 }
 
@@ -869,7 +878,8 @@ function addSandwichToCart() {
     }
 
     const qty = parseInt(document.getElementById('sandwichQty').value) || 1;
-    const unitPrice = currentSandwich.price;
+    const options = Array.from(document.querySelectorAll('.sandwich-option-cb:checked')).map(cb => cb.value);
+    const unitPrice = currentSandwich.price + getSandwichOptionsExtra();
 
     const cartItem = {
         id: Date.now(),
@@ -878,7 +888,7 @@ function addSandwichToCart() {
         name: currentSandwich.name,
         basePrice: unitPrice,
         quantity: qty,
-        customization: { base: currentSandwich.base, sauces: selectedSauces, type: currentSandwich.type },
+        customization: { base: currentSandwich.base, sauces: selectedSauces, options, type: currentSandwich.type },
         totalPrice: unitPrice * qty
     };
     cart.push(cartItem);
@@ -1467,6 +1477,9 @@ function createCartItemElement(item) {
         if (item.customization.base) details.push(`Base: ${item.customization.base}`);
         if (item.customization.sauces && item.customization.sauces.length > 0) {
             details.push(`Sauces: ${item.customization.sauces.join(', ')}`);
+        }
+        if (item.customization.options && item.customization.options.length > 0) {
+            details.push(`Options: ${item.customization.options.join(', ')}`);
         }
         detailsHTML = `<div class="cart-item-details">${details.join(' • ')}</div>`;
     }
@@ -4781,6 +4794,9 @@ function formatOrderForEmail(orderData) {
             if (c.base) itemText += `\n   🥖 BASE: ${c.base.toUpperCase()}`;
             if (c.sauces && c.sauces.length > 0) {
                 itemText += `\n   🥫 SAUCES: ${c.sauces.join(' + ')}`;
+            }
+            if (c.options && c.options.length > 0) {
+                itemText += `\n   ➕ OPTIONS: ${c.options.join(' + ')}`;
             }
         }
         
