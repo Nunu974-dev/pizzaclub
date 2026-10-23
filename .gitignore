@@ -27,3 +27,7 @@ admin-dashboard-backup.php
 # FTP Deploy - credentials et script local
 .env.ftp
 ftp-deploy.sh
+
+# Application caisse (dépôt séparé) et app web publiée dans /app
+pizzeria_pos/
+app/

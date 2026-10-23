@@ -43,6 +43,7 @@ jobs:
           --exclude orders/ \
           --exclude APPLI/ \
           --exclude pizzeria_pos/ \
+          --exclude app/ \
           . .;
         bye
         "

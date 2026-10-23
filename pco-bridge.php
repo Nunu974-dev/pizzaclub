@@ -193,6 +193,7 @@ function pco_build_payload($orderData, $restaurant)
             'first_name' => $customer['firstName'] ?? null,
             'last_name' => $customer['lastName'] ?? null,
             'email' => $customer['email'] ?? null,
+            'birthdate' => $customer['birthdate'] ?? null,
         ],
         'lines' => $lines,
     ];
