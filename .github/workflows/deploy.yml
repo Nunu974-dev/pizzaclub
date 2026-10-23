@@ -39,6 +39,10 @@ jobs:
           --exclude debug-order.txt \
           --exclude .env \
           --exclude config/brevo-config.php \
+          --exclude config/pco-config.php \
+          --exclude orders/ \
+          --exclude APPLI/ \
+          --exclude pizzeria_pos/ \
           . .;
         bye
         "

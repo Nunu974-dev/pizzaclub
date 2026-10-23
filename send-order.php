@@ -201,6 +201,14 @@ if ($isOrderNow) {
     }
 }
 
+// ========================================
+// PASSERELLE PIZZACLUBORDERS (caisse)
+// La commande arrive sur la caisse avec alerte sonore.
+// Sans config/pco-config.php, cette étape est simplement ignorée.
+// ========================================
+require_once __DIR__ . '/pco-bridge.php';
+$pcoResult = pco_forward_order($orderData);
+
 // Configuration email
 $to = 'commande@pizzaclub.re';
 $smsEmail = '0692630364@orange.fr'; // SMS instantané via Orange (SFR ne marche pas)
@@ -1003,6 +1011,7 @@ $response = [
     'emailSent' => $emailSent,
     'clientEmailSent' => $clientEmailSent,
     'smsSent' => $smsSent,
+    'posSent' => $pcoResult['sent'],
     'orderNumber' => $orderData['orderNumber'],
     'message' => ($emailSent || $smsSent) ? 'Commande envoyée avec succès' : 'Commande enregistrée (notifications en attente)'
 ];
