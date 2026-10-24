@@ -28,8 +28,13 @@ if (!is_array($in)) {
 $type = $in['type'] ?? '';
 $id = $in['id'] ?? '';
 $token = $in['access_token'] ?? '';
-if (!in_array($type, ['receipt', 'statement'], true) || !preg_match('/^[0-9a-f-]{36}$/i', $id) || $token === '') {
+// day_report : récapitulatif de la journée pour le gérant (pas d'identifiant, la date est dans « month »)
+if (!in_array($type, ['receipt', 'statement', 'day_report'], true) || $token === ''
+    || ($type !== 'day_report' && !preg_match('/^[0-9a-f-]{36}$/i', $id))) {
     fail(400, 'Paramètres manquants');
+}
+if ($type === 'day_report') {
+    $id = null;
 }
 
 $pco = @include __DIR__ . '/config/pco-config.php';
@@ -125,7 +130,7 @@ if ($type === 'receipt') {
         . '<div style="font-size:13px;color:#555;margin-top:8px">' . $vat . ($pays ? '<div>Réglé : ' . e(implode(' + ', $pays)) . '</div>' : '<div>Non réglé</div>') . '</div>'
         . ($t ? '<p style="font-size:11px;color:#999">Signature ' . e(strtoupper(substr($t['hash'] ?? '', 0, 16))) . '</p>' : '')
         . '<p>Merci et à bientôt !</p>';
-} else {
+} elseif ($type === 'statement') {
     $a = $payload['data']['account'];
     $c = $a['customer'];
     $name = $c['kind'] === 'company' && !empty($c['company_name']) ? $c['company_name'] : trim(($c['first_name'] ?? '') . ' ' . ($c['last_name'] ?? ''));
@@ -154,6 +159,66 @@ if ($type === 'receipt') {
         . '<tr><td colspan="2" style="padding:10px 4px;font-weight:800;font-size:16px">Solde à la fin du mois</td><td style="padding:10px 4px;font-weight:800;font-size:16px;text-align:right">' . eur($closing) . '</td></tr></table>'
         . '<p style="font-size:13px;color:#555">Solde actuel du compte : <b>' . eur($a['balance_cents']) . '</b></p>'
         . '<p>Merci de votre confiance.</p>';
+} else {
+    // --- Récapitulatif de la journée (fermeture de caisse) pour le gérant
+    $d = $payload['data']['report'];
+    $day = $d['day'];
+    $pct = function ($cur, $ref) {
+        if ((int) $ref <= 0) {
+            return '<span style="color:#999">—</span>';
+        }
+        $v = round(($cur - $ref) * 100 / $ref);
+        return '<span style="color:' . ($v >= 0 ? '#2e7d32' : '#c62828') . ';font-weight:700">' . ($v >= 0 ? '+' : '') . $v . ' %</span>';
+    };
+    $kpi = function ($label, $value) {
+        return '<td style="padding:8px;background:#f5f4f1;border-radius:8px;text-align:center"><div style="font-size:12px;color:#777">'
+            . e($label) . '</div><div style="font-size:18px;font-weight:800">' . $value . '</div></td>';
+    };
+    $rows = '';
+    foreach (($d['payments'] ?? []) as $m => $c) {
+        $rows .= "<tr><td $td>" . e($methods[$m] ?? $m) . "</td><td $tdr>" . eur($c) . '</td></tr>';
+    }
+    $svc = '';
+    foreach ($d['services'] as $s) {
+        $cnt = $s['count'] ?? null;
+        $svc .= "<tr><td $td><b>" . ($s['service'] === 'midi' ? 'Midi' : 'Soir') . '</b><div style="color:#777;font-size:12px">'
+            . (int) $s['orders_count'] . ' commande(s)</div></td>'
+            . "<td $tdr>" . eur($s['revenue_cents']) . '</td>'
+            . "<td $tdr>" . ($cnt ? 'compté ' . eur($cnt['counted_cents']) . '<div style="font-size:12px;color:' . ((int) $cnt['difference_cents'] === 0 ? '#2e7d32' : '#c62828') . '">écart ' . eur($cnt['difference_cents']) . '</div>' : '<span style="color:#ef8a17">non compté</span>') . '</td></tr>';
+    }
+    $soir = $d['services'][1]['count'] ?? null;
+    $top = '';
+    foreach (array_slice($d['top_products'] ?? [], 0, 8) as $p) {
+        $top .= "<tr><td $td>" . e($p['name']) . "</td><td $tdr>" . (int) $p['quantity'] . "</td><td $tdr>" . eur($p['revenue_cents']) . '</td></tr>';
+    }
+    $drivers = implode(', ', array_map(function ($x) {
+        return e($x['name']) . ' (' . (int) $x['deliveries'] . ')';
+    }, $d['drivers'] ?? []));
+    $subject = $r['name'] . ' — clôture du ' . dfr($d['date']) . ' : ' . eur($day['revenue_cents']);
+    $h2 = 'style="font-size:15px;margin:18px 0 6px"';
+    $body = $test . $header
+        . '<p style="font-size:16px">Clôture de caisse du <b>' . e(dfr($d['date'])) . '</b></p>'
+        . '<table style="width:100%;border-spacing:6px"><tr>'
+        . $kpi("Chiffre d'affaires", eur($day['revenue_cents']))
+        . $kpi('Commandes', (int) $day['orders'])
+        . $kpi('Panier moyen', eur($day['avg_cents']))
+        . '</tr></table>'
+        . '<p style="font-size:13px">vs même jour N-1 : ' . $pct($day['revenue_cents'], $d['last_year']['revenue_cents'] ?? 0)
+        . ' · vs semaine dernière : ' . $pct($day['revenue_cents'], $d['last_week']['revenue_cents'] ?? 0)
+        . '<br>Cumul du mois : <b>' . eur($d['month']['revenue_cents']) . '</b> (' . (int) $d['month']['orders'] . ' commandes)</p>'
+        . '<p style="font-size:13px;color:#555">' . (int) $day['dine_in'] . ' sur place · ' . (int) $day['takeaway'] . ' à emporter · '
+        . (int) $day['delivery'] . ' livraisons · ' . (int) $day['web'] . ' via le site' . ($drivers ? '<br>Livreurs : ' . $drivers : '') . '</p>'
+        . "<h3 $h2>Services</h3><table style=\"width:100%;border-collapse:collapse;font-size:14px\">$svc</table>"
+        . "<h3 $h2>Encaissements</h3><table style=\"width:100%;border-collapse:collapse;font-size:14px\">$rows</table>"
+        . "<h3 $h2>Fond de caisse</h3><p style=\"font-size:14px\">"
+        . ($soir ? 'Compté le soir : <b>' . eur($soir['counted_cents']) . '</b> · retiré ' . eur($soir['withdrawn_cents'])
+            . '<br>Fond laissé pour demain : <b>' . eur($soir['float_cents']) . '</b>' : 'Fond du soir non compté') . '</p>'
+        . (($d['unpaid']['count'] ?? 0) > 0 ? '<p style="color:#c62828;font-weight:700">⚠ ' . (int) $d['unpaid']['count'] . ' commande(s) non payée(s) : ' . eur($d['unpaid']['amount_cents']) . '</p>' : '')
+        . '<p style="font-size:13px;color:#555">Annulées : ' . (int) $d['cancelled']['count'] . ' (' . eur($d['cancelled']['amount_cents']) . ')'
+        . ' · articles offerts : ' . (int) $d['offered']['count'] . ' · remises : ' . eur($d['offered']['discount_cents']) . '</p>'
+        . ($top ? "<h3 $h2>Meilleures ventes</h3><table style=\"width:100%;border-collapse:collapse;font-size:14px\">$top</table>" : '')
+        . (!empty($d['z']) ? '<p style="font-size:12px;color:#777;margin-top:16px">Clôture Z : ' . (int) $d['z']['tickets_count'] . ' ticket(s) · TTC '
+            . eur($d['z']['total_ttc_cents']) . ' · HT ' . eur($d['z']['total_ht_cents']) . ' · TVA ' . eur($d['z']['total_tax_cents']) . '</p>' : '');
 }
 
 $html = '<!doctype html><html><body style="font-family:Arial,sans-serif;background:#f5f4f1;padding:16px">'
