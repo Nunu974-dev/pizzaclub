@@ -187,6 +187,16 @@ if ($type === 'receipt') {
             . "<td $tdr>" . ($cnt ? 'compté ' . eur($cnt['counted_cents']) . '<div style="font-size:12px;color:' . ((int) $cnt['difference_cents'] === 0 ? '#2e7d32' : '#c62828') . '">écart ' . eur($cnt['difference_cents']) . '</div>' : '<span style="color:#ef8a17">non compté</span>') . '</td></tr>';
     }
     $soir = $d['services'][1]['count'] ?? null;
+    // contrôle de caisse : attendu par la caisse / compté ou relevé (TPE…) / écart
+    $rec = '';
+    foreach (($d['reconciliation'] ?? []) as $x) {
+        $diff = $x['difference_cents'];
+        $rec .= "<tr><td $td>" . e($x['method'] === 'cash' ? 'Espèces (avec le fond)' : ($methods[$x['method']] ?? $x['method'])) . '</td>'
+            . "<td $tdr>" . eur($x['expected_cents']) . '</td>'
+            . "<td $tdr>" . ($x['declared_cents'] === null ? '—' : eur($x['declared_cents'])) . '</td>'
+            . "<td $tdr><b style=\"color:" . ((int) $diff === 0 ? '#2e7d32' : '#c62828') . '">'
+            . ($diff === null ? '—' : ((int) $diff === 0 ? 'juste' : ($diff > 0 ? '+' : '') . eur($diff))) . '</b></td></tr>';
+    }
     $top = '';
     foreach (array_slice($d['top_products'] ?? [], 0, 8) as $p) {
         $top .= "<tr><td $td>" . e($p['name']) . "</td><td $tdr>" . (int) $p['quantity'] . "</td><td $tdr>" . eur($p['revenue_cents']) . '</td></tr>';
@@ -210,9 +220,14 @@ if ($type === 'receipt') {
         . (int) $day['delivery'] . ' livraisons · ' . (int) $day['web'] . ' via le site' . ($drivers ? '<br>Livreurs : ' . $drivers : '') . '</p>'
         . "<h3 $h2>Services</h3><table style=\"width:100%;border-collapse:collapse;font-size:14px\">$svc</table>"
         . "<h3 $h2>Encaissements</h3><table style=\"width:100%;border-collapse:collapse;font-size:14px\">$rows</table>"
+        . ($rec ? "<h3 $h2>Contrôle de caisse</h3><table style=\"width:100%;border-collapse:collapse;font-size:14px\">"
+            . "<tr><td $td style=\"color:#777\"></td><td $tdr><span style=\"color:#777\">Caisse</span></td><td $tdr><span style=\"color:#777\">Compté</span></td><td $tdr><span style=\"color:#777\">Écart</span></td></tr>"
+            . "$rec</table>" : '')
         . "<h3 $h2>Fond de caisse</h3><p style=\"font-size:14px\">"
         . ($soir ? 'Compté le soir : <b>' . eur($soir['counted_cents']) . '</b> · retiré ' . eur($soir['withdrawn_cents'])
-            . '<br>Fond laissé pour demain : <b>' . eur($soir['float_cents']) . '</b>' : 'Fond du soir non compté') . '</p>'
+            . '<br>Fond laissé pour demain : <b>' . eur($soir['float_cents']) . '</b>' : 'Fond du soir non compté')
+        . (!empty($d['opening']) ? '<br><span style="color:#777">Caisse ouverte à ' . e(substr((new DateTime($d['opening']['opened_at']))->setTimezone(new DateTimeZone('Indian/Reunion'))->format('H:i'), 0, 5))
+            . (!empty($d['opening']['staff']) ? ' par ' . e($d['opening']['staff']) : '') . ' avec un fond de ' . eur($d['opening']['float_cents']) . '</span>' : '') . '</p>'
         . (($d['unpaid']['count'] ?? 0) > 0 ? '<p style="color:#c62828;font-weight:700">⚠ ' . (int) $d['unpaid']['count'] . ' commande(s) non payée(s) : ' . eur($d['unpaid']['amount_cents']) . '</p>' : '')
         . '<p style="font-size:13px;color:#555">Annulées : ' . (int) $d['cancelled']['count'] . ' (' . eur($d['cancelled']['amount_cents']) . ')'
         . ' · articles offerts : ' . (int) $d['offered']['count'] . ' · remises : ' . eur($d['offered']['discount_cents']) . '</p>'
