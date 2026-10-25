@@ -29,7 +29,7 @@ $type = $in['type'] ?? '';
 $id = $in['id'] ?? '';
 $token = $in['access_token'] ?? '';
 // day_report : récapitulatif de la journée pour le gérant (pas d'identifiant, la date est dans « month »)
-if (!in_array($type, ['receipt', 'statement', 'day_report'], true) || $token === ''
+if (!in_array($type, ['receipt', 'statement', 'day_report', 'invoice'], true) || $token === ''
     || ($type !== 'day_report' && !preg_match('/^[0-9a-f-]{36}$/i', $id))) {
     fail(400, 'Paramètres manquants');
 }
@@ -130,6 +130,44 @@ if ($type === 'receipt') {
         . '<div style="font-size:13px;color:#555;margin-top:8px">' . $vat . ($pays ? '<div>Réglé : ' . e(implode(' + ', $pays)) . '</div>' : '<div>Non réglé</div>') . '</div>'
         . ($t ? '<p style="font-size:11px;color:#999">Signature ' . e(strtoupper(substr($t['hash'] ?? '', 0, 16))) . '</p>' : '')
         . '<p>Merci et à bientôt !</p>';
+} elseif ($type === 'invoice') {
+    // facture (numérotée, inaltérable) envoyée au client
+    $inv = $payload['data']['invoice'];
+    $cu = $inv['customer'] ?? [];
+    $rows = '';
+    foreach ($inv['lines'] ?? [] as $l) {
+        $name = $l['qty'] . ' × ' . $l['name'] . (!empty($l['variant']) ? ' ' . $l['variant'] : '');
+        $rows .= "<tr><td $td>" . e($name) . ' <span style="color:#777;font-size:12px">TVA ' . number_format(($l['tax_bp'] ?? 0) / 100, 1, ',', '') . " %</span></td><td $tdr>" . eur($l['total']) . '</td></tr>';
+    }
+    if (($inv['delivery_fee_cents'] ?? 0) > 0) {
+        $rows .= "<tr><td $td>Frais de livraison</td><td $tdr>" . eur($inv['delivery_fee_cents']) . '</td></tr>';
+    }
+    if (($inv['discount_cents'] ?? 0) > 0) {
+        $rows .= "<tr><td $td>Remise</td><td $tdr>-" . eur($inv['discount_cents']) . '</td></tr>';
+    }
+    $vat = '';
+    foreach (($inv['tax_breakdown'] ?? []) as $v) {
+        $vat .= '<div>TVA ' . number_format($v['rate_bp'] / 100, 1, ',', '') . ' % : ' . eur($v['tva']) . ' (HT ' . eur($v['ht']) . ')</div>';
+    }
+    $pays = [];
+    foreach ($inv['payments'] ?? [] as $p) {
+        $pays[] = ($methods[$p['method']] ?? $p['method']) . ' ' . eur($p['amount']);
+    }
+    $subject = $r['name'] . ' — facture ' . $inv['number'];
+    $body = $test . $header
+        . '<p style="font-size:18px;font-weight:800;margin:0">Facture ' . e($inv['number']) . '</p>'
+        . '<p style="color:#555;margin:2px 0 12px">Du ' . e(dfr($inv['issued_at'])) . ' · commande #' . e($inv['order_number'] ?? '') . '</p>'
+        . '<div style="border:1px solid #ddd;border-radius:8px;padding:10px;margin-bottom:12px"><div style="color:#777;font-size:11px">CLIENT</div><b>' . e($cu['name'] ?? '') . '</b>'
+        . (!empty($cu['address']) ? '<div>' . e($cu['address']) . '</div>' : '')
+        . (!empty($cu['siret']) ? '<div style="color:#555;font-size:12px">SIRET ' . e($cu['siret']) . '</div>' : '')
+        . (!empty($cu['vat_number']) ? '<div style="color:#555;font-size:12px">TVA ' . e($cu['vat_number']) . '</div>' : '') . '</div>'
+        . '<table style="width:100%;border-collapse:collapse;font-size:14px">' . $rows
+        . "<tr><td $td>Total HT</td><td $tdr>" . eur($inv['total_ht_cents']) . '</td></tr>'
+        . "<tr><td $td>Total TVA</td><td $tdr>" . eur($inv['total_tax_cents']) . '</td></tr>'
+        . '<tr><td style="padding:10px 4px;font-weight:800;font-size:16px">TOTAL TTC</td><td style="padding:10px 4px;font-weight:800;font-size:16px;text-align:right">' . eur($inv['total_ttc_cents']) . '</td></tr></table>'
+        . '<div style="font-size:13px;color:#555;margin-top:8px">' . $vat . '<div><b>Facture acquittée</b>' . ($pays ? ' : ' . e(implode(' + ', $pays)) : '') . '</div></div>'
+        . '<p style="font-size:11px;color:#999">Paiement comptant, pas d\'escompte. Clients professionnels : pénalités de retard au taux de 3 fois le taux d\'intérêt légal, indemnité forfaitaire de 40 € pour frais de recouvrement.</p>'
+        . '<p>Merci de votre confiance.</p>';
 } elseif ($type === 'statement') {
     $a = $payload['data']['account'];
     $c = $a['customer'];
