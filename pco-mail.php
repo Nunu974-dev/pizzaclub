@@ -86,7 +86,7 @@ function dfr($iso)
     $t = strtotime((string) $iso);
     return $t ? date('d/m/Y', $t) : '';
 }
-$methods = ['card' => 'CB', 'cash' => 'Espèces', 'meal_voucher' => 'Titre-restaurant', 'online' => 'Paiement en ligne',
+$methods = ['card' => 'CB', 'cash' => 'Espèces', 'check' => 'Chèque', 'meal_voucher' => 'Titre-restaurant', 'online' => 'Paiement en ligne',
     'platform' => 'Plateforme', 'other' => 'Autre', 'account' => 'En compte'];
 
 $r = $payload['restaurant'];
@@ -116,7 +116,7 @@ if ($type === 'receipt') {
     }
     $pays = [];
     foreach ($o['payments'] ?? [] as $p) {
-        $pays[] = ($methods[$p['method']] ?? $p['method']) . ' ' . eur($p['amount_cents']);
+        $pays[] = ($p['label'] ?? $methods[$p['method']] ?? $p['method']) . ' ' . eur($p['amount_cents']);
     }
     $vat = '';
     foreach (($t['tax_breakdown'] ?? []) as $v) {
@@ -151,7 +151,7 @@ if ($type === 'receipt') {
     }
     $pays = [];
     foreach ($inv['payments'] ?? [] as $p) {
-        $pays[] = ($methods[$p['method']] ?? $p['method']) . ' ' . eur($p['amount']);
+        $pays[] = ($p['label'] ?? $methods[$p['method']] ?? $p['method']) . ' ' . eur($p['amount']);
     }
     $credit = ($inv['kind'] ?? '') === 'credit';
     $subject = $r['name'] . ($credit ? ' — avoir ' : ' — facture ') . $inv['number'];
@@ -230,7 +230,7 @@ if ($type === 'receipt') {
     $rec = '';
     foreach (($d['reconciliation'] ?? []) as $x) {
         $diff = $x['difference_cents'];
-        $rec .= "<tr><td $td>" . e($x['method'] === 'cash' ? 'Espèces (avec le fond)' : ($methods[$x['method']] ?? $x['method'])) . '</td>'
+        $rec .= "<tr><td $td>" . e($x['method'] === 'cash' ? 'Espèces (avec le fond)' : ($x['label'] ?? $methods[$x['method']] ?? $x['method'])) . '</td>'
             . "<td $tdr>" . eur($x['expected_cents']) . '</td>'
             . "<td $tdr>" . ($x['declared_cents'] === null ? '—' : eur($x['declared_cents'])) . '</td>'
             . "<td $tdr><b style=\"color:" . ((int) $diff === 0 ? '#2e7d32' : '#c62828') . '">'
