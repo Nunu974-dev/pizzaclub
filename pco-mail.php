@@ -153,9 +153,10 @@ if ($type === 'receipt') {
     foreach ($inv['payments'] ?? [] as $p) {
         $pays[] = ($methods[$p['method']] ?? $p['method']) . ' ' . eur($p['amount']);
     }
-    $subject = $r['name'] . ' — facture ' . $inv['number'];
+    $credit = ($inv['kind'] ?? '') === 'credit';
+    $subject = $r['name'] . ($credit ? ' — avoir ' : ' — facture ') . $inv['number'];
     $body = $test . $header
-        . '<p style="font-size:18px;font-weight:800;margin:0">Facture ' . e($inv['number']) . '</p>'
+        . '<p style="font-size:18px;font-weight:800;margin:0">' . ($credit ? "Facture d'avoir " : 'Facture ') . e($inv['number']) . '</p>'
         . '<p style="color:#555;margin:2px 0 12px">Du ' . e(dfr($inv['issued_at'])) . ' · commande #' . e($inv['order_number'] ?? '') . '</p>'
         . '<div style="border:1px solid #ddd;border-radius:8px;padding:10px;margin-bottom:12px"><div style="color:#777;font-size:11px">CLIENT</div><b>' . e($cu['name'] ?? '') . '</b>'
         . (!empty($cu['address']) ? '<div>' . e($cu['address']) . '</div>' : '')
