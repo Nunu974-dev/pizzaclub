@@ -61,6 +61,18 @@ if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $data['closures']['vacations'] = [];
             }
             
+            // Liste commune : enregistrée aussi dans la caisse Jorders (produits + ingrédients)
+            $labels = (array) ($data['ingredientLabels'] ?? []);
+            unset($data['ingredientLabels']);
+            require_once __DIR__ . '/pco-availability.php';
+            $posIngredients = [];
+            foreach ((array) $data['ingredients'] as $key => $v) {
+                if ($v) {
+                    $posIngredients[] = ['key' => (string) $key, 'name' => (string) ($labels[$key] ?? $key)];
+                }
+            }
+            $posSaved = pco_availability_save(array_keys(array_filter((array) $data['items'])), $posIngredients);
+
             $jsonToSave = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
             $bytesWritten = file_put_contents(JSON_FILE, $jsonToSave, LOCK_EX);
             
@@ -73,7 +85,8 @@ if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     $verif = json_decode(file_get_contents(JSON_FILE), true);
                     error_log("📝 INDISPOS - Vérification: " . count($verif['items']) . " items, " . count($verif['ingredients']) . " ingredients");
                 }
-                echo json_encode(['success' => true, 'message' => 'Sauvegarde réussie (' . $bytesWritten . ' octets)']);
+                echo json_encode(['success' => true, 'pos' => $posSaved !== null,
+                    'message' => 'Sauvegarde réussie (' . $bytesWritten . ' octets)' . ($posSaved !== null ? ' · caisse à jour' : ' · caisse injoignable')]);
             } else {
                 error_log("❌ INDISPOS - ERREUR écriture fichier");
                 http_response_code(500);
@@ -94,6 +107,17 @@ if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST') {
 $unavailabilityData = ['items' => [], 'ingredients' => []];
 if (file_exists(JSON_FILE)) {
     $unavailabilityData = json_decode(file_get_contents(JSON_FILE), true);
+}
+// Liste commune : ce qui est épuisé à la caisse Jorders s'affiche ici (la caisse fait foi)
+require_once __DIR__ . '/pco-availability.php';
+$posState = pco_availability();
+if (is_array($posState)) {
+    $unavailabilityData['items'] = array_filter((array) ($posState['items'] ?? []));
+    $unavailabilityData['ingredients'] = [];
+    foreach ((array) ($posState['ingredient_keys'] ?? []) as $key) {
+        $unavailabilityData['ingredients'][$key] = true;
+    }
+    $unavailabilityData['posIngredientNames'] = array_values((array) ($posState['ingredient_names'] ?? []));
 }
 ?>
 <!DOCTYPE html>
@@ -1108,6 +1132,13 @@ if (file_exists(JSON_FILE)) {
                 // Autres
                 'oeuf': 'Œuf', 'miel': 'Miel', 'creme': 'Crème fraîche', 'citron': 'Citron', 'ananas': 'Ananas Victoria'
             };
+            // liste commune : ingrédients épuisés à la caisse (par nom) → codes du panneau
+            window.INGREDIENT_LABELS = ingredientNames;
+            const norm = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            const posNames = new Set((unavailability.posIngredientNames || []).map(norm));
+            Object.entries(ingredientNames).forEach(([key, label]) => {
+                if (posNames.has(norm(label)) || posNames.has(norm(key))) unavailability.ingredients[key] = true;
+            });
             
             ingredients.forEach(ingredient => {
                 const isUnavailable = unavailability.ingredients[ingredient] || false;
@@ -1177,7 +1208,7 @@ if (file_exists(JSON_FILE)) {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(unavailability)
+                    body: JSON.stringify({ ...unavailability, posIngredientNames: undefined, ingredientLabels: window.INGREDIENT_LABELS || {} })
                 });
 
                 if (response.ok) {

@@ -15,14 +15,14 @@ if (!is_array($data)) {
 $data['items'] = (array) ($data['items'] ?? []);
 $data['ingredients'] = (array) ($data['ingredients'] ?? []);
 
-// + ce qui est épuisé à la caisse Jorders (produits par référence du site, ingrédients par nom)
+// Liste commune caisse / panneau admin : celle de la caisse fait foi ; unavailability.json sert de secours
 require_once __DIR__ . '/pco-availability.php';
 $pos = pco_availability();
 if (is_array($pos)) {
-    foreach ((array) ($pos['items'] ?? []) as $key => $v) {
-        if ($v) {
-            $data['items'][$key] = true;
-        }
+    $data['items'] = array_filter((array) ($pos['items'] ?? []));
+    $data['ingredients'] = [];
+    foreach ((array) ($pos['ingredient_keys'] ?? []) as $key) {
+        $data['ingredients'][$key] = true;
     }
     $data['ingredientNames'] = array_values((array) ($pos['ingredient_names'] ?? []));
     $data['posClosure'] = $pos['closure'] ?? null;
