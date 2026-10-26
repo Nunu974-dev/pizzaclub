@@ -114,6 +114,21 @@ function isRestaurantClosed() {
         }
     }
     
+    // ========================================
+    // FERMETURE DÉCIDÉE À LA CAISSE (Jorders)
+    // ========================================
+    require_once __DIR__ . '/pco-availability.php';
+    $posClosure = pco_online_closure($checkDateParam && $checkTimeParam ? $checkDT->getTimestamp() : null);
+    if ($posClosure) {
+        return [
+            'isClosed' => true,
+            'reason'   => $posClosure['reason'],
+            'type'     => 'emergency',
+            'service'  => 'all',
+            'message'  => '🚨 Commandes en ligne fermées : ' . $posClosure['reason'] . '. Réouverture vers ' . date('H\\hi', $posClosure['until']) . '.'
+        ];
+    }
+
     // Vérifier la fermeture d'urgence
     if (isset($data['closures']['emergency']) && $data['closures']['emergency'] !== null) {
         $emergency = $data['closures']['emergency'];

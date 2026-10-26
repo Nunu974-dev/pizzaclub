@@ -255,6 +255,19 @@ async function loadUnavailability() {
         const data = await response.json();
         DYNAMIC_UNAVAILABLE_ITEMS = data.items || {};
         DYNAMIC_UNAVAILABLE_INGREDIENTS = data.ingredients || {};
+        // Ingrédients épuisés à la caisse (par nom) → clés du site (EXTRAS : suppléments, bases…)
+        (data.ingredientNames || []).forEach(name => {
+            const wanted = normalizeIngredientKey(name);
+            DYNAMIC_UNAVAILABLE_INGREDIENTS[wanted] = true;
+            Object.values(typeof EXTRAS === 'object' ? EXTRAS : {}).forEach(group => {
+                if (!group || typeof group !== 'object') return;
+                Object.entries(group).forEach(([key, def]) => {
+                    if (def && typeof def === 'object' && normalizeIngredientKey(def.name) === wanted) {
+                        DYNAMIC_UNAVAILABLE_INGREDIENTS[key] = true;
+                    }
+                });
+            });
+        });
         console.log('✅ Indisponibilités chargées:', data);
     } catch (error) {
         console.error('❌ Erreur chargement indisponibilités:', error);
