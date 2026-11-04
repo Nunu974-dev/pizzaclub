@@ -151,7 +151,7 @@ function getKitchenEmailTemplate($orderData) {
                                     <?php if (!empty($pizzaCust['size'])): ?>
                                         <div class="item-detail">
                                             <span class="item-detail-label">📏 Taille :</span>
-                                            <span class="item-detail-value"><?= $pizzaCust['size'] === 'moyenne' ? '33cm' : '40cm' ?></span>
+                                            <span class="item-detail-value"><?= ['petite' => '26cm', 'moyenne' => '33cm', 'grande' => '40cm'][$pizzaCust['size']] ?? htmlspecialchars($pizzaCust['size']) ?></span>
                                         </div>
                                     <?php endif; ?>
                                     <?php if (!empty($pizzaCust['base'])): ?>
@@ -268,7 +268,7 @@ function getKitchenEmailTemplate($orderData) {
                                 <?php if (!empty($custom['type'])): ?>
                                     <div class="item-detail">
                                         <span class="item-detail-label">🔥 Type :</span>
-                                        <span class="item-detail-value"><?= $custom['type'] === 'gratine' ? 'Gratiné (chaud)' : 'Américain (froid)' ?></span>
+                                        <span class="item-detail-value"><?= $custom['type'] === 'gratine' ? 'Gratiné (chaud)' : 'Américain (chaud)' ?></span>
                                     </div>
                                 <?php endif; ?>
                                 
@@ -286,6 +286,7 @@ function getKitchenEmailTemplate($orderData) {
                                         $sizeLabel = '';
                                         if (!empty($custom['size'])) {
                                             switch($custom['size']) {
+                                                case 'petite': $sizeLabel = '26cm'; break;
                                                 case 'moyenne': $sizeLabel = '33cm'; break;
                                                 case 'grande': $sizeLabel = '40cm'; break;
                                                 case 'L': $sizeLabel = 'Large'; break;

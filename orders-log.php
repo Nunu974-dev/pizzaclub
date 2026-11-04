@@ -515,6 +515,7 @@ $debugFile = __DIR__ . '/debug-order.txt';
                                             // TAILLE
                                             if (!empty($custom['size'])) {
                                                 $sizeLabel = $custom['size'];
+                                                if ($custom['size'] === 'petite') $sizeLabel = '26cm';
                                                 if ($custom['size'] === 'moyenne') $sizeLabel = '33cm';
                                                 if ($custom['size'] === 'grande') $sizeLabel = '40cm';
                                                 if ($custom['size'] === 'L') $sizeLabel = 'Large';
@@ -599,6 +600,7 @@ $debugFile = __DIR__ . '/debug-order.txt';
                                                     $pizzaCust = $custom['pizzaCustomization'];
                                                     if (!empty($pizzaCust['size'])) {
                                                         $sizeLabel = $pizzaCust['size'];
+                                                        if ($pizzaCust['size'] === 'petite') $sizeLabel = '26cm';
                                                         if ($pizzaCust['size'] === 'moyenne') $sizeLabel = '33cm';
                                                         if ($pizzaCust['size'] === 'grande') $sizeLabel = '40cm';
                                                         echo "&nbsp;&nbsp;↳ Taille: " . htmlspecialchars($sizeLabel) . "<br>";
@@ -656,7 +658,7 @@ $debugFile = __DIR__ . '/debug-order.txt';
                                                     echo "➕ Options: " . htmlspecialchars(implode(' + ', $custom['options'])) . "<br>";
                                                 }
                                                 if (!empty($custom['type'])) {
-                                                    echo "🔥 " . ($custom['type'] === 'gratine' ? 'Gratiné (chaud)' : 'Américain (froid)') . "<br>";
+                                                    echo "🔥 " . ($custom['type'] === 'gratine' ? 'Gratiné (chaud)' : 'Américain (chaud)') . "<br>";
                                                 }
                                             }
                                             ?>

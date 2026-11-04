@@ -96,6 +96,7 @@ function getClientEmailTemplate($orderData) {
                                 <br>
                                 <?php 
                                 $sizeLabel = $custom['size'];
+                                if ($custom['size'] === 'petite') $sizeLabel = '26cm';
                                 if ($custom['size'] === 'moyenne') $sizeLabel = '33cm';
                                 if ($custom['size'] === 'grande') $sizeLabel = '40cm';
                                 ?>
@@ -288,6 +289,7 @@ function getClientEmailTemplate($orderData) {
                                         <?php 
                                         // Conversion des tailles en dimensions
                                         $sizeLabel = $custom['pizzaCustomization']['size'];
+                                        if ($custom['pizzaCustomization']['size'] === 'petite') $sizeLabel = '26cm';
                                         if ($custom['pizzaCustomization']['size'] === 'moyenne') $sizeLabel = '33cm';
                                         if ($custom['pizzaCustomization']['size'] === 'grande') $sizeLabel = '40cm';
                                         ?>

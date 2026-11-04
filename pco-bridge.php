@@ -98,7 +98,7 @@ function pco_item_details($item)
         }
     }
     if ($type === 'sandwich' && !empty($c['type'])) {
-        $d[] = $c['type'] === 'gratine' ? 'Gratiné (chaud)' : 'Américain (froid)';
+        $d[] = $c['type'] === 'gratine' ? 'Gratiné (chaud)' : 'Américain (chaud)';
     }
     if ($type === 'bun') {
         if (!empty($c['format'])) $d[] = 'Format : ' . $c['format'];
