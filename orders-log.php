@@ -528,6 +528,7 @@ $debugFile = __DIR__ . '/debug-order.txt';
                                                 $baseLabel = $custom['base'];
                                                 if ($custom['base'] === 'creme') $baseLabel = 'Crème';
                                                 if ($custom['base'] === 'tomate') $baseLabel = 'Tomate';
+                                                if ($custom['base'] === 'mozza') $baseLabel = 'Mozzarella';
                                                 echo "🍕 Base: " . htmlspecialchars($baseLabel) . "<br>";
                                             }
                                             

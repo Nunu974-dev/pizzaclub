@@ -816,6 +816,11 @@ const EXTRAS = {
             name: 'Crème fraîche', 
             price33: 1.00, // +1€ en 33cm
             price40: 1.50  // +1.50€ en 40cm
+        },
+        mozza: {
+            name: 'Mozzarella',
+            price33: 1.00, // +1€ en 33cm
+            price40: 1.50  // +1.50€ en 40cm
         }
     },
     toppings: {
@@ -890,6 +895,27 @@ const EXTRAS = {
         }
     }
 };
+
+// ========================================
+// PRIX DES SUPPLÉMENTS PIZZA (selon la taille)
+//   légumes, fromages, poissons : 1,00 € en 33 cm · 1,50 € en 40 cm
+//   viandes                     : 1,50 € en 33 cm · 2,00 € en 40 cm
+//   œuf : 1,00 € quelle que soit la taille · Marmaille (26 cm) = tarif 33 cm
+// ========================================
+const PIZZA_TOPPING_TIERS = [
+    { p33: 1.00, p40: 1.50, keys: ['champignons', 'olives', 'poivrons', 'oignons', 'tomates', 'pommesDeTerre', 'mais', 'capres', 'grosPiment', 'salade'] }, // légumes
+    { p33: 1.00, p40: 1.50, keys: ['fromage', 'mozzarella', 'chevre', 'emmental', 'roquefort', 'raclette', 'reblochon', 'cheddar', 'gorgonzola', 'parmesan'] }, // fromages
+    { p33: 1.00, p40: 1.50, keys: ['thon', 'anchois', 'crevettes', 'saumon'] }, // poissons
+    { p33: 1.50, p40: 2.00, keys: ['chorizo', 'jambon', 'merguez', 'poulet', 'pouletFume', 'sarcivePoulet', 'saucisseFumee', 'boeuf', 'lardons', 'saucisses', 'bacon', 'viandeFumee'] } // viandes
+];
+
+/** Prix d'un supplément pizza selon la taille ('petite' | 'moyenne' | 'grande') */
+function pizzaToppingPrice(key, size) {
+    if (key === 'oeuf') return 1.00;
+    const tier = PIZZA_TOPPING_TIERS.find(t => t.keys.includes(key));
+    if (tier) return size === 'grande' ? tier.p40 : tier.p33;
+    return (typeof EXTRAS !== 'undefined' && EXTRAS.toppings[key]) ? EXTRAS.toppings[key].price : 0;
+}
 
 // ========================================
 // DONNÉES DES BOISSONS

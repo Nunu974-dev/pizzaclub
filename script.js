@@ -1202,7 +1202,8 @@ function calculateItemPrice(basePrice, customization, quantity = 1, pizza = null
     // SAUF si la pizza a déjà base crème par défaut (category: 'creme')
     const isPizzaBaseCreme = pizza && pizza.category === 'creme';
     
-    if (customization.base === 'creme' && !isPizzaBaseCreme) {
+    // Base mozzarella : même supplément que la crème (1 € en 33 cm, 1,50 € en 40 cm), quelle que soit la pizza
+    if ((customization.base === 'creme' && !isPizzaBaseCreme) || customization.base === 'mozza') {
         // Supplément crème uniquement pour les pizzas qui sont normalement à base tomate
         if (isFormuleMidi) {
             price += 1.00; // +1€ pour crème en formule midi
@@ -1219,7 +1220,7 @@ function calculateItemPrice(basePrice, customization, quantity = 1, pizza = null
     if (customization.addedIngredients) {
         customization.addedIngredients.forEach(ingredient => {
             if (EXTRAS.toppings[ingredient]) {
-                let ingredientPrice = EXTRAS.toppings[ingredient].price;
+                let ingredientPrice = pizzaToppingPrice(ingredient, customization.size);
                 
                 // Tarifs spéciaux formule midi
                 if (isFormuleMidi) {
@@ -1844,6 +1845,8 @@ function openCustomizeModal(pizzaId) {
     // Mettre à jour les labels des bases selon la catégorie de pizza
     const tomateLabelSpan = document.querySelector('input[name="base"][value="tomate"]').nextElementSibling;
     const cremeLabelSpan = document.querySelector('input[name="base"][value="creme"]').nextElementSibling;
+    const mozzaLabelSpan = document.querySelector('input[name="base"][value="mozza"]')?.nextElementSibling;
+    if (mozzaLabelSpan) mozzaLabelSpan.textContent = 'Mozzarella (+1.00€ en 33cm / +1.50€ en 40cm)';
     
     if (pizza.category === 'creme') {
         // Pizza base crème : crème incluse, tomate gratuit
@@ -1874,8 +1877,23 @@ function closeCustomizeModal() {
     }
 }
 
+/** Met à jour le prix (data-price) et le libellé « (+X.XX€) » des suppléments d'une fenêtre selon la taille choisie */
+function syncPizzaToppingPrices(selector, size) {
+    document.querySelectorAll(selector).forEach(cb => {
+        if (cb.name) return; // pâtes / salades : tarifs propres
+        const key = cb.value;
+        const known = (typeof EXTRAS !== 'undefined' && EXTRAS.toppings[key]) || PIZZA_TOPPING_TIERS.some(t => t.keys.includes(key));
+        if (!known) return;
+        const p = pizzaToppingPrice(key, size);
+        cb.dataset.price = String(p);
+        const small = cb.parentElement ? cb.parentElement.querySelector('small') : null;
+        if (small) small.textContent = `(+${p.toFixed(2)}€)`;
+    });
+}
+
 function updateCustomizePrice() {
     if (!currentPizza) return;
+    syncPizzaToppingPrices('#customizeModal .ingredients-add input[type="checkbox"]', document.querySelector('input[name="size"]:checked')?.value || 'moyenne');
 
     let price = currentPizza.price33; // Prix de base pour 33cm
     let selectedSize = 'moyenne';
@@ -1896,7 +1914,7 @@ function updateCustomizePrice() {
 
     // Ajouter le supplément pour base crème si sélectionnée
     const baseInput = document.querySelector('input[name="base"]:checked');
-    if (baseInput && baseInput.value === 'creme') {
+    if (baseInput && (baseInput.value === 'creme' || baseInput.value === 'mozza')) {
         if (selectedSize === 'grande') {
             price += 1.50; // +1.50€ pour crème en 40cm
         } else if (selectedSize === 'moyenne') {
@@ -2121,6 +2139,7 @@ function setupAmericaineSauceListeners() {
 
 function updateAmericainePrice() {
     if (!currentAmericaine) return;
+    syncPizzaToppingPrices('#americaineIngredientsAdd input[type="checkbox"]', document.querySelector('input[name="americaineSize"]:checked')?.value || 'moyenne');
 
     let price = currentAmericaine.price33; // Prix de base pour 33cm
     
@@ -2201,6 +2220,7 @@ function addCustomizedAmericaineToCart() {
         addedIngredients.push(checkbox.value);
     });
 
+    syncPizzaToppingPrices('#americaineIngredientsAdd input[type="checkbox"]', size || 'moyenne');
     // Calculer le prix
     let basePrice = currentAmericaine.price33;
     if (size === 'grande' && currentAmericaine.price40) {
@@ -4304,7 +4324,7 @@ function displayOrderSummary() {
                 customizationHTML = `<br><small>📏 TAILLE: ${sizeLabel || '(non spécifiée)'}</small>`;
                 
                 // BASE - toujours afficher
-                const baseLabel = c.base ? (c.base === 'creme' ? 'Crème' : c.base === 'tomate' ? 'Tomate' : c.base) : '(non spécifiée)';
+                const baseLabel = c.base ? (c.base === 'creme' ? 'Crème' : c.base === 'tomate' ? 'Tomate' : c.base === 'mozza' ? 'Mozzarella' : c.base) : '(non spécifiée)';
                 customizationHTML += `<br><small>🍕 BASE: ${baseLabel}</small>`;
                 
                 // RETIRER - toujours afficher
@@ -4362,7 +4382,7 @@ function displayOrderSummary() {
                     customizationHTML = `<br><small>🥗 Ingrédients: ${c.ingredients.join(', ')}</small>`;
                 }
                 if (c.base) {
-                    const baseLabel = c.base === 'creme' ? 'Crème' : c.base === 'tomate' ? 'Tomate' : c.base;
+                    const baseLabel = c.base === 'creme' ? 'Crème' : c.base === 'tomate' ? 'Tomate' : c.base === 'mozza' ? 'Mozzarella' : c.base;
                     customizationHTML += `<br><small>Base: ${baseLabel}</small>`;
                 }
                 if (c.supplements?.length > 0) {
@@ -4679,7 +4699,7 @@ async function sendOrderBySMS(orderData) {
 
 function formatOrderForEmail(orderData) {
     // Catégoriser les ingrédients pour affichage détaillé
-    const categorizeIngredient = (key) => {
+    const categorizeIngredient = (key, size) => {
         const ingredient = EXTRAS.toppings[key];
         if (!ingredient) return { cat: 'Autre', name: key, price: 0 };
         
@@ -4696,7 +4716,7 @@ function formatOrderForEmail(orderData) {
         else if (mer.includes(key)) cat = 'MER';
         else if (autres.includes(key)) cat = 'AUTRE';
         
-        return { cat, name: ingredient.name, price: ingredient.price };
+        return { cat, name: ingredient.name, price: pizzaToppingPrice(key, size) };
     };
     
     // Formater chaque item avec tous les détails de personnalisation
@@ -4714,7 +4734,7 @@ function formatOrderForEmail(orderData) {
                 if (c.ingredients.added && c.ingredients.added.length > 0) {
                     itemText += `\n\n   ➕ INGRÉDIENTS AJOUTÉS:`;
                     c.ingredients.added.forEach(id => {
-                        const ing = categorizeIngredient(id);
+                        const ing = categorizeIngredient(id, (typeof c !== 'undefined' && c) ? c.size : undefined);
                         itemText += `\n      • [${ing.cat}] ${ing.name} (+${ing.price.toFixed(2)}€)`;
                     });
                 }
@@ -4736,7 +4756,7 @@ function formatOrderForEmail(orderData) {
             if (c.supplements && c.supplements.length > 0) {
                 itemText += `\n\n   ➕ SUPPLÉMENTS:`;
                 c.supplements.forEach(id => {
-                    const ing = categorizeIngredient(id);
+                    const ing = categorizeIngredient(id, (typeof c !== 'undefined' && c) ? c.size : undefined);
                     itemText += `\n      • [${ing.cat}] ${ing.name} (+${ing.price.toFixed(2)}€)`;
                 });
             }
@@ -4758,7 +4778,7 @@ function formatOrderForEmail(orderData) {
             if (c.supplements && c.supplements.length > 0) {
                 itemText += `\n\n   ➕ SUPPLÉMENTS:`;
                 c.supplements.forEach(id => {
-                    const ing = categorizeIngredient(id);
+                    const ing = categorizeIngredient(id, (typeof c !== 'undefined' && c) ? c.size : undefined);
                     itemText += `\n      • [${ing.cat}] ${ing.name} (+${ing.price.toFixed(2)}€)`;
                 });
             }
@@ -4773,7 +4793,7 @@ function formatOrderForEmail(orderData) {
                 if (c.ingredients.added && c.ingredients.added.length > 0) {
                     itemText += `\n\n   ➕ INGRÉDIENTS AJOUTÉS:`;
                     c.ingredients.added.forEach(id => {
-                        const ing = categorizeIngredient(id);
+                        const ing = categorizeIngredient(id, (typeof c !== 'undefined' && c) ? c.size : undefined);
                         itemText += `\n      • [${ing.cat}] ${ing.name} (+${ing.price.toFixed(2)}€)`;
                     });
                 }
@@ -4830,7 +4850,7 @@ function formatOrderForEmail(orderData) {
                         if (pc.ingredients.added && pc.ingredients.added.length > 0) {
                             itemText += `\n\n      ➕ AJOUTS:`;
                             pc.ingredients.added.forEach(id => {
-                                const ing = categorizeIngredient(id);
+                                const ing = categorizeIngredient(id, (typeof c !== 'undefined' && c) ? c.size : undefined);
                                 itemText += `\n         • [${ing.cat}] ${ing.name} (+${ing.price.toFixed(2)}€)`;
                             });
                         }
@@ -4868,7 +4888,7 @@ function formatOrderForEmail(orderData) {
                     if (mc.supplements && mc.supplements.length > 0) {
                         itemText += `\n\n      ➕ SUPPLÉMENTS:`;
                         mc.supplements.forEach(id => {
-                            const ing = categorizeIngredient(id);
+                            const ing = categorizeIngredient(id, (typeof c !== 'undefined' && c) ? c.size : undefined);
                             itemText += `\n         • [${ing.cat}] ${ing.name} (+${ing.price.toFixed(2)}€)`;
                         });
                     }
