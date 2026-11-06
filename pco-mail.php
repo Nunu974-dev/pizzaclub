@@ -236,6 +236,33 @@ if ($type === 'receipt') {
             . "<td $tdr><b style=\"color:" . ((int) $diff === 0 ? '#2e7d32' : '#c62828') . '">'
             . ($diff === null ? '—' : ((int) $diff === 0 ? 'juste' : ($diff > 0 ? '+' : '') . eur($diff))) . '</b></td></tr>';
     }
+    // points à surveiller pour le gérant : annulations, baisses de montant, remises, paiements corrigés (qui, quand, quoi)
+    $payNames = ['card' => 'CB', 'cash' => 'Espèces', 'other' => 'Ticket resto / autre', 'meal_voucher' => 'Titre-restaurant', 'check' => 'Chèque'];
+    $payList = function ($lines) use ($payNames) {
+        $o = [];
+        foreach ((array) $lines as $l) { $o[] = ($payNames[$l['method'] ?? ''] ?? ($l['method'] ?? '?')) . ' ' . eur($l['amount_cents'] ?? 0); }
+        return implode(' + ', $o);
+    };
+    $alerts = '';
+    foreach (($d['alerts'] ?? []) as $a) {
+        $when = (new DateTime($a['at']))->setTimezone(new DateTimeZone('Indian/Reunion'))->format('H:i');
+        $who = !empty($a['staff']) ? e($a['staff']) : 'inconnu';
+        $n = (int) ($a['order_number'] ?? 0);
+        $m = $a['meta'] ?? [];
+        switch ($a['kind']) {
+            case 'cancel':
+                $t = "Bon #$n <b>annulé</b> par $who : « " . e($m['reason'] ?? '') . ' »'; break;
+            case 'lowered':
+                $t = "Bon #$n <b>modifié à la baisse</b> par $who : " . eur($a['prev_total_cents']) . ' → ' . eur($a['new_total_cents']); break;
+            case 'item_adjust':
+                $t = "Bon #$n : <b>remise sur article</b> « " . e($m['item'] ?? '') . ' » (' . e($m['label'] ?? '') . ') par ' . $who
+                    . ' — remise ' . eur($m['discount_cents'] ?? 0) . (isset($m['old_discount_cents']) ? ' (avant ' . eur($m['old_discount_cents']) . ')' : ''); break;
+            case 'payment_correction':
+                $t = "Bon #$n : <b>paiement corrigé</b> par $who — avant : " . $payList($m['old'] ?? []) . ' · après : ' . $payList($m['new'] ?? []); break;
+            default: continue 2;
+        }
+        $alerts .= "<tr><td style=\"padding:4px 6px;color:#777;white-space:nowrap;vertical-align:top\">$when</td><td style=\"padding:4px 6px\">$t</td></tr>";
+    }
     $top = '';
     foreach (array_slice($d['top_products'] ?? [], 0, 8) as $p) {
         $top .= "<tr><td $td>" . e($p['name']) . "</td><td $tdr>" . (int) $p['quantity'] . "</td><td $tdr>" . eur($p['revenue_cents']) . '</td></tr>';
@@ -270,6 +297,8 @@ if ($type === 'receipt') {
         . (($d['unpaid']['count'] ?? 0) > 0 ? '<p style="color:#c62828;font-weight:700">⚠ ' . (int) $d['unpaid']['count'] . ' commande(s) non payée(s) : ' . eur($d['unpaid']['amount_cents']) . '</p>' : '')
         . '<p style="font-size:13px;color:#555">Annulées : ' . (int) $d['cancelled']['count'] . ' (' . eur($d['cancelled']['amount_cents']) . ')'
         . ' · articles offerts : ' . (int) $d['offered']['count'] . ' · remises : ' . eur($d['offered']['discount_cents']) . '</p>'
+        . ($alerts ? "<h3 style=\"font-size:15px;margin:18px 0 6px;color:#c62828\">⚠ À vérifier aujourd'hui</h3><table style=\"width:100%;border-collapse:collapse;font-size:13px\">$alerts</table>"
+            : '<p style="font-size:13px;color:#2e7d32">Rien d\'inhabituel : aucune annulation, baisse de montant, remise sur article ni paiement corrigé.</p>')
         . ($top ? "<h3 $h2>Meilleures ventes</h3><table style=\"width:100%;border-collapse:collapse;font-size:14px\">$top</table>" : '')
         . (!empty($d['z']) ? '<p style="font-size:12px;color:#777;margin-top:16px">Clôture Z : ' . (int) $d['z']['tickets_count'] . ' ticket(s) · TTC '
             . eur($d['z']['total_ttc_cents']) . ' · HT ' . eur($d['z']['total_ht_cents']) . ' · TVA ' . eur($d['z']['total_tax_cents']) . '</p>' : '');
