@@ -1202,17 +1202,22 @@ function calculateItemPrice(basePrice, customization, quantity = 1, pizza = null
     // SAUF si la pizza a déjà base crème par défaut (category: 'creme')
     const isPizzaBaseCreme = pizza && pizza.category === 'creme';
     
-    // Base mozzarella : même supplément que la crème (1 € en 33 cm, 1,50 € en 40 cm), quelle que soit la pizza
-    if ((customization.base === 'creme' && !isPizzaBaseCreme) || customization.base === 'mozza') {
-        // Supplément crème uniquement pour les pizzas qui sont normalement à base tomate
-        if (isFormuleMidi) {
-            price += 1.00; // +1€ pour crème en formule midi
-        } else if (customization.size === 'grande') {
-            price += 1.50; // +1.50€ pour crème en 40cm
-        } else if (customization.size === 'moyenne') {
-            price += 1.00; // +1€ pour crème en 33cm
+    // Bases payantes : crème (sauf pizza déjà à base crème) et mozzarella, chacune 1 € en 33 cm / 1,50 € en 40 cm ; « crème + mozzarella » = les deux
+    {
+        const b = customization.base;
+        const cremeCharge = (b === 'creme' || b === 'creme_mozza') && !isPizzaBaseCreme ? 1 : 0;
+        const mozzaCharge = (b === 'mozza' || b === 'creme_mozza') ? 1 : 0;
+        const parts = cremeCharge + mozzaCharge;
+        if (parts > 0) {
+            if (isFormuleMidi) {
+                price += 1.00 * parts; // +1€ par base en formule midi
+            } else if (customization.size === 'grande') {
+                price += 1.50 * parts; // +1.50€ en 40cm
+            } else if (customization.size === 'moyenne') {
+                price += 1.00 * parts; // +1€ en 33cm
+            }
+            // Pas de supplément pour Marmaille (26cm) normale
         }
-        // Pas de supplément pour Marmaille (26cm) normale
     }
     // Si pizza base crème change vers tomate : gratuit (pas de supplément ni réduction)
 
@@ -1847,6 +1852,8 @@ function openCustomizeModal(pizzaId) {
     const cremeLabelSpan = document.querySelector('input[name="base"][value="creme"]').nextElementSibling;
     const mozzaLabelSpan = document.querySelector('input[name="base"][value="mozza"]')?.nextElementSibling;
     if (mozzaLabelSpan) mozzaLabelSpan.textContent = 'Mozzarella (+1.00€ en 33cm / +1.50€ en 40cm)';
+    const cremeMozzaLabelSpan = document.querySelector('input[name="base"][value="creme_mozza"]')?.nextElementSibling;
+    if (cremeMozzaLabelSpan) cremeMozzaLabelSpan.textContent = pizza.category === 'creme' ? 'Crème + Mozzarella (+1.00€ en 33cm / +1.50€ en 40cm)' : 'Crème + Mozzarella (+2.00€ en 33cm / +3.00€ en 40cm)';
     
     if (pizza.category === 'creme') {
         // Pizza base crème : crème incluse, tomate gratuit
@@ -1914,11 +1921,15 @@ function updateCustomizePrice() {
 
     // Ajouter le supplément pour base crème si sélectionnée
     const baseInput = document.querySelector('input[name="base"]:checked');
-    if (baseInput && (baseInput.value === 'creme' || baseInput.value === 'mozza')) {
+    if (baseInput) {
+        const b = baseInput.value;
+        // même règle que le panier : crème gratuite sur une pizza déjà à base crème, mozzarella toujours payante
+        const parts = ((b === 'creme' || b === 'creme_mozza') && currentPizza.category !== 'creme' ? 1 : 0) +
+                      ((b === 'mozza' || b === 'creme_mozza') ? 1 : 0);
         if (selectedSize === 'grande') {
-            price += 1.50; // +1.50€ pour crème en 40cm
+            price += 1.50 * parts; // +1.50€ par base en 40cm
         } else if (selectedSize === 'moyenne') {
-            price += 1.00; // +1€ pour crème en 33cm
+            price += 1.00 * parts; // +1€ par base en 33cm
         }
         // Pas de supplément pour Marmaille (26cm)
     }
@@ -4324,7 +4335,7 @@ function displayOrderSummary() {
                 customizationHTML = `<br><small>📏 TAILLE: ${sizeLabel || '(non spécifiée)'}</small>`;
                 
                 // BASE - toujours afficher
-                const baseLabel = c.base ? (c.base === 'creme' ? 'Crème' : c.base === 'tomate' ? 'Tomate' : c.base === 'mozza' ? 'Mozzarella' : c.base) : '(non spécifiée)';
+                const baseLabel = c.base ? (c.base === 'creme' ? 'Crème' : c.base === 'tomate' ? 'Tomate' : c.base === 'mozza' ? 'Mozzarella' : c.base === 'creme_mozza' ? 'Crème + Mozzarella' : c.base) : '(non spécifiée)';
                 customizationHTML += `<br><small>🍕 BASE: ${baseLabel}</small>`;
                 
                 // RETIRER - toujours afficher
@@ -4382,7 +4393,7 @@ function displayOrderSummary() {
                     customizationHTML = `<br><small>🥗 Ingrédients: ${c.ingredients.join(', ')}</small>`;
                 }
                 if (c.base) {
-                    const baseLabel = c.base === 'creme' ? 'Crème' : c.base === 'tomate' ? 'Tomate' : c.base === 'mozza' ? 'Mozzarella' : c.base;
+                    const baseLabel = c.base === 'creme' ? 'Crème' : c.base === 'tomate' ? 'Tomate' : c.base === 'mozza' ? 'Mozzarella' : c.base === 'creme_mozza' ? 'Crème + Mozzarella' : c.base;
                     customizationHTML += `<br><small>Base: ${baseLabel}</small>`;
                 }
                 if (c.supplements?.length > 0) {

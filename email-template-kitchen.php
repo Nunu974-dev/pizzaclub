@@ -157,7 +157,7 @@ function getKitchenEmailTemplate($orderData) {
                                     <?php if (!empty($pizzaCust['base'])): ?>
                                         <div class="item-detail">
                                             <span class="item-detail-label">🍕 Base :</span>
-                                            <span class="item-detail-value"><?= $pizzaCust['base'] === 'creme' ? 'Crème' : ($pizzaCust['base'] === 'mozza' ? 'Mozzarella' : 'Tomate') ?></span>
+                                            <span class="item-detail-value"><?= $pizzaCust['base'] === 'creme' ? 'Crème' : ($pizzaCust['base'] === 'mozza' ? 'Mozzarella' : ($pizzaCust['base'] === 'creme_mozza' ? 'Crème + Mozzarella' : 'Tomate')) ?></span>
                                         </div>
                                     <?php endif; ?>
                                     <?php $addedIngredients = $pizzaCust['addedIngredients'] ?? []; ?>
@@ -317,7 +317,7 @@ function getKitchenEmailTemplate($orderData) {
                                         <?php
                                         if (!empty($custom['base'])) {
                                             if (in_array($item['type'], ['pizza', 'roll', 'bun'])) {
-                                                echo $custom['base'] === 'creme' ? 'Crème' : ($custom['base'] === 'mozza' ? 'Mozzarella' : 'Tomate');
+                                                echo $custom['base'] === 'creme' ? 'Crème' : ($custom['base'] === 'mozza' ? 'Mozzarella' : ($custom['base'] === 'creme_mozza' ? 'Crème + Mozzarella' : 'Tomate'));
                                             } else {
                                                 echo htmlspecialchars($custom['base']);
                                             }

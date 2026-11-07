@@ -817,6 +817,11 @@ const EXTRAS = {
             price33: 1.00, // +1€ en 33cm
             price40: 1.50  // +1.50€ en 40cm
         },
+        creme_mozza: {
+            name: 'Crème + Mozzarella',
+            price33: 2.00, // +2€ en 33cm (crème + mozzarella)
+            price40: 3.00  // +3€ en 40cm
+        },
         mozza: {
             name: 'Mozzarella',
             price33: 1.00, // +1€ en 33cm

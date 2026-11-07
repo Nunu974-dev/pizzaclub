@@ -263,7 +263,7 @@ foreach ($orderData['items'] as $item) {
             
             // Base de la pizza
             if (!empty($pizzaCust['base'])) {
-                $baseLabel = ($pizzaCust['base'] === 'creme') ? 'Crème' : (($pizzaCust['base'] === 'mozza') ? 'Mozzarella' : 'Tomate');
+                $baseLabel = ($pizzaCust['base'] === 'creme') ? 'Crème' : (($pizzaCust['base'] === 'mozza') ? 'Mozzarella' : (($pizzaCust['base'] === 'creme_mozza') ? 'Crème + Mozzarella' : 'Tomate'));
                 $itemsList .= "\n    Base: " . $baseLabel;
             }
             
@@ -399,7 +399,7 @@ foreach ($orderData['items'] as $item) {
         
         // BASE - Toujours afficher selon le type de produit
         if ($item['type'] === 'pizza') {
-            $baseLabel = !empty($custom['base']) ? ($custom['base'] === 'creme' ? 'Crème' : ($custom['base'] === 'mozza' ? 'Mozzarella' : 'Tomate')) : '(non spécifiée)';
+            $baseLabel = !empty($custom['base']) ? ($custom['base'] === 'creme' ? 'Crème' : ($custom['base'] === 'mozza' ? 'Mozzarella' : ($custom['base'] === 'creme_mozza' ? 'Crème + Mozzarella' : 'Tomate'))) : '(non spécifiée)';
             $itemsList .= "🍕 BASE: " . $baseLabel . "\n";
         }
         elseif ($item['type'] === 'pate') {
@@ -407,7 +407,7 @@ foreach ($orderData['items'] as $item) {
             $itemsList .= "🍝 BASE: " . $baseLabel . "\n";
         }
         elseif ($item['type'] === 'roll' || $item['type'] === 'bun') {
-            $baseLabel = !empty($custom['base']) ? ($custom['base'] === 'creme' ? 'Crème' : ($custom['base'] === 'mozza' ? 'Mozzarella' : 'Tomate')) : '(non spécifiée)';
+            $baseLabel = !empty($custom['base']) ? ($custom['base'] === 'creme' ? 'Crème' : ($custom['base'] === 'mozza' ? 'Mozzarella' : ($custom['base'] === 'creme_mozza' ? 'Crème + Mozzarella' : 'Tomate'))) : '(non spécifiée)';
             $itemsList .= "🌯 BASE: " . $baseLabel . "\n";
         }
         

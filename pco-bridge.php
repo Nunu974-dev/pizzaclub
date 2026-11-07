@@ -67,7 +67,7 @@ function pco_item_details($item)
             $pc = $c['pizzaCustomization'] ?? [];
             $info = [];
             if (!empty($pc['size'])) $info[] = pco_size_label($pc['size']);
-            if (!empty($pc['base'])) $info[] = $pc['base'] === 'creme' ? 'base crème' : ($pc['base'] === 'mozza' ? 'base mozzarella' : 'base tomate');
+            if (!empty($pc['base'])) $info[] = $pc['base'] === 'creme' ? 'base crème' : ($pc['base'] === 'mozza' ? 'base mozzarella' : ($pc['base'] === 'creme_mozza' ? 'base crème + mozzarella' : 'base tomate'));
             $d[] = 'Pizza : ' . $c['pizza'] . ($info ? ' (' . implode(', ', $info) . ')' : '');
             foreach (pco_list($pc['addedIngredients'] ?? []) as $a) $d[] = '+ ' . $a;
             foreach (pco_list($pc['removedIngredients'] ?? []) as $r) $d[] = 'SANS ' . $r;
@@ -91,6 +91,7 @@ function pco_item_details($item)
         if (in_array($type, ['pizza', 'roll', 'bun'], true)) {
             if ($c['base'] === 'creme') $d[] = 'Base crème';
             elseif ($c['base'] === 'mozza') $d[] = 'Base mozzarella';
+            elseif ($c['base'] === 'creme_mozza') $d[] = 'Base crème + mozzarella';
             elseif ($c['base'] !== 'tomate') $d[] = 'Base ' . $c['base'];
         } elseif ($type === 'sandwich') {
             $d[] = 'Base : ' . $c['base'];

@@ -104,7 +104,7 @@ function getClientEmailTemplate($orderData) {
                                 
                                 <?php 
                                 // BASE - toujours afficher
-                                $baseLabel = isset($custom['base']) ? ($custom['base'] === 'creme' ? 'Crème' : ($custom['base'] === 'tomate' ? 'Tomate' : ($custom['base'] === 'mozza' ? 'Mozzarella' : $custom['base']))) : '(non spécifiée)';
+                                $baseLabel = isset($custom['base']) ? ($custom['base'] === 'creme' ? 'Crème' : ($custom['base'] === 'tomate' ? 'Tomate' : ($custom['base'] === 'mozza' ? 'Mozzarella' : ($custom['base'] === 'creme_mozza' ? 'Crème + Mozzarella' : $custom['base'])))) : '(non spécifiée)';
                                 ?>
                                 <br><small><strong>🍕 BASE:</strong> <?= htmlspecialchars($baseLabel) ?></small>
                                 
@@ -228,7 +228,7 @@ function getClientEmailTemplate($orderData) {
                                     <?php // BASE (crème ou tomate) ?>
                                     <?php if (!empty($custom['base'])): ?>
                                         <br><small><strong>🌯 BASE:</strong> 
-                                        <?= $custom['base'] === 'creme' ? 'Crème' : ($custom['base'] === 'mozza' ? 'Mozzarella' : 'Tomate') ?>
+                                        <?= $custom['base'] === 'creme' ? 'Crème' : ($custom['base'] === 'mozza' ? 'Mozzarella' : ($custom['base'] === 'creme_mozza' ? 'Crème + Mozzarella' : 'Tomate')) ?>
                                         </small>
                                     <?php endif; ?>
                                     
