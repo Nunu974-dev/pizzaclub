@@ -6106,8 +6106,8 @@ function openMarmailleModal() {
     });
 
     // Réinitialiser les sélections
-    document.querySelector('input[name="marmailleViande"][value="jambon"]').checked = true;
-    document.querySelector('input[name="marmailleBase"][value="tomate"]').checked = true;
+    // la viande n'est pas pré-cochée : le client doit choisir jambon ou poulet
+    document.querySelectorAll('input[name="marmailleViande"]').forEach(r => { r.checked = false; });
     document.querySelectorAll('#marmailleIngredientsRemove input[type="checkbox"]').forEach(input => {
         input.checked = false;
     });
@@ -6131,13 +6131,7 @@ function closeMarmailleModal() {
 
 function updateMarmaillePrice() {
     const pizza = PIZZAS_DATA.find(p => p.id === 38);
-    let price = pizza.price33; // 8.40€
-
-    // Ajouter supplément crème si sélectionnée
-    const baseInput = document.querySelector('input[name="marmailleBase"]:checked');
-    if (baseInput && baseInput.value === 'creme') {
-        price += 1.00; // +1€ pour crème (26cm)
-    }
+    let price = pizza.price33; // 8.40€ — aucun supplément sur la Marmaille
 
     // Multiplier par la quantité
     const quantity = parseInt(document.getElementById('marmailleQty').value) || 1;
@@ -6147,6 +6141,12 @@ function updateMarmaillePrice() {
 }
 
 function addMarmailleToCart() {
+    // la viande est obligatoire : on vérifie avant tout
+    const viandeInput = document.querySelector('input[name="marmailleViande"]:checked');
+    if (!viandeInput) {
+        showNotification('Choisissez la viande de la Marmaille : jambon ou poulet');
+        return;
+    }
     // Si c'est le premier ajout, vérifier l'heure d'abord
     if (cart.length === 0 && !deliveryTimeSet) {
         console.log('Premier ajout Marmaille - ouverture modal heure');
@@ -6161,8 +6161,8 @@ function addMarmailleToCart() {
     const quantity = parseInt(qtyInput ? qtyInput.value : 1);
 
     // Récupérer les sélections
-    const viande = document.querySelector('input[name="marmailleViande"]:checked').value;
-    const base = document.querySelector('input[name="marmailleBase"]:checked').value;
+    const viande = viandeInput.value;
+    const base = 'tomate'; // pas de choix de base ni de supplément sur la Marmaille
     
     // Récupérer les ingrédients retirés
     const removedIngredients = [];
@@ -6174,10 +6174,7 @@ function addMarmailleToCart() {
     const customName = `Marmaille ${viande.charAt(0).toUpperCase() + viande.slice(1)}`;
 
     // Calculer le prix
-    let basePrice = pizza.price33;
-    if (base === 'creme') {
-        basePrice += 1.00;
-    }
+    const basePrice = pizza.price33;
 
     const cartItem = {
         id: Date.now(),
