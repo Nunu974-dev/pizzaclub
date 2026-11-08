@@ -263,6 +263,19 @@ if ($type === 'receipt') {
         }
         $alerts .= "<tr><td style=\"padding:4px 6px;color:#777;white-space:nowrap;vertical-align:top\">$when</td><td style=\"padding:4px 6px\">$t</td></tr>";
     }
+    // mouvements d'espèces du tiroir (entrées / sorties) : qui, quand, pourquoi
+    $cashReasons = ['bank' => 'Dépôt en banque', 'change' => 'Monnaie / échange', 'expense' => 'Dépense (achat)', 'manager' => 'Prélèvement du gérant',
+        'float_error' => 'Erreur de fond de caisse', 'float_add' => 'Ajout au fond de caisse', 'safe_return' => 'Retour du coffre', 'other' => 'Autre'];
+    $cashMoves = '';
+    $cmIn = 0; $cmOut = 0;
+    foreach (($d['cash_moves'] ?? []) as $cm) {
+        $when = (new DateTime($cm['at']))->setTimezone(new DateTimeZone('Indian/Reunion'))->format('H:i');
+        $isIn = ($cm['kind'] ?? '') === 'in';
+        if ($isIn) { $cmIn += (int) $cm['amount_cents']; } else { $cmOut += (int) $cm['amount_cents']; }
+        $why = e($cashReasons[$cm['reason'] ?? ''] ?? ($cm['reason'] ?? '')) . (!empty($cm['note']) ? ' — ' . e($cm['note']) : '');
+        $cashMoves .= "<tr><td style=\"padding:4px 6px;color:#777;white-space:nowrap;vertical-align:top\">$when</td><td style=\"padding:4px 6px\"><b style=\"color:"
+            . ($isIn ? '#2e7d32' : '#c62828') . '">' . ($isIn ? 'Entrée ' : 'Sortie ') . eur($cm['amount_cents']) . "</b> · $why · " . e($cm['staff'] ?? 'inconnu') . '</td></tr>';
+    }
     $top = '';
     foreach (array_slice($d['top_products'] ?? [], 0, 8) as $p) {
         $top .= "<tr><td $td>" . e($p['name']) . "</td><td $tdr>" . (int) $p['quantity'] . "</td><td $tdr>" . eur($p['revenue_cents']) . '</td></tr>';
@@ -299,6 +312,8 @@ if ($type === 'receipt') {
         . ' · articles offerts : ' . (int) $d['offered']['count'] . ' · remises : ' . eur($d['offered']['discount_cents']) . '</p>'
         . ($alerts ? "<h3 style=\"font-size:15px;margin:18px 0 6px;color:#c62828\">⚠ À vérifier aujourd'hui</h3><table style=\"width:100%;border-collapse:collapse;font-size:13px\">$alerts</table>"
             : '<p style="font-size:13px;color:#2e7d32">Rien d\'inhabituel : aucune annulation, baisse de montant, remise sur article ni paiement corrigé.</p>')
+        . ($cashMoves ? "<h3 $h2>Mouvements d'espèces du tiroir</h3><table style=\"width:100%;border-collapse:collapse;font-size:13px\">$cashMoves</table>"
+            . '<p style="font-size:13px;color:#555">Total entrées : ' . eur($cmIn) . ' · total sorties : ' . eur($cmOut) . '</p>' : '')
         . ($top ? "<h3 $h2>Meilleures ventes</h3><table style=\"width:100%;border-collapse:collapse;font-size:14px\">$top</table>" : '')
         . (!empty($d['z']) ? '<p style="font-size:12px;color:#777;margin-top:16px">Clôture Z : ' . (int) $d['z']['tickets_count'] . ' ticket(s) · TTC '
             . eur($d['z']['total_ttc_cents']) . ' · HT ' . eur($d['z']['total_ht_cents']) . ' · TVA ' . eur($d['z']['total_tax_cents']) . '</p>' : '');
