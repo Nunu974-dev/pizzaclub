@@ -513,6 +513,8 @@ function setupEventListeners() {
             closeFormuleMidiModal();
             closeMenuPatesSaladeModal();
             closeSandwichCustomizeModal();
+            closeCompoModal();
+            closeMoitieModal();
             // Ne pas fermer deliveryTimeModal sur overlay click (obligatoire)
         }
     });
@@ -533,7 +535,7 @@ function renderPizzas(filter = 'all') {
 
     if (filter === 'all') {
         // Afficher par catégorie avec des titres
-        const categories = ['creme', 'poulet', 'boeuf', 'porc', 'enfant', 'vegetarienne', 'mer'];
+        const categories = ['speciales', 'creme', 'poulet', 'boeuf', 'porc', 'enfant', 'vegetarienne', 'mer'];
         
         categories.forEach(category => {
             const pizzasInCategory = PIZZAS_DATA.filter(pizza => pizza.category === category);
@@ -626,7 +628,7 @@ function createPizzaCard(pizza) {
                 <div class="pizza-actions">
                     ${unavailable 
                         ? '<button class="btn btn-secondary btn-block" disabled><i class="fas fa-ban"></i> Indisponible</button>'
-                        : `<button class="btn btn-primary btn-block" onclick="openCustomizeModal(${pizza.id})"><i class="fas fa-pizza-slice"></i> Personnaliser & Commander</button>`
+                        : `<button class="btn btn-primary btn-block" onclick="openCustomizeModal(${pizza.id})"><i class="fas fa-pizza-slice"></i> ${pizza.id === 9001 ? 'Composer ma pizza' : pizza.id === 9002 ? 'Choisir mes 2 pizzas' : 'Personnaliser & Commander'}</button>`
                     }
                 </div>
             </div>
@@ -1772,6 +1774,10 @@ function openCustomizeModal(pizzaId) {
     console.log('🍕 Pizza trouvée:', pizza ? pizza.name : 'NON TROUVÉE');
     currentPizza = pizza;
 
+    // Pizzas à composer : La Compo (9001) et Moitié-Moitié (9002)
+    if (pizzaId === 9001) { openCompoModal(); return; }
+    if (pizzaId === 9002) { openMoitieModal(); return; }
+
     // Si c'est la Marmaille (ID 38), ouvrir le modal spécial de choix viande
     if (pizzaId === 38) {
         openMarmailleModal();
@@ -2835,7 +2841,7 @@ function openFormuleMidiModal() {
     
     const excludedIds = FORMULES_DATA.midi.excludedPizzas || [];
     
-    PIZZAS_DATA.forEach(pizza => {
+    PIZZAS_DATA.filter(p => p.category !== 'speciales').forEach(pizza => {
         const isPremium = excludedIds.includes(pizza.id);
         const priceNote = isPremium ? ' (+1€)' : '';
         
@@ -6217,3 +6223,249 @@ function addMarmailleToCart() {
 // Vérifier toutes les 60 secondes
 setInterval(updateFormuleMidiAvailability, 60000);
 
+
+// ========================================
+// LA COMPO : base au choix + 4 ingrédients inclus, dès le 5e supplément normal
+// ========================================
+let compoOrder = []; // ingrédients cochés, dans l'ordre : les 4 premiers sont inclus
+
+function compoSize() {
+    return document.querySelector('input[name="compoSize"]:checked')?.value || 'moyenne';
+}
+
+function compoEuro(n) {
+    return n.toFixed(2).replace('.', ',') + ' €';
+}
+
+function openCompoModal() {
+    compoOrder = [];
+    const box = document.getElementById('compoIngredients');
+    box.innerHTML = '';
+    COMPO_CONFIG.groups.forEach(g => {
+        const keys = g.keys.filter(k => EXTRAS.toppings[k]);
+        if (!keys.length) return;
+        const h = document.createElement('div');
+        h.style.cssText = 'font-weight:700;margin:10px 0 4px;color:#555;';
+        h.textContent = g.label;
+        box.appendChild(h);
+        const wrap = document.createElement('div');
+        wrap.className = 'ingredients-add';
+        keys.forEach(k => {
+            const label = document.createElement('label');
+            label.className = 'ingredient-checkbox';
+            const out = isIngredientUnavailable(k);
+            label.innerHTML = `<input type="checkbox" data-compo="${k}"${out ? ' disabled' : ''}><span>${EXTRAS.toppings[k].name} <small>${out ? '(épuisé)' : ''}</small></span>`;
+            if (out) label.style.opacity = '0.5';
+            wrap.appendChild(label);
+        });
+        box.appendChild(wrap);
+    });
+    document.querySelector('input[name="compoSize"][value="moyenne"]').checked = true;
+    document.querySelector('input[name="compoBase"][value="tomate"]').checked = true;
+    document.getElementById('compoNoOlives').checked = false;
+    document.getElementById('compoQty').value = 1;
+
+    document.querySelectorAll('#compoModal input[data-compo]').forEach(cb => {
+        cb.onchange = () => {
+            const k = cb.dataset.compo;
+            compoOrder = compoOrder.filter(x => x !== k);
+            if (cb.checked) compoOrder.push(k);
+            updateCompoPrice();
+        };
+    });
+    document.querySelectorAll('#compoModal input[name="compoSize"], #compoModal input[name="compoBase"], #compoQty').forEach(i => {
+        i.onchange = updateCompoPrice;
+    });
+    updateCompoPrice();
+    openModal(document.getElementById('compoModal'));
+}
+
+function closeCompoModal() {
+    const m = document.getElementById('compoModal');
+    if (m) m.classList.remove('active');
+}
+
+/** Prix d'une Compo : taille + base mozzarella + ingrédients à partir du 5e */
+function compoUnitPrice() {
+    const size = compoSize();
+    let price = COMPO_CONFIG.prices[size];
+    if (document.querySelector('input[name="compoBase"]:checked')?.value === 'mozza') price += COMPO_CONFIG.mozzaBase[size];
+    compoOrder.forEach((k, i) => {
+        if (i >= COMPO_CONFIG.included) price += pizzaToppingPrice(k, size);
+    });
+    return price;
+}
+
+function updateCompoPrice() {
+    const size = compoSize();
+    const n = compoOrder.length;
+    document.querySelectorAll('#compoModal input[data-compo]').forEach(cb => {
+        const k = cb.dataset.compo;
+        const small = cb.parentElement.querySelector('small');
+        if (cb.disabled) return;
+        const idx = compoOrder.indexOf(k);
+        const price = pizzaToppingPrice(k, size);
+        if (idx >= 0) {
+            small.textContent = idx < COMPO_CONFIG.included ? '(inclus)' : `(+${compoEuro(price)})`;
+            small.style.color = idx < COMPO_CONFIG.included ? '#2e7d32' : '#c0392b';
+        } else {
+            small.textContent = n >= COMPO_CONFIG.included ? `(+${compoEuro(price)})` : '';
+            small.style.color = '#c0392b';
+        }
+    });
+    const left = Math.max(COMPO_CONFIG.included - n, 0);
+    document.getElementById('compoCounter').textContent =
+        left > 0 ? `— ${n}/${COMPO_CONFIG.included} inclus (encore ${left} gratuit${left > 1 ? 's' : ''})` : `— ${COMPO_CONFIG.included} inclus utilisés${n > COMPO_CONFIG.included ? ` · ${n - COMPO_CONFIG.included} en supplément` : ''}`;
+    document.getElementById('compoMozzaLabel').textContent =
+        `Mozzarella (+${compoEuro(COMPO_CONFIG.mozzaBase[size])})`;
+    const qty = Math.max(parseInt(document.getElementById('compoQty').value) || 1, 1);
+    document.getElementById('compoPrice').textContent = `${(compoUnitPrice() * qty).toFixed(2)}€`;
+}
+
+function addCompoToCart() {
+    if (cart.length === 0 && !deliveryTimeSet) {
+        pendingCartAction = () => addCompoToCart();
+        closeCompoModal();
+        openDeliveryTimeModal();
+        return;
+    }
+    const size = compoSize();
+    const base = document.querySelector('input[name="compoBase"]:checked')?.value || 'tomate';
+    const qty = Math.max(parseInt(document.getElementById('compoQty').value) || 1, 1);
+    const unit = compoUnitPrice();
+
+    // détail lisible partout (panier, e-mails, caisse) : base, ingrédients inclus puis suppléments avec leur prix
+    const lines = [];
+    if (base === 'creme') lines.push('Base crème');
+    if (base === 'mozza') lines.push(`Base mozzarella (+${compoEuro(COMPO_CONFIG.mozzaBase[size])})`);
+    compoOrder.forEach((k, i) => {
+        const nm = EXTRAS.toppings[k].name;
+        lines.push(i < COMPO_CONFIG.included ? `${nm} (inclus)` : `${nm} (+${compoEuro(pizzaToppingPrice(k, size))})`);
+    });
+    if (compoOrder.length < COMPO_CONFIG.included) lines.push(`${COMPO_CONFIG.included - compoOrder.length} ingrédient(s) inclus non choisi(s)`);
+
+    cart.push({
+        id: Date.now(),
+        type: 'pizza',
+        pizzaId: 9001,
+        name: 'La Compo',
+        basePrice: unit,
+        pizza: null, // prix déjà complet : jamais recalculé depuis la fiche de la pizza
+        quantity: qty,
+        customization: {
+            size,
+            base: 'tomate', // la base payante est déjà dans le prix ; son libellé est dans le détail
+            removedIngredients: document.getElementById('compoNoOlives').checked ? ['Olives'] : [],
+            addedIngredients: lines
+        },
+        totalPrice: unit * qty
+    });
+    saveCartToStorage();
+    updateCartUI();
+    closeCompoModal();
+    showNotification('La Compo ajoutée au panier');
+    checkPromo2Pizzas();
+    setTimeout(() => openCart(), 100);
+}
+
+// ========================================
+// MOITIÉ-MOITIÉ : deux pizzas au choix, prix fixe, +1 € une seule fois (Burger / Américaine)
+// ========================================
+function moitieSize() {
+    return document.querySelector('input[name="moitieSize"]:checked')?.value || 'moyenne';
+}
+
+function moitieChoices() {
+    const order = ['creme', 'poulet', 'boeuf', 'porc', 'vegetarienne', 'mer'];
+    return PIZZAS_DATA
+        .filter(p => order.includes(p.category))
+        .sort((a, b) => order.indexOf(a.category) - order.indexOf(b.category) || a.name.localeCompare(b.name, 'fr'));
+}
+
+function openMoitieModal() {
+    const choices = moitieChoices();
+    ['moitieA', 'moitieB'].forEach(id => {
+        const sel = document.getElementById(id);
+        sel.innerHTML = '<option value="">— Choisir une pizza —</option>' +
+            choices.map(p => `<option value="${p.id}">${p.name}${MOITIE_CONFIG.supplementPizzaIds.includes(p.id) ? ' (+1€)' : ''}</option>`).join('');
+        sel.value = '';
+        sel.onchange = updateMoitiePrice;
+    });
+    document.querySelector('input[name="moitieSize"][value="moyenne"]').checked = true;
+    document.getElementById('moitieQty').value = 1;
+    document.querySelectorAll('#moitieModal input[name="moitieSize"], #moitieQty').forEach(i => { i.onchange = updateMoitiePrice; });
+    updateMoitiePrice();
+    openModal(document.getElementById('moitieModal'));
+}
+
+function closeMoitieModal() {
+    const m = document.getElementById('moitieModal');
+    if (m) m.classList.remove('active');
+}
+
+function moitiePizza(selectId) {
+    const v = parseInt(document.getElementById(selectId).value);
+    return PIZZAS_DATA.find(p => p.id === v) || null;
+}
+
+function moitieSupplement() {
+    const a = moitiePizza('moitieA'), b = moitiePizza('moitieB');
+    const special = [a, b].some(p => p && MOITIE_CONFIG.supplementPizzaIds.includes(p.id));
+    return special ? MOITIE_CONFIG.supplement : 0; // une seule fois, même si les deux moitiés sont concernées
+}
+
+function updateMoitiePrice() {
+    const size = moitieSize();
+    const unit = MOITIE_CONFIG.prices[size] + moitieSupplement();
+    const qty = Math.max(parseInt(document.getElementById('moitieQty').value) || 1, 1);
+    document.getElementById('moitiePrice').textContent = `${(unit * qty).toFixed(2)}€`;
+    document.getElementById('moitieSupplementNote').textContent = moitieSupplement() > 0 ? '+1,00 € inclus (Burger ou Américaine)' : '';
+    ['A', 'B'].forEach(l => {
+        const p = moitiePizza('moitie' + l);
+        document.getElementById('moitie' + l + 'Info').textContent = p ? p.ingredients.join(', ') : '';
+    });
+}
+
+function addMoitieToCart() {
+    const a = moitiePizza('moitieA'), b = moitiePizza('moitieB');
+    if (!a || !b) {
+        showNotification('Choisissez les deux moitiés de la pizza');
+        return;
+    }
+    if (cart.length === 0 && !deliveryTimeSet) {
+        pendingCartAction = () => addMoitieToCart();
+        closeMoitieModal();
+        openDeliveryTimeModal();
+        return;
+    }
+    const size = moitieSize();
+    const qty = Math.max(parseInt(document.getElementById('moitieQty').value) || 1, 1);
+    const supp = moitieSupplement();
+    const unit = MOITIE_CONFIG.prices[size] + supp;
+    cart.push({
+        id: Date.now(),
+        type: 'pizza',
+        pizzaId: 9002,
+        name: 'Moitié-Moitié',
+        basePrice: unit,
+        pizza: null,
+        quantity: qty,
+        customization: {
+            size,
+            base: 'tomate',
+            removedIngredients: [],
+            addedIngredients: [
+                `Moitié 1 : ${a.name}`,
+                `Moitié 2 : ${b.name}`,
+                ...(supp > 0 ? ['Supplément Burger / Américaine (+1,00 €)'] : [])
+            ]
+        },
+        totalPrice: unit * qty
+    });
+    saveCartToStorage();
+    updateCartUI();
+    closeMoitieModal();
+    showNotification('Moitié-Moitié ajoutée au panier');
+    checkPromo2Pizzas();
+    setTimeout(() => openCart(), 100);
+}

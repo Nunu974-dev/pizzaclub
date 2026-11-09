@@ -456,6 +456,7 @@
             <!-- Filtres Pizzas (visible uniquement quand Pizzas est sélectionné) -->
             <div class="menu-filters" id="pizzaFilters">
                 <button class="filter-btn active" data-filter="all">Toutes</button>
+                <button class="filter-btn" data-filter="speciales">🧩 Compo &amp; ½+½</button>
                 <button class="filter-btn" data-filter="creme">Crème</button>
                 <button class="filter-btn" data-filter="poulet">Poulet</button>
                 <button class="filter-btn" data-filter="boeuf">Bœuf</button>
@@ -1817,6 +1818,101 @@
     </div>
 
     <!-- MODAL MARMAILLE CHOIX VIANDE -->
+    <!-- MODAL LA COMPO : base au choix + 4 ingrédients inclus -->
+    <div class="modal" id="compoModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🧩 La Compo — composez votre pizza</h3>
+                <button class="modal-close" onclick="closeCompoModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 4px; color: #856404;">
+                    <i class="fas fa-info-circle"></i> <strong>Inclus :</strong> base tomate ou crème, mix fromages (emmental + mozzarella), olives et
+                    <strong>4 ingrédients au choix</strong>. À partir du 5<sup>e</sup> ingrédient : supplément normal.
+                </div>
+                <div class="customize-section">
+                    <h4>Taille</h4>
+                    <div class="size-options">
+                        <label class="size-option"><input type="radio" name="compoSize" value="moyenne" checked><span class="size-label">33cm<br><small>16.90€</small></span></label>
+                        <label class="size-option"><input type="radio" name="compoSize" value="grande"><span class="size-label">40cm<br><small>19.90€</small></span></label>
+                    </div>
+                </div>
+                <div class="customize-section">
+                    <h4>Base</h4>
+                    <div class="base-options">
+                        <label class="base-option"><input type="radio" name="compoBase" value="tomate" checked><span>Sauce Tomate (incluse)</span></label>
+                        <label class="base-option"><input type="radio" name="compoBase" value="creme"><span>Crème fraîche (incluse)</span></label>
+                        <label class="base-option"><input type="radio" name="compoBase" value="mozza"><span id="compoMozzaLabel">Mozzarella (+1.00€ en 33cm / +1.50€ en 40cm)</span></label>
+                    </div>
+                </div>
+                <div class="customize-section">
+                    <h4>Vos ingrédients <span id="compoCounter" style="font-weight:600;color:#c0392b;"></span></h4>
+                    <div id="compoIngredients"></div>
+                    <label class="ingredient-checkbox" style="margin-top:10px;"><input type="checkbox" id="compoNoOlives"><span>Sans olives</span></label>
+                </div>
+                <div class="customize-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <label style="font-weight: 600; margin-right: 10px;">Quantité :</label>
+                            <input type="number" id="compoQty" min="1" max="10" value="1" style="width: 80px; padding: 8px; border: 2px solid #ddd; border-radius: 4px; text-align: center; font-size: 1.1rem;">
+                        </div>
+                        <div class="customize-price-display"><span class="price-label">Total :</span> <span class="price-value" id="compoPrice">16.90€</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary btn-block" onclick="addCompoToCart()"><i class="fas fa-shopping-cart"></i> Ajouter au panier</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL MOITIÉ-MOITIÉ : deux pizzas en une -->
+    <div class="modal" id="moitieModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>½ + ½ Moitié-Moitié</h3>
+                <button class="modal-close" onclick="closeMoitieModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 4px; color: #856404;">
+                    <i class="fas fa-info-circle"></i> Une pizza, <strong>deux moitiés au choix</strong>. <strong>+1€</strong> si une moitié est la Burger ou l'Américaine.
+                </div>
+                <div class="customize-section">
+                    <h4>Taille</h4>
+                    <div class="size-options">
+                        <label class="size-option"><input type="radio" name="moitieSize" value="moyenne" checked><span class="size-label">33cm<br><small>16.90€</small></span></label>
+                        <label class="size-option"><input type="radio" name="moitieSize" value="grande"><span class="size-label">40cm<br><small>19.90€</small></span></label>
+                    </div>
+                </div>
+                <div class="customize-section">
+                    <h4>Première moitié <span style="color:#c0392b;font-weight:700;">(obligatoire)</span></h4>
+                    <select id="moitieA" style="width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;font-size:1rem;"></select>
+                    <p id="moitieAInfo" style="margin:6px 0 0;color:#777;font-size:.9rem;"></p>
+                </div>
+                <div class="customize-section">
+                    <h4>Deuxième moitié <span style="color:#c0392b;font-weight:700;">(obligatoire)</span></h4>
+                    <select id="moitieB" style="width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;font-size:1rem;"></select>
+                    <p id="moitieBInfo" style="margin:6px 0 0;color:#777;font-size:.9rem;"></p>
+                </div>
+                <div class="customize-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <label style="font-weight: 600; margin-right: 10px;">Quantité :</label>
+                            <input type="number" id="moitieQty" min="1" max="10" value="1" style="width: 80px; padding: 8px; border: 2px solid #ddd; border-radius: 4px; text-align: center; font-size: 1.1rem;">
+                        </div>
+                        <div class="customize-price-display"><span class="price-label">Total :</span> <span class="price-value" id="moitiePrice">16.90€</span></div>
+                    </div>
+                    <p id="moitieSupplementNote" style="margin:8px 0 0;color:#c0392b;font-weight:600;"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary btn-block" onclick="addMoitieToCart()"><i class="fas fa-shopping-cart"></i> Ajouter au panier</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal" id="marmailleModal">
         <div class="modal-overlay"></div>
         <div class="modal-content">
@@ -2381,9 +2477,9 @@
     
     <!-- Config & Scripts -->
     <script src="config.js?v=20251125"></script>
-    <script src="data.js?v=20261107a"></script>
+    <script src="data.js?v=20261109a"></script>
     <script src="emailjs-config.js?v=20251125"></script>
-    <script src="script.js?v=20261107b"></script>
+    <script src="script.js?v=20261109a"></script>
     <!-- Widget WhatsApp -->
     <a href="https://wa.me/262692620062?text=Bonjour%20Pizza%20Club%20!%20" 
        class="whatsapp-float" 

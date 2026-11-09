@@ -29,7 +29,8 @@ const CATEGORY_ICONS = {
     porc: { icon: 'fa-bacon', color: '#FF69B4', label: 'Porc' },
     mer: { icon: 'fa-fish', color: '#4169E1', label: 'Mer' },
     vegetarienne: { icon: 'fa-leaf', color: '#32CD32', label: 'Végé' },
-    enfant: { icon: 'fa-child', color: '#FF69B4', label: 'Enfant' }
+    enfant: { icon: 'fa-child', color: '#FF69B4', label: 'Enfant' },
+    speciales: { icon: 'fa-star', color: '#FFB300', label: 'à composer' }
 };
 
 // ========================================
@@ -515,6 +516,58 @@ const PIZZAS_DATA = [
         isPremium: true
     }
 ];
+
+// ========================================
+// PIZZAS À COMPOSER
+//   La Compo : base tomate ou crème, mix fromages (emmental + mozzarella) et olives inclus, 4 ingrédients au choix inclus,
+//              à partir du 5e : supplément normal (selon la taille) ; base mozzarella en supplément.
+//   Moitié-Moitié : deux pizzas au choix, une de chaque côté, prix fixe ; +1 € (une seule fois) si une moitié est Burger ou Américaine.
+// ========================================
+PIZZAS_DATA.push(
+    {
+        id: 9001,
+        name: 'La Compo',
+        category: 'speciales',
+        ingredients: ['Base tomate ou crème', 'Mix fromages (emmental, mozzarella)', 'Olives', '4 ingrédients au choix inclus'],
+        price33: 16.90,
+        price40: 19.90,
+        image: 'img/SHOOT JULIEN 2021/Mixte.png',
+        badge: '🧩 À composer',
+        isSpicy: false,
+        isPremium: false
+    },
+    {
+        id: 9002,
+        name: 'Moitié-Moitié',
+        category: 'speciales',
+        ingredients: ['Deux pizzas au choix, une de chaque côté', '+1 € si Burger ou Américaine'],
+        price33: 16.90,
+        price40: 19.90,
+        image: 'img/SHOOT JULIEN 2021/Reine.png',
+        badge: '½ + ½',
+        isSpicy: false,
+        isPremium: false
+    }
+);
+
+const COMPO_CONFIG = {
+    included: 4,
+    prices: { moyenne: 16.90, grande: 19.90 },
+    mozzaBase: { moyenne: 1.00, grande: 1.50 },
+    // ingrédients au choix (les olives et le mix fromages sont déjà inclus)
+    groups: [
+        { label: 'Légumes', keys: ['champignons', 'poivrons', 'oignons', 'tomates', 'pommesDeTerre', 'mais', 'capres', 'grosPiment', 'salade'] },
+        { label: 'Fromages', keys: ['fromage', 'mozzarella', 'chevre', 'emmental', 'roquefort', 'raclette', 'reblochon', 'cheddar', 'gorgonzola', 'parmesan'] },
+        { label: 'Viandes', keys: ['chorizo', 'jambon', 'merguez', 'poulet', 'pouletFume', 'sarcivePoulet', 'saucisseFumee', 'boeuf', 'lardons'] },
+        { label: 'Poissons et autres', keys: ['thon', 'anchois', 'crevettes', 'saumon', 'oeuf'] }
+    ]
+};
+
+const MOITIE_CONFIG = {
+    prices: { moyenne: 16.90, grande: 19.90 },
+    supplement: 1.00,                // une seule fois
+    supplementPizzaIds: [17, 26]     // Burger, L'Américaine
+};
 
 // ========================================
 // DONNÉES DES PÂTES
