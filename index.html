@@ -456,7 +456,6 @@
             <!-- Filtres Pizzas (visible uniquement quand Pizzas est sélectionné) -->
             <div class="menu-filters" id="pizzaFilters">
                 <button class="filter-btn active" data-filter="all">Toutes</button>
-                <button class="filter-btn" data-filter="speciales">🧩 Compo &amp; ½+½</button>
                 <button class="filter-btn" data-filter="creme">Crème</button>
                 <button class="filter-btn" data-filter="poulet">Poulet</button>
                 <button class="filter-btn" data-filter="boeuf">Bœuf</button>
@@ -464,6 +463,7 @@
                 <button class="filter-btn" data-filter="enfant">👶 Enfant</button>
                 <button class="filter-btn" data-filter="vegetarienne">Végétarienne</button>
                 <button class="filter-btn" data-filter="mer">Mer</button>
+                <button class="filter-btn" data-filter="speciales">🧩 À composer</button>
             </div>
 
             <div class="menu-grid" id="menuGrid">
@@ -1897,6 +1897,18 @@
                     <p id="moitieBInfo" style="margin:6px 0 0;color:#777;font-size:.9rem;"></p>
                 </div>
                 <div class="customize-section">
+                    <h4>Base</h4>
+                    <div class="base-options">
+                        <label class="base-option"><input type="radio" name="moitieBase" value="tomate" checked><span>Sauce Tomate (incluse)</span></label>
+                        <label class="base-option"><input type="radio" name="moitieBase" value="creme"><span id="moitieCremeLabel">Crème fraîche (+1.00€)</span></label>
+                        <label class="base-option"><input type="radio" name="moitieBase" value="mozza"><span id="moitieMozzaLabel">Mozzarella (+1.00€)</span></label>
+                    </div>
+                </div>
+                <div class="customize-section">
+                    <h4>Suppléments (facultatif)</h4>
+                    <div id="moitieIngredients"></div>
+                </div>
+                <div class="customize-section">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <label style="font-weight: 600; margin-right: 10px;">Quantité :</label>
@@ -2479,7 +2491,7 @@
     <script src="config.js?v=20251125"></script>
     <script src="data.js?v=20261109a"></script>
     <script src="emailjs-config.js?v=20251125"></script>
-    <script src="script.js?v=20261109a"></script>
+    <script src="script.js?v=20261109b"></script>
     <!-- Widget WhatsApp -->
     <a href="https://wa.me/262692620062?text=Bonjour%20Pizza%20Club%20!%20" 
        class="whatsapp-float" 

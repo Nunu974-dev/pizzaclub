@@ -535,7 +535,7 @@ function renderPizzas(filter = 'all') {
 
     if (filter === 'all') {
         // Afficher par catégorie avec des titres
-        const categories = ['speciales', 'creme', 'poulet', 'boeuf', 'porc', 'enfant', 'vegetarienne', 'mer'];
+        const categories = ['creme', 'poulet', 'boeuf', 'porc', 'enfant', 'vegetarienne', 'mer', 'speciales'];
         
         categories.forEach(category => {
             const pizzasInCategory = PIZZAS_DATA.filter(pizza => pizza.category === category);
@@ -6391,9 +6391,31 @@ function openMoitieModal() {
         sel.value = '';
         sel.onchange = updateMoitiePrice;
     });
+    // suppléments de la pizza entière (prix selon la taille), tous payants
+    const box = document.getElementById('moitieIngredients');
+    box.innerHTML = '';
+    COMPO_CONFIG.groups.forEach((g, gi) => {
+        const keys = (gi === 0 ? ['olives', ...g.keys] : g.keys).filter(k => EXTRAS.toppings[k]);
+        const h = document.createElement('div');
+        h.style.cssText = 'font-weight:700;margin:10px 0 4px;color:#555;';
+        h.textContent = g.label;
+        box.appendChild(h);
+        const wrap = document.createElement('div');
+        wrap.className = 'ingredients-add';
+        keys.forEach(k => {
+            const label = document.createElement('label');
+            label.className = 'ingredient-checkbox';
+            const out = isIngredientUnavailable(k);
+            label.innerHTML = `<input type="checkbox" data-moitie="${k}"${out ? ' disabled' : ''}><span>${EXTRAS.toppings[k].name} <small></small></span>`;
+            if (out) label.style.opacity = '0.5';
+            wrap.appendChild(label);
+        });
+        box.appendChild(wrap);
+    });
     document.querySelector('input[name="moitieSize"][value="moyenne"]').checked = true;
+    document.querySelector('input[name="moitieBase"][value="tomate"]').checked = true;
     document.getElementById('moitieQty').value = 1;
-    document.querySelectorAll('#moitieModal input[name="moitieSize"], #moitieQty').forEach(i => { i.onchange = updateMoitiePrice; });
+    document.querySelectorAll('#moitieModal input[name="moitieSize"], #moitieModal input[name="moitieBase"], #moitieQty, #moitieModal input[data-moitie]').forEach(i => { i.onchange = updateMoitiePrice; });
     updateMoitiePrice();
     openModal(document.getElementById('moitieModal'));
 }
@@ -6414,9 +6436,35 @@ function moitieSupplement() {
     return special ? MOITIE_CONFIG.supplement : 0; // une seule fois, même si les deux moitiés sont concernées
 }
 
+/** Suppléments cochés (clés) et base choisie */
+function moitieExtras() {
+    return [...document.querySelectorAll('#moitieModal input[data-moitie]:checked')].map(cb => cb.dataset.moitie);
+}
+
+function moitieBase() {
+    return document.querySelector('input[name="moitieBase"]:checked')?.value || 'tomate';
+}
+
+function moitieBasePrice(size) {
+    const b = moitieBase();
+    return b === 'tomate' ? 0 : COMPO_CONFIG.mozzaBase[size]; // crème et mozzarella : 1 € en 33 cm, 1,50 € en 40 cm
+}
+
+function moitieUnitPrice() {
+    const size = moitieSize();
+    return MOITIE_CONFIG.prices[size] + moitieSupplement() + moitieBasePrice(size) +
+        moitieExtras().reduce((sum, k) => sum + pizzaToppingPrice(k, size), 0);
+}
+
 function updateMoitiePrice() {
     const size = moitieSize();
-    const unit = MOITIE_CONFIG.prices[size] + moitieSupplement();
+    const unit = moitieUnitPrice();
+    document.getElementById('moitieCremeLabel').textContent = `Crème fraîche (+${compoEuro(COMPO_CONFIG.mozzaBase[size])})`;
+    document.getElementById('moitieMozzaLabel').textContent = `Mozzarella (+${compoEuro(COMPO_CONFIG.mozzaBase[size])})`;
+    document.querySelectorAll('#moitieModal input[data-moitie]').forEach(cb => {
+        const small = cb.parentElement.querySelector('small');
+        if (!cb.disabled) small.textContent = `(+${compoEuro(pizzaToppingPrice(cb.dataset.moitie, size))})`;
+    });
     const qty = Math.max(parseInt(document.getElementById('moitieQty').value) || 1, 1);
     document.getElementById('moitiePrice').textContent = `${(unit * qty).toFixed(2)}€`;
     document.getElementById('moitieSupplementNote').textContent = moitieSupplement() > 0 ? '+1,00 € inclus (Burger ou Américaine)' : '';
@@ -6441,7 +6489,12 @@ function addMoitieToCart() {
     const size = moitieSize();
     const qty = Math.max(parseInt(document.getElementById('moitieQty').value) || 1, 1);
     const supp = moitieSupplement();
-    const unit = MOITIE_CONFIG.prices[size] + supp;
+    const unit = moitieUnitPrice();
+    const extraLines = [];
+    const mb = moitieBase();
+    if (mb === 'creme') extraLines.push(`Base crème (+${compoEuro(moitieBasePrice(size))})`);
+    if (mb === 'mozza') extraLines.push(`Base mozzarella (+${compoEuro(moitieBasePrice(size))})`);
+    moitieExtras().forEach(k => extraLines.push(`Supplément ${EXTRAS.toppings[k].name} (+${compoEuro(pizzaToppingPrice(k, size))})`));
     cart.push({
         id: Date.now(),
         type: 'pizza',
@@ -6457,7 +6510,8 @@ function addMoitieToCart() {
             addedIngredients: [
                 `Moitié 1 : ${a.name}`,
                 `Moitié 2 : ${b.name}`,
-                ...(supp > 0 ? ['Supplément Burger / Américaine (+1,00 €)'] : [])
+                ...(supp > 0 ? ['Supplément Burger / Américaine (+1,00 €)'] : []),
+                ...extraLines
             ]
         },
         totalPrice: unit * qty
