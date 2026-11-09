@@ -276,6 +276,16 @@ if ($type === 'receipt') {
         $cashMoves .= "<tr><td style=\"padding:4px 6px;color:#777;white-space:nowrap;vertical-align:top\">$when</td><td style=\"padding:4px 6px\"><b style=\"color:"
             . ($isIn ? '#2e7d32' : '#c62828') . '">' . ($isIn ? 'Entrée ' : 'Sortie ') . eur($cm['amount_cents']) . "</b> · $why · " . e($cm['staff'] ?? 'inconnu') . '</td></tr>';
     }
+    // prix d'articles modifiés à la caisse : qui, quel article, ancien et nouveau prix, motif
+    $priceRows = '';
+    foreach (($d['price_changes'] ?? []) as $pc) {
+        $when = (new DateTime($pc['at']))->setTimezone(new DateTimeZone('Indian/Reunion'))->format('H:i');
+        $label = trim(preg_replace('/^Prix modifié\s*·?\s*/u', '', (string) ($pc['label'] ?? '')));
+        $priceRows .= "<tr><td style=\"padding:4px 6px;color:#777;white-space:nowrap;vertical-align:top\">$when</td><td style=\"padding:4px 6px\">Bon #" . (int) $pc['order_number']
+            . ' : <b>' . e($pc['item'] ?? '') . (!empty($pc['variant']) ? ' ' . e($pc['variant']) : '') . '</b> ' . eur($pc['old_unit_cents']) . ' → <b style="color:#c62828">' . eur($pc['new_unit_cents']) . '</b>'
+            . ((int) ($pc['quantity'] ?? 1) > 1 ? ' (×' . (int) $pc['quantity'] . ')' : '')
+            . ($label !== '' ? ' — ' . e($label) : '') . ' · ' . e($pc['staff'] ?? 'inconnu') . '</td></tr>';
+    }
     $top = '';
     foreach (array_slice($d['top_products'] ?? [], 0, 8) as $p) {
         $top .= "<tr><td $td>" . e($p['name']) . "</td><td $tdr>" . (int) $p['quantity'] . "</td><td $tdr>" . eur($p['revenue_cents']) . '</td></tr>';
@@ -312,6 +322,7 @@ if ($type === 'receipt') {
         . ' · articles offerts : ' . (int) $d['offered']['count'] . ' · remises : ' . eur($d['offered']['discount_cents']) . '</p>'
         . ($alerts ? "<h3 style=\"font-size:15px;margin:18px 0 6px;color:#c62828\">⚠ À vérifier aujourd'hui</h3><table style=\"width:100%;border-collapse:collapse;font-size:13px\">$alerts</table>"
             : '<p style="font-size:13px;color:#2e7d32">Rien d\'inhabituel : aucune annulation, baisse de montant, remise sur article ni paiement corrigé.</p>')
+        . ($priceRows ? "<h3 style=\"font-size:15px;margin:18px 0 6px;color:#c62828\">⚠ Prix modifiés à la caisse</h3><table style=\"width:100%;border-collapse:collapse;font-size:13px\">$priceRows</table>" : '')
         . ($cashMoves ? "<h3 $h2>Mouvements d'espèces du tiroir</h3><table style=\"width:100%;border-collapse:collapse;font-size:13px\">$cashMoves</table>"
             . '<p style="font-size:13px;color:#555">Total entrées : ' . eur($cmIn) . ' · total sorties : ' . eur($cmOut) . '</p>' : '')
         . ($top ? "<h3 $h2>Meilleures ventes</h3><table style=\"width:100%;border-collapse:collapse;font-size:14px\">$top</table>" : '')
