@@ -130,17 +130,17 @@ final class SF {
         return $r;
     }
     public function planning(): array {
+        // Le site stocke le planning dans des champs cachés inputPlan1..7 : "début-fin-actif-profil|" (minutes depuis minuit).
         $x = self::dom($this->page('configuration/planning/')); $days = [];
-        $toMin = function (?string $t): int { if (!preg_match('/(\d+)h(\d*)/', (string)$t, $m)) throw new RuntimeException('Lecture du planning impossible (format inattendu).'); return (int)$m[1] * 60 + (int)($m[2] ?: 0); };
         for ($d = 1; $d <= 7; $d++) {
-            $j = $x->query("//*[@id='jour_$d']")->item(0);
-            $on = $j && preg_match('/(^|\s)on(\s|$)/', $j->getAttribute('class'));
-            $ranges = [];
-            foreach ($x->query("//*[@id='barrejour_$d']//*[" . self::cls('plage') . "]") as $p) {
-                $a = $x->query(".//p[" . self::cls('deb') . "]//span", $p)->item(0); $b = $x->query(".//p[" . self::cls('fin') . "]//span", $p)->item(0);
-                $ranges[] = [$toMin($a?->textContent), $toMin($b?->textContent)];
+            $n = $x->query("//*[@id='inputPlan$d']")->item(0);
+            if (!$n) throw new RuntimeException('Lecture du planning impossible : champ du jour ' . $d . ' introuvable.');
+            $ranges = []; $prof = []; $flags = [];
+            foreach (array_filter(explode('|', trim($n->getAttribute('value')))) as $seg) {
+                if (!preg_match('/^(\d+)-(\d+)-(\d+)-(\d+)$/', $seg, $m)) throw new RuntimeException('Lecture du planning impossible (format inattendu).');
+                $ranges[] = [(int)$m[1], (int)$m[2]]; $flags[] = (int)$m[3]; $prof[] = (int)$m[4];
             }
-            $days[$d] = ['on' => (bool)$on, 'ranges' => $ranges];
+            $days[$d] = ['on' => count($ranges) > 0 && !in_array(0, $flags, true), 'ranges' => $ranges, 'prof' => $prof];
         }
         return $days;
     }
@@ -155,7 +155,9 @@ final class SF {
         };
         $gl = function (string $id) use ($el) { $e = $el($id); return $e ? (string)((int)$e->getAttribute('data-value') + (int)$e->getAttribute('data-diff')) : ''; };
         $t = $x->query('//*[@data-typeannonce]/@data-typeannonce')->item(0);
-        $f = []; foreach (['profil','extension','is_texte','is_musique','type_texte','speakrine','type_musique','choix_musique'] as $k) $f[$k] = $val($k);
+        // Le site lit ces réglages avec innerHTML (ddh) ou .value (ddv) : on fait pareil.
+        $f = []; foreach (['profil','is_texte','is_musique','type_texte','type_musique','choix_musique'] as $k) { $e = $el($k); $f[$k] = $e ? trim($e->textContent) : ''; }
+        foreach (['extension','speakrine'] as $k) $f[$k] = $val($k);
         $g = []; foreach (['param_mixvol','param_debut','param_timeout','synthese_volume','synthese_debit','synthese_timbre'] as $k) $g[$k] = $gl($k);
         return ['text' => $el('synthese_texte')?->textContent ?? '', 'type' => $t ? $t->nodeValue : '', 'f' => $f, 'g' => $g];
     }
@@ -164,8 +166,14 @@ final class SF {
         self::refused($this->page('configuration/telephones/', ['change_redirection' => '1', 'typedonnee' => 'phone', 'value' => $value, 'id' => $id, 'profil' => '1']), 'le numéro');
     }
     public function setPlanning(array $days): void {
-        $b = ['save_planning' => '1'];
-        for ($d = 1; $d <= 7; $d++) $b["planning$d"] = implode('', array_map(fn($r) => "{$r[0]}-{$r[1]}-" . ($days[$d]['on'] ? 1 : 0) . '-1|', $days[$d]['ranges']));
+        $cur = $this->planning(); $b = ['save_planning' => '1'];
+        for ($d = 1; $d <= 7; $d++) {
+            $on = $days[$d]['on']; $parts = [];
+            // jour éteint : on conserve les anciens créneaux avec le drapeau 0 (comme le fait le site) ; jour allumé : nouveaux créneaux.
+            $ranges = $on ? $days[$d]['ranges'] : $cur[$d]['ranges'];
+            foreach ($ranges as $i => $r) $parts[] = "{$r[0]}-{$r[1]}-" . ($on ? 1 : 0) . '-' . ($cur[$d]['prof'][$i] ?? 1) . '|';
+            $b["planning$d"] = implode('', $parts);
+        }
         self::refused($this->page('configuration/planning/', $b), 'le planning');
     }
     public function setAnnounce(string $page, string $text): void {
