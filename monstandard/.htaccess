@@ -1,0 +1,8 @@
+Options -Indexes
+<FilesMatch "^(\.env.*|make-hash\.php|LISEZ-MOI\.md)$">
+  Require all denied
+</FilesMatch>
+<IfModule mod_headers.c>
+  Header set X-Frame-Options "DENY"
+  Header set Cache-Control "no-store"
+</IfModule>
