@@ -1941,7 +1941,7 @@ function updateCustomizePrice() {
     }
 
     // Ajouter le prix des ingrédients supplémentaires
-    document.querySelectorAll('.ingredients-add input[type="checkbox"]:checked').forEach(checkbox => {
+    document.querySelectorAll('#customizeModal .ingredients-add input[type="checkbox"]:checked').forEach(checkbox => {
         price += parseFloat(checkbox.dataset.price);
     });
 
@@ -1978,12 +1978,12 @@ function addCustomizedToCart() {
     const quantity = parseInt(document.getElementById('customizeQty').value);
 
     const removedIngredients = [];
-    document.querySelectorAll('.ingredients-remove input[type="checkbox"]:checked').forEach(checkbox => {
+    document.querySelectorAll('#customizeModal .ingredients-remove input[type="checkbox"]:checked').forEach(checkbox => {
         removedIngredients.push(checkbox.value);
     });
 
     const addedIngredients = [];
-    document.querySelectorAll('.ingredients-add input[type="checkbox"]:checked').forEach(checkbox => {
+    document.querySelectorAll('#customizeModal .ingredients-add input[type="checkbox"]:checked').forEach(checkbox => {
         addedIngredients.push(checkbox.value);
     });
 
