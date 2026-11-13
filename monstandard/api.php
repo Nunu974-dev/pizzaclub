@@ -55,10 +55,11 @@ function addHistory(array $e): void { store('history', array_slice(array_merge([
 if ($route === 'login' && $isPost) {
     $ip = $_SERVER['REMOTE_ADDR'] ?? '?'; $all = store('attempts'); $now = time();
     $mine = array_values(array_filter($all[$ip] ?? [], fn($t) => $t > $now - 900));
-    if (count($mine) >= MAX_ATTEMPTS) out(429, ['error' => 'Trop d\'essais. Réessayez dans 15 minutes.']);
+    $global = array_values(array_filter($all['*'] ?? [], fn($t) => $t > $now - 900));   // plafond tous visiteurs confondus
+    if (count($mine) >= MAX_ATTEMPTS || count($global) >= 20) out(429, ['error' => 'Trop d\'essais. Réessayez dans 15 minutes.']);
     $pw = $in['password'] ?? '';
     if (!is_string($pw) || !password_verify($pw, $cfg['APP_PASSWORD_HASH'])) {
-        $mine[] = $now; $all[$ip] = $mine; store('attempts', $all);
+        $mine[] = $now; $all[$ip] = $mine; $global[] = $now; $all['*'] = $global; store('attempts', $all);
         usleep(400000); out(401, ['error' => 'Mot de passe incorrect.']);
     }
     session_regenerate_id(true); $_SESSION['ok'] = true; $_SESSION['until'] = $now + 43200;
