@@ -169,8 +169,8 @@ final class SF {
         $cur = $this->planning(); $b = ['save_planning' => '1'];
         for ($d = 1; $d <= 7; $d++) {
             $on = $days[$d]['on']; $parts = [];
-            // jour éteint : on conserve les anciens créneaux avec le drapeau 0 (comme le fait le site) ; jour allumé : nouveaux créneaux.
-            $ranges = $on ? $days[$d]['ranges'] : $cur[$d]['ranges'];
+            // jour fermé : les créneaux sont conservés avec le drapeau 0 (comme l'interrupteur du site).
+            $ranges = $days[$d]['ranges'];
             foreach ($ranges as $i => $r) $parts[] = "{$r[0]}-{$r[1]}-" . ($on ? 1 : 0) . '-' . ($cur[$d]['prof'][$i] ?? 1) . '|';
             $b["planning$d"] = implode('', $parts);
         }
@@ -192,8 +192,9 @@ final class SF {
 /* ---------- conversions ---------- */
 function hm(int $m): string { return sprintf('%02d:%02d', intdiv($m, 60), $m % 60); }
 function tmin(string $t): int { [$h, $m] = array_map('intval', explode(':', $t)); return $h * 60 + $m; }
-function fromSF(array $days): array { $o = []; foreach ([0,1,2,3,4,5,6] as $d) { $x = $days[$d === 0 ? 7 : $d]; $o[$d] = $x['on'] ? array_map(fn($r) => [hm($r[0]), hm($r[1])], $x['ranges']) : []; } return $o; }
-function toSF(array $h): array { $o = []; foreach ([1,2,3,4,5,6,7] as $d) { $r = array_map(fn($p) => [tmin($p[0]), tmin($p[1])], $h[$d === 7 ? 0 : $d] ?? []); $o[$d] = ['on' => count($r) > 0, 'ranges' => $r]; } return $o; }
+function fromSF(array $days): array { $o = []; foreach ([0,1,2,3,4,5,6] as $d) { $x = $days[$d === 0 ? 7 : $d]; $o[$d] = array_map(fn($r) => [hm($r[0]), hm($r[1])], $x['ranges']); } return $o; }
+function offFromSF(array $days): array { $o = []; foreach ([0,1,2,3,4,5,6] as $d) $o[$d] = !$days[$d === 0 ? 7 : $d]['on']; return $o; }
+function toSF(array $h, array $off): array { $o = []; foreach ([1,2,3,4,5,6,7] as $d) { $k = $d === 7 ? 0 : $d; $r = array_map(fn($p) => [tmin($p[0]), tmin($p[1])], $h[$k] ?? []); $o[$d] = ['on' => count($r) > 0 && empty($off[$k]), 'ranges' => $r]; } return $o; }
 function norm(string $s): string { return trim(preg_replace('/\s+/u', ' ', $s)); }
 function digits(string $s): string { return preg_replace('/\D/', '', $s); }
 
@@ -206,7 +207,7 @@ try {
         $p = $sf->phones()[$line] ?? throw new RuntimeException('Ligne de téléphone introuvable.');
         try { $st = $sf->status(); } catch (Throwable) { $st = ''; }
         out(200, ['live' => true, 'forward' => $p['value'], 'forwardId' => $p['id'], 'greeting' => norm($sf->announce('message-accueil')['text']),
-                  'closed' => norm($sf->announce('message-repondeur')['text']), 'hours' => fromSF($sf->planning()), 'status' => $st]);
+                  'closed' => norm($sf->announce('message-repondeur')['text']), $pl = null, 'hours' => fromSF($pl = $sf->planning()), 'off' => offFromSF($pl), 'status' => $st]);
     }
     if ($route === 'apply' && $isPost) {
         $key = $in['key'] ?? ''; $value = $in['value'] ?? null;
@@ -224,8 +225,11 @@ try {
             } elseif ($key === 'hours') {
                 $label = 'Horaires d\'ouverture'; $h = $value['hours'] ?? null;
                 if (!is_array($h)) throw new RuntimeException('Horaires invalides.');
-                $before = fromSF($sf->planning()); $sf->setPlanning(toSF($h)); $after = fromSF($sf->planning());
-                if (json_encode($after) !== json_encode(fromSF(toSF($h)))) throw new RuntimeException('Relecture différente : le planning chez StandardFacile n\'est pas celui envoyé.');
+                $off = is_array($value['off'] ?? null) ? $value['off'] : [];
+                $pl = $sf->planning(); $before = ['hours' => fromSF($pl), 'off' => offFromSF($pl)];
+                $sf->setPlanning(toSF($h, $off)); $pl = $sf->planning(); $after = ['hours' => fromSF($pl), 'off' => offFromSF($pl)];
+                $want = toSF($h, $off);
+                if (json_encode($after) !== json_encode(['hours' => fromSF($want), 'off' => offFromSF($want)])) throw new RuntimeException('Relecture différente : le planning chez StandardFacile n\'est pas celui envoyé.');
             } else throw new RuntimeException('Réglage inconnu.');
             addHistory(['at' => time() * 1000, 'label' => $label, 'status' => 'applied', 'before' => $before, 'after' => $after]);
             out(200, ['ok' => true, 'verified' => true, 'label' => $label]);

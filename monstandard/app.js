@@ -40,7 +40,7 @@ function setBanner() {
 }
 async function loadLive() {
   const st = await api('api/state');
-  S = {...S, forward: st.forward, greeting: st.greeting, closed: st.closed, hours: st.hours, closures: [], status: st.status};
+  S = {...S, forward: st.forward, greeting: st.greeting, closed: st.closed, hours: st.hours, off: st.off || {}, closures: [], status: st.status};
   S.history = await api('api/history');
   live = true; setBanner();
 }
@@ -62,6 +62,7 @@ function now() {
     dow:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(p.weekday)};
 }
 const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); };
+const isOff = d => !!(S.off && S.off[d]);
 const closureOn = date => S.closures.find(c => c.date === date);
 const fmtDate = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', timeZone:'UTC'});
 const hh = t => t.replace(':', 'h').replace(/h00$/, 'h');
@@ -70,7 +71,7 @@ function status() {
   if (live && S.status === 'pause') return {open:false, pause:true};
   const n = now();
   if (!closureOn(n.date)) {
-    const slot = (S.hours[n.dow] || []).find(([a,b]) => n.time >= a && n.time < b);
+    const slot = isOff(n.dow) ? null : (S.hours[n.dow] || []).find(([a,b]) => n.time >= a && n.time < b);
     if (slot) return {open:true, until: slot[1]};
   }
   return {open:false};
@@ -79,7 +80,7 @@ function nextSlots(count = 4) {
   const n = now(), out = [];
   for (let i = 0; i < 14 && out.length < count; i++) {
     const date = addDays(n.date, i), dow = (n.dow + i) % 7, c = closureOn(date);
-    if (c) { out.push({date, closed:c.reason}); continue; }
+    if (c || isOff(dow)) { out.push({date, closed: c ? c.reason || 'Fermeture exceptionnelle' : 'Fermé toute la journée'}); continue; }
     const slots = (S.hours[dow] || []).filter(([a,b]) => i > 0 || b > n.time);
     if (slots.length) out.push({date, slots, today: i === 0});
   }
@@ -98,7 +99,8 @@ function validateHours(h) {
   }
   return '';
 }
-const hoursText = h => ORDER.map(d => `${DAYS[d]} : ${h[d].length ? h[d].map(([a,b]) => `${hh(a)}–${hh(b)}`).join(' et ') : 'fermé'}`).join('\n');
+const slotsText = l => l.map(([a,b]) => `${hh(a)}–${hh(b)}`).join(' et ');
+const hoursText = (h, off = {}) => ORDER.map(d => `${DAYS[d]} : ${off[d] ? '⛔ FERMÉ toute la journée' + (h[d].length ? ' (créneaux conservés : ' + slotsText(h[d]) + ')' : '') : h[d].length ? slotsText(h[d]) : 'fermé'}`).join('\n');
 const closuresText = c => c.length ? c.map(x => `${fmtDate(x.date)}${x.reason ? ' (' + x.reason + ')' : ''}`).join('\n') : 'Aucune';
 
 /* ---------- vues ---------- */
@@ -115,11 +117,14 @@ const views = {
     return `<div class="status ${st.open ? 'open' : 'closed'}">
       <div class="big">${st.open ? '🟢 OUVERT' : st.pause ? '⏸️ EN PAUSE' : '🔴 FERMÉ'}</div>
       <div class="sub">${st.open ? 'jusqu’à ' + hh(st.until) : st.pause ? 'Standard en pause chez StandardFacile' : 'Les appels reçoivent l’annonce de fermeture'}</div></div>
+    <div class="card"><div class="label">Jours d’ouverture (chaque semaine)</div>
+      ${ORDER.map(d => `<div class="slot" style="justify-content:space-between;margin:8px 0"><b>${DAYS[d]}</b><button class="btn small ${isOff(d) ? '' : 'sec'}" data-toggleday="${d}" style="min-width:190px">${isOff(d) ? '⛔ Fermé — rouvrir' : '✅ Ouvert — fermer'}</button></div>`).join('')}
+      <p class="hint">Fermer un jour le ferme <b>chaque semaine</b> jusqu’à ce que vous le rouvriez. Les horaires du jour sont conservés.</p></div>
     <div class="card"><div class="label">Appels transférés vers</div><div class="value">📞 ${esc(S.forward)}</div>
       <button class="btn" data-go="forward">Changer le numéro</button></div>
     <div class="card"><div class="label">Prochains horaires</div>
       ${nx.map(x => `<p style="margin:8px 0"><b>${x.today ? 'Aujourd’hui' : esc(fmtDate(x.date))}</b><br>${
-        x.closed !== undefined ? '⛔ Fermeture exceptionnelle' + (x.closed ? ' — ' + esc(x.closed) : '') : x.slots.map(([a,b]) => `${hh(a)} – ${hh(b)}`).join(' · ')}</p>`).join('') || '<p>Aucun horaire à venir.</p>'}
+        x.closed !== undefined ? '⛔ ' + esc(x.closed) : x.slots.map(([a,b]) => `${hh(a)} – ${hh(b)}`).join(' · ')}</p>`).join('') || '<p>Aucun horaire à venir.</p>'}
     </div>
     <p class="hint">Heure de La Réunion. Statut calculé d’après les horaires de démonstration.</p>`;
   },
@@ -144,9 +149,9 @@ const views = {
   greeting() { return textView('greeting', 'Annonce d’accueil', 'Lue pendant les heures d’ouverture.'); },
   closed() { return textView('closed', 'Annonce de fermeture', 'Lue en dehors des horaires et lors des fermetures exceptionnelles.'); },
   hours() {
-    draft ??= {hours: structuredClone(S.hours), closures: structuredClone(S.closures)};
+    draft ??= {hours: structuredClone(S.hours), off: structuredClone(S.off || {}), closures: structuredClone(S.closures)};
     return back() + `<h2>Horaires d’ouverture</h2><div class="card">
-      ${ORDER.map(d => `<div class="day"><h3>${DAYS[d]}${draft.hours[d].length ? '' : ' <small class="hint">Fermé</small>'}</h3>
+      ${ORDER.map(d => `<div class="day"><h3>${DAYS[d]} <button class="btn small ${draft.off[d] ? '' : 'sec'}" data-off="${d}">${draft.off[d] ? '⛔ Fermé chaque ' + DAYS[d].toLowerCase() : '✅ Ouvert'}</button></h3>
         ${draft.hours[d].map((s,i) => `<div class="slot"><input type="time" data-d="${d}" data-i="${i}" data-k="0" value="${s[0]}">→<input type="time" data-d="${d}" data-i="${i}" data-k="1" value="${s[1]}"><button class="x" data-del="${d}:${i}" aria-label="Supprimer le créneau">✕</button></div>`).join('')}
         <button class="btn sec small" data-add="${d}">+ Créneau</button></div>`).join('')}
       </div>
@@ -188,16 +193,16 @@ function recap(key) {
     const m = validateHours(draft.hours); if (m) return err(m);
     if (draft.closures.some(c => !c.date)) return err('Une fermeture exceptionnelle n’a pas de date.');
     val = draft;
-    before = hoursText(S.hours) + (live ? '' : '\n\nFermetures :\n' + closuresText(S.closures));
-    after = hoursText(draft.hours) + (live ? '' : '\n\nFermetures :\n' + closuresText(draft.closures));
+    before = hoursText(S.hours, S.off || {}) + (live ? '' : '\n\nFermetures :\n' + closuresText(S.closures));
+    after = hoursText(draft.hours, draft.off) + (live ? '' : '\n\nFermetures :\n' + closuresText(draft.closures));
   } else { before = S[key]; after = val = draft.trim(); if (!after) return err('Le texte ne peut pas être vide.'); }
   if (before === after) return err('Aucun changement à valider.');
   openModal(`<h2>Vérifiez avant de valider</h2><p class="label">${META[key].label}</p>
     <div class="label">Avant</div><div class="diff old">${esc(before)}</div>
     <div class="label">Après</div><div class="diff new">${esc(after)}</div>
-    ${live ? '<div class="warn">⚠️ Ce changement sera <b>envoyé pour de vrai</b> à StandardFacile, puis relu pour vérification.</div>' : '<div class="warn">🧪 Démo : ce changement sera <b>simulé</b>. Il ne sera pas envoyé à StandardFacile.</div>'}
+    ${key === 'hours' ? '<div class="warn">🔁 Un jour fermé reste fermé <b>chaque semaine</b> jusqu’à ce que vous le rouvriez. Ses créneaux sont conservés.</div>' : ''}${live ? '<div class="warn">⚠️ Ce changement sera <b>envoyé pour de vrai</b> à StandardFacile, puis relu pour vérification.</div>' : '<div class="warn">🧪 Démo : ce changement sera <b>simulé</b>. Il ne sera pas envoyé à StandardFacile.</div>'}
     <button class="btn ok" id="confirm">${live ? 'Confirmer et appliquer' : 'Confirmer (simulation)'}</button><button class="btn sec" id="cancel">Annuler</button>`);
-  $('#cancel').onclick = closeModal;
+  $('#cancel').onclick = () => { closeModal(); if (!screen) draft = null; };
   $('#confirm').onclick = () => apply(key, val);
 }
 const err = m => { const e = $('#e'); if (e) e.textContent = m; };
@@ -238,6 +243,8 @@ document.addEventListener('click', e => {
   if (t.id === 'go') return recap(screen);
   if (t.id === 'dologin') { const pw = $('#pw').value; return api('api/login', {method:'POST', body: JSON.stringify({password: pw})}).then(() => { screen = null; return loadLive(); }).catch(x => { if (x.code === 401 || x.code === 429) return err(x.message); screen = null; }).then(render); }
   if (t.id === 'reset') { S = structuredClone(DEFAULTS); save(); return render(); }
+  if (t.dataset.off !== undefined) { draft.off[t.dataset.off] = !draft.off[t.dataset.off]; return render(); }
+  if (t.dataset.toggleday !== undefined) { const d = +t.dataset.toggleday; draft = {hours: structuredClone(S.hours), off: {...(S.off || {}), [d]: !isOff(d)}, closures: structuredClone(S.closures)}; return recap('hours'); }
   if (t.dataset.add !== undefined) { draft.hours[t.dataset.add].push(['11:00','14:00']); return render(); }
   if (t.dataset.del) { const [d,i] = t.dataset.del.split(':'); draft.hours[d].splice(i,1); return render(); }
   if (t.id === 'addc') { draft.closures.push({date: addDays(now().date, 1), reason: ''}); return render(); }
