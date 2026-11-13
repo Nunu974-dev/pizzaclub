@@ -532,6 +532,9 @@ $message .= "└─────────────────────�
 $message .= "📋 CLIENT:\n";
 $message .= "───────────────────────────────────────────\n";
 $message .= "👤 " . $orderData['customer']['firstName'] . " " . $orderData['customer']['lastName'] . "\n";
+if (!empty($orderData['customer']['company'])) {
+    $message .= "🏢 " . $orderData['customer']['company'] . "\n";
+}
 $message .= "📞 " . $orderData['customer']['phone'] . "\n";
 if (!empty($orderData['customer']['email'])) {
     $message .= "📧 " . $orderData['customer']['email'] . "\n";

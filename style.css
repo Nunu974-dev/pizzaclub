@@ -2090,3 +2090,58 @@ label:has(input[type="radio"]:checked) {
     z-index: 10;
 }
 
+
+
+/* ========================================
+   Thème clair forcé, bouton carte PDF, fenêtres de commande plus grandes sur téléphone
+   ======================================== */
+:root { color-scheme: light; }
+
+.pdf-float {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #FF0000, #c62828);
+    color: #fff;
+    text-decoration: none;
+    padding: 12px 18px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    z-index: 999;
+}
+.pdf-float i { font-size: 18px; }
+@media (max-width: 768px) {
+    .pdf-float { bottom: 14px; right: 14px; padding: 11px 15px; }
+}
+
+@media (max-width: 768px) {
+    /* fenêtres de choix des options : tout l'écran, pour voir et faire défiler les options */
+    #customizeModal, #sandwichCustomizeModal, #americaineCustomizeModal, #patesCustomizeModal, #saladeCustomizeModal,
+    #bunsCustomizeModal, #rollsCustomizeModal, #compoModal, #moitieModal, #marmailleModal, #formuleMidiModal,
+    #menuPatesSaladeModal, #checkoutModal { padding: 0; align-items: stretch; }
+    #customizeModal .modal-content, #sandwichCustomizeModal .modal-content, #americaineCustomizeModal .modal-content,
+    #patesCustomizeModal .modal-content, #saladeCustomizeModal .modal-content, #bunsCustomizeModal .modal-content,
+    #rollsCustomizeModal .modal-content, #compoModal .modal-content, #moitieModal .modal-content,
+    #marmailleModal .modal-content, #formuleMidiModal .modal-content, #menuPatesSaladeModal .modal-content,
+    #checkoutModal .modal-content {
+        max-width: 100%;
+        height: 100vh;
+        height: 100dvh;
+        max-height: 100dvh;
+        border-radius: 0;
+    }
+    .modal-header { padding: 0.6rem 1rem; }
+    .modal-header h3 { font-size: 1.1rem; line-height: 1.25; }
+    .modal-body { padding: 0.75rem 1rem; }
+    .customize-section { margin-bottom: 1rem; }
+    .customize-section h4 { margin-bottom: 0.5rem; }
+    /* prix et bouton sur une seule ligne en bas */
+    .modal-footer { padding: 0.6rem 1rem; display: flex; align-items: center; gap: 0.75rem; }
+    .modal-footer .modal-price { margin-bottom: 0; font-size: 1.1rem; flex: 0 0 auto; flex-direction: column; align-items: flex-start; gap: 0; }
+    .modal-footer .btn { flex: 1; padding: 0.75rem 0.5rem; }
+}

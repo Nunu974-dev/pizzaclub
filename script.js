@@ -4237,6 +4237,7 @@ function validateCustomerForm() {
     customerData = {
         lastName: document.getElementById('lastName').value,
         firstName: document.getElementById('firstName').value,
+        company: (document.getElementById('company')?.value || '').trim(),
         phone: phone,
         email: email,
         deliveryMode: mode,

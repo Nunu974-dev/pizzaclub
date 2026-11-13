@@ -185,7 +185,7 @@ function pco_build_payload($orderData, $restaurant)
         'external_ref' => (string) ($orderData['orderNumber'] ?? ''),
         'mode' => $mode,
         'scheduled_for' => $scheduled,
-        'notes' => $customer['comments'] ?? null,
+        'notes' => trim((!empty($customer['company']) ? 'Entreprise : ' . $customer['company'] . ($customer['comments'] ?? '' ? ' · ' : '') : '') . ($customer['comments'] ?? '')) ?: null,
         'promo_code' => $orderData['promoCode'] ?? null,
         'discount_cents' => pco_cents($orderData['discount'] ?? 0),
         'delivery_fee_cents' => pco_cents($orderData['deliveryFee'] ?? 0),
@@ -193,6 +193,7 @@ function pco_build_payload($orderData, $restaurant)
         'customer' => [
             'phone' => $customer['phone'] ?? null,
             'first_name' => $customer['firstName'] ?? null,
+            'company' => trim((string) ($customer['company'] ?? '')) ?: null,
             'last_name' => $customer['lastName'] ?? null,
             'email' => $customer['email'] ?? null,
             'birthdate' => $customer['birthdate'] ?? null,

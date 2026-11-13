@@ -100,6 +100,7 @@ function getKitchenEmailTemplate($orderData) {
                     <h3>👤 INFORMATIONS CLIENT</h3>
                     <div class="client-info">
                         <strong>Nom :</strong> <?= htmlspecialchars($orderData['customer']['firstName']) ?> <?= htmlspecialchars($orderData['customer']['lastName']) ?><br>
+                        <?php if (!empty($orderData['customer']['company'])): ?><strong>Entreprise :</strong> <?= htmlspecialchars($orderData['customer']['company']) ?><br><?php endif; ?>
                         <strong>Téléphone :</strong> <?= htmlspecialchars($orderData['customer']['phone']) ?><br>
                         <?php if (!empty($orderData['customer']['email'])): ?>
                             <strong>Email :</strong> <?= htmlspecialchars($orderData['customer']['email']) ?><br>
