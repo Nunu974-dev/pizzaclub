@@ -4249,6 +4249,23 @@ function validateCustomerForm() {
         customerData.address = document.getElementById('address').value;
         customerData.postalCode = document.getElementById('postalCode').value;
         customerData.city = document.getElementById('city').value;
+
+        // Adresse complète obligatoire en livraison (les champs ne sont pas pré-remplis : 97410 / Saint-Pierre n'étaient qu'un exemple grisé)
+        if (!customerData.address.trim()) {
+            showNotification('Merci de saisir votre adresse (numéro et nom de rue)', 'error');
+            document.getElementById('address').focus();
+            return false;
+        }
+        if (!/^\d{5}$/.test(customerData.postalCode.trim())) {
+            showNotification('Merci de saisir votre code postal (5 chiffres, ex. 97410)', 'error');
+            document.getElementById('postalCode').focus();
+            return false;
+        }
+        if (!customerData.city.trim()) {
+            showNotification('Merci de saisir votre ville', 'error');
+            document.getElementById('city').focus();
+            return false;
+        }
         
         // Vérifier si le code postal et l'adresse sont dans la zone de livraison
         const zoneCheck = isInDeliveryZone(

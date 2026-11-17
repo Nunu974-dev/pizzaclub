@@ -55,6 +55,43 @@ function pco_list($v)
     }, $v), 'strlen'));
 }
 
+/** Prix d'un supplément pizza selon la taille (mêmes tarifs que le site : data.js, PIZZA_TOPPING_TIERS) ; null si inconnu */
+function pco_topping_price($key, $size)
+{
+    if ($key === 'oeuf') return 1.00;
+    $big = $size === 'grande';
+    $tiers = [
+        [1.00, 1.50, ['champignons', 'olives', 'poivrons', 'oignons', 'tomates', 'pommesDeTerre', 'mais', 'capres', 'grosPiment', 'salade',
+                      'fromage', 'mozzarella', 'chevre', 'emmental', 'roquefort', 'raclette', 'reblochon', 'cheddar', 'gorgonzola', 'parmesan',
+                      'thon', 'anchois', 'crevettes', 'saumon']],
+        [1.50, 2.00, ['chorizo', 'jambon', 'merguez', 'poulet', 'pouletFume', 'sarcivePoulet', 'saucisseFumee', 'boeuf', 'lardons', 'saucisses', 'bacon', 'viandeFumee']],
+    ];
+    foreach ($tiers as $t) {
+        if (in_array($key, $t[2], true)) return $big ? $t[1] : $t[0];
+    }
+    $fixed = ['maxiGarniture' => 3.00, 'miel' => 0.50, 'creme' => 1.00, 'citron' => 0.50];
+    return $fixed[$key] ?? null;
+}
+
+/** Nom lisible d'un supplément (clé du site → nom du catalogue) */
+function pco_topping_name($key)
+{
+    $names = ['maxiGarniture' => 'Maxi Garniture', 'champignons' => 'Champignons frais', 'olives' => 'Olives', 'poivrons' => 'Poivrons',
+        'oignons' => 'Oignons', 'tomates' => 'Tomates fraîches', 'pommesDeTerre' => 'Pommes de terre', 'mais' => 'Maïs', 'capres' => 'Câpres',
+        'grosPiment' => 'Gros piment', 'salade' => 'Salade', 'fromage' => 'Fromage supplémentaire', 'mozzarella' => 'Mozzarella', 'chevre' => 'Chèvre',
+        'emmental' => 'Emmental', 'roquefort' => 'Roquefort', 'raclette' => 'Raclette', 'reblochon' => 'Reblochon', 'cheddar' => 'Cheddar',
+        'gorgonzola' => 'Gorgonzola', 'parmesan' => 'Parmesan', 'chorizo' => 'Chorizo', 'jambon' => 'Jambon/Épaule', 'merguez' => 'Merguez poulet',
+        'poulet' => 'Poulet', 'pouletFume' => 'Poulet fumé', 'sarcivePoulet' => 'Sarcive poulet', 'saucisseFumee' => 'Saucisse fumée poulet',
+        'boeuf' => 'Bœuf haché', 'lardons' => 'Lardons', 'thon' => 'Thon', 'anchois' => 'Anchois', 'crevettes' => 'Crevettes', 'saumon' => 'Saumon fumé',
+        'oeuf' => 'Œuf', 'miel' => 'Miel', 'creme' => 'Crème fraîche', 'citron' => 'Citron'];
+    return $names[$key] ?? $key;
+}
+
+function pco_price_tag($euros)
+{
+    return ' (+' . number_format($euros, 2, ',', '') . ' €)';
+}
+
 /** Détails lisibles en cuisine pour une ligne du panier du site */
 function pco_item_details($item)
 {
@@ -84,6 +121,31 @@ function pco_item_details($item)
         }
         if (!empty($c['boisson'])) $d[] = 'Boisson : ' . $c['boisson'];
         if (!empty($c['dessert'])) $d[] = 'Dessert : ' . $c['dessert'];
+        return $d;
+    }
+
+    // Pizza : chaque supplément avec son prix (ticket livraison / client / facture : on comprend le total de la ligne)
+    if ($type === 'pizza') {
+        $size = $c['size'] ?? 'moyenne';
+        $big = $size === 'grande';
+        $isCreamPizza = (($item['pizza']['category'] ?? '') === 'creme');
+        $b = $c['base'] ?? 'tomate';
+        $baseUnit = $big ? 1.50 : ($size === 'moyenne' ? 1.00 : 0.0);
+        $d[] = 'Taille ' . pco_size_label($size);
+        if (in_array($b, ['creme', 'creme_mozza'], true)) {
+            $d[] = $isCreamPizza ? 'Base crème' : '+ Supplément base crème' . ($baseUnit > 0 ? pco_price_tag($baseUnit) : '');
+        } elseif ($isCreamPizza && $b === 'tomate') {
+            $d[] = 'Base tomate (gratuit)';
+        }
+        if (in_array($b, ['mozza', 'creme_mozza'], true)) {
+            $d[] = '+ Supplément base mozza' . ($baseUnit > 0 ? pco_price_tag($baseUnit) : '');
+        }
+        foreach (pco_list($c['added'] ?? $c['addedIngredients'] ?? []) as $a) {
+            $pr = pco_topping_price($a, $size);
+            $d[] = '+ ' . pco_topping_name($a) . ($pr !== null ? pco_price_tag($pr) : '');
+        }
+        foreach (pco_list($c['removed'] ?? $c['removedIngredients'] ?? []) as $r) $d[] = 'SANS ' . $r;
+        if (!empty($item['notes'])) $d[] = '>> ' . $item['notes'];
         return $d;
     }
 
@@ -156,9 +218,24 @@ function pco_build_payload($orderData, $restaurant)
     $modeMap = ['livraison' => 'delivery', 'emporter' => 'takeaway', 'surplace' => 'dine_in'];
     $mode = $modeMap[$customer['deliveryMode'] ?? 'emporter'] ?? 'takeaway';
 
+    // Promo 2 pizzas : la Margherita offerte prend la taille des pizzas commandées
+    // (2 × 33 = 33 ; 2 × 40 = 40 ; une 33 + une 40 = 33)
+    $promoSizes = [];
+    foreach (($orderData['items'] ?? []) as $it) {
+        if (($it['type'] ?? '') === 'pizza' && !empty($it['customization']['size'])) {
+            $promoSizes[] = (string) $it['customization']['size'];
+        }
+    }
+    $promoSizes = array_unique($promoSizes);
+    $promoMargSize = count($promoSizes) === 1 && in_array($promoSizes[0], ['grande', 'petite'], true) ? $promoSizes[0] : 'moyenne';
+
     $lines = [];
     foreach (($orderData['items'] ?? []) as $item) {
         $qty = max(1, (int) ($item['quantity'] ?? 1));
+        $isPromoMarga = ($item['type'] ?? '') === 'promo2pizzas' && stripos((string) ($item['name'] ?? ''), 'Margherita') !== false;
+        if ($isPromoMarga && empty($item['customization']['size'])) {
+            $item['customization'] = array_merge(is_array($item['customization'] ?? null) ? $item['customization'] : [], ['size' => $promoMargSize]);
+        }
         $total = pco_cents($item['totalPrice'] ?? (($item['price'] ?? 0) * $qty));
         $c = $item['customization'] ?? [];
         $size = $c['size'] ?? null;
@@ -168,7 +245,7 @@ function pco_build_payload($orderData, $restaurant)
             'quantity' => $qty,
             'unit_price_cents' => (int) round($total / $qty),
             'line_total_cents' => $total,
-            'details' => pco_item_details($item),
+            'details' => $isPromoMarga ? ['OFFERTE (promo 2 pizzas)'] : pco_item_details($item),
             'category' => pco_category_label($item['type'] ?? ''),
             'legacy_ref' => pco_legacy_ref($item),
         ];
