@@ -21,6 +21,10 @@ $in = json_decode(file_get_contents('php://input') ?: '{}', true);
 $slug = is_array($in) ? ($in['slug'] ?? '') : '';
 $from = is_array($in) ? ($in['from'] ?? '') : '';
 $to = is_array($in) ? ($in['to'] ?? '') : '';
+$kind = is_array($in) ? ($in['kind'] ?? 'weekly') : 'weekly';
+if (!in_array($kind, ['daily', 'weekly', 'monthly'], true)) {
+    out(400, ['ok' => false, 'error' => 'Type de rapport invalide']);
+}
 if (!preg_match('/^[a-z0-9-]{2,40}$/', $slug) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $from) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $to)) {
     out(400, ['ok' => false, 'error' => 'Paramètres invalides']);
 }
@@ -40,7 +44,7 @@ curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_TIMEOUT => 30,
     CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'apikey: ' . $pco['publishable_key']],
-    CURLOPT_POSTFIELDS => json_encode(['p_secret' => $pco['sms_secret'], 'p_slug' => $slug, 'p_from' => $from, 'p_to' => $to]),
+    CURLOPT_POSTFIELDS => json_encode(['p_secret' => $pco['sms_secret'], 'p_slug' => $slug, 'p_from' => $from, 'p_to' => $to, 'p_kind' => $kind]),
 ]);
 $res = curl_exec($ch);
 $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -77,13 +81,13 @@ function jour($iso)
     return $t ? $j[(int) date('w', $t)] . ' ' . date('d/m', $t) : '';
 }
 /** Évolution par rapport à la semaine précédente */
-function evol($now, $prev)
+function evol($now, $prev, $vs = 'semaine précédente')
 {
     if ((int) $prev <= 0) {
         return '';
     }
     $p = round((($now - $prev) / $prev) * 100);
-    return ' <span style="color:' . ($p >= 0 ? '#2E7D32' : '#C62828') . ';font-size:12px">' . ($p >= 0 ? '+' : '') . $p . ' % vs semaine précédente</span>';
+    return ' <span style="color:' . ($p >= 0 ? '#2E7D32' : '#C62828') . ';font-size:12px">' . ($p >= 0 ? '+' : '') . $p . ' % vs ' . $vs . '</span>';
 }
 $methods = ['card' => 'Carte bancaire', 'cash' => 'Espèces', 'check' => 'Chèque', 'meal_voucher' => 'Titres-restaurant', 'online' => 'Paiement en ligne',
     'platform' => 'Plateformes', 'other' => 'Autre', 'account' => 'En compte (crédit)'];
@@ -96,15 +100,29 @@ $w = $d['week'];
 $p = $d['previous_week'];
 $t = $d['tickets'];
 
+$mois = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+if ($kind === 'daily') {
+    $title = 'Résumé de la journée du ' . dfr($d['to']);
+    $subject = 'résumé du ' . dfr($d['to']);
+    $vs = 'même jour la semaine précédente';
+} elseif ($kind === 'monthly') {
+    $title = 'Résumé du mois de ' . $mois[(int) date('n', strtotime($d['from'])) - 1] . ' ' . date('Y', strtotime($d['from']));
+    $subject = 'résumé de ' . $mois[(int) date('n', strtotime($d['from'])) - 1] . ' ' . date('Y', strtotime($d['from']));
+    $vs = 'mois précédent';
+} else {
+    $title = 'Résumé de la semaine du ' . dfr($d['from']) . ' au ' . dfr($d['to']);
+    $subject = 'résumé de la semaine du ' . dfr($d['from']) . ' au ' . dfr($d['to']);
+    $vs = 'semaine précédente';
+}
 $body = '<div style="text-align:center"><div style="font-size:22px;font-weight:800">' . e($d['restaurant']['name']) . '</div>'
-    . '<div style="color:#555">Résumé de la semaine du ' . e(dfr($d['from'])) . ' au ' . e(dfr($d['to'])) . '</div></div>';
+    . '<div style="color:#555">' . e($title) . '</div></div>';
 if (!empty($d['restaurant']['is_training'])) {
     $body .= '<p style="background:#ef8a17;color:#fff;padding:6px;text-align:center;font-weight:700">MODE TEST</p>';
 }
 $body .= '<div style="background:#f7f6f3;border-radius:10px;padding:14px;margin-top:14px;text-align:center">'
     . '<div style="font-size:13px;color:#555">Chiffre d\'affaires TTC</div>'
     . '<div style="font-size:32px;font-weight:800">' . eur($w['revenue_cents']) . '</div>'
-    . '<div>' . evol($w['revenue_cents'], $p['revenue_cents']) . '</div>'
+    . '<div>' . evol($w['revenue_cents'], $p['revenue_cents'], $vs) . '</div>'
     . '<div style="margin-top:6px;font-size:14px">' . (int) $w['orders'] . ' commandes · ticket moyen ' . eur($w['avg_cents']) . '</div></div>';
 
 // jour par jour
@@ -164,12 +182,12 @@ $body .= "<h3 $h>Crédits clients encore dus : " . eur($total) . '</h3>'
 
 $html = '<!doctype html><html><body style="font-family:Arial,sans-serif;background:#f5f4f1;padding:16px">'
     . '<div style="max-width:600px;margin:auto;background:#fff;border-radius:12px;padding:20px">' . $body
-    . '<p style="color:#999;font-size:11px;margin-top:24px">Résumé automatique Jorders, envoyé chaque dimanche soir.</p></div></body></html>';
+    . '<p style="color:#999;font-size:11px;margin-top:24px">Résumé automatique Jorders, envoyé selon vos réglages (Administration › Réglages › Rapports par e-mail).</p></div></body></html>';
 
 $mail = [
     'sender' => ['name' => $d['restaurant']['name'], 'email' => 'commande@pizzaclub.re'],
     'to' => [['email' => $to_email]],
-    'subject' => $d['restaurant']['name'] . ' — résumé de la semaine du ' . dfr($d['from']) . ' au ' . dfr($d['to']) . ' · CA ' . eur($w['revenue_cents']),
+    'subject' => $d['restaurant']['name'] . ' — ' . $subject . ' · CA ' . eur($w['revenue_cents']),
     'htmlContent' => $html,
 ];
 $ch = curl_init('https://api.brevo.com/v3/smtp/email');
