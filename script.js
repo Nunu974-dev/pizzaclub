@@ -3411,6 +3411,18 @@ function openSaladesCustomizeModal(saladeId) {
                     <span>+ Champignons frais <small>(+1.50€)</small></span>
                 </label>
                 <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="grosPiment" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Gros piment 🌶️ <small>(+0.50€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="mais" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Maïs <small>(+1.00€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="oignons" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Oignons <small>(+1.00€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
                     <input type="checkbox" name="saladeSupplement" value="olives" onchange="updateSaladesCustomizePrice()">
                     <span>+ Olives <small>(+1.00€)</small></span>
                 </label>
@@ -3419,34 +3431,22 @@ function openSaladesCustomizeModal(saladeId) {
                     <span>+ Poivrons <small>(+1.50€)</small></span>
                 </label>
                 <label class="ingredient-checkbox">
-                    <input type="checkbox" name="saladeSupplement" value="oignons" onchange="updateSaladesCustomizePrice()">
-                    <span>+ Oignons <small>(+1.00€)</small></span>
+                    <input type="checkbox" name="saladeSupplement" value="pommesDeTerre" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Pommes de terre <small>(+1.50€)</small></span>
                 </label>
                 <label class="ingredient-checkbox">
                     <input type="checkbox" name="saladeSupplement" value="tomates" onchange="updateSaladesCustomizePrice()">
                     <span>+ Tomates fraîches <small>(+1.00€)</small></span>
                 </label>
-                <label class="ingredient-checkbox">
-                    <input type="checkbox" name="saladeSupplement" value="pommesDeTerre" onchange="updateSaladesCustomizePrice()">
-                    <span>+ Pommes de terre <small>(+1.50€)</small></span>
-                </label>
-                <label class="ingredient-checkbox">
-                    <input type="checkbox" name="saladeSupplement" value="mais" onchange="updateSaladesCustomizePrice()">
-                    <span>+ Maïs <small>(+1.00€)</small></span>
-                </label>
-                <label class="ingredient-checkbox">
-                    <input type="checkbox" name="saladeSupplement" value="grosPiment" onchange="updateSaladesCustomizePrice()">
-                    <span>+ Gros piment 🌶️ <small>(+0.50€)</small></span>
-                </label>
                 
                 <div style="margin-top: 15px; font-weight: 600; color: #333; border-top: 1px solid #ddd; padding-top: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px;">Fromages</div>
                 <label class="ingredient-checkbox">
-                    <input type="checkbox" name="saladeSupplement" value="fromage" onchange="updateSaladesCustomizePrice()">
-                    <span>+ Fromage <small>(+1.50€)</small></span>
-                </label>
-                <label class="ingredient-checkbox">
                     <input type="checkbox" name="saladeSupplement" value="chevre" onchange="updateSaladesCustomizePrice()">
                     <span>+ Chèvre <small>(+2.00€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="fromage" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Fromage <small>(+1.50€)</small></span>
                 </label>
                 <label class="ingredient-checkbox">
                     <input type="checkbox" name="saladeSupplement" value="gorgonzola" onchange="updateSaladesCustomizePrice()">
@@ -3459,35 +3459,31 @@ function openSaladesCustomizeModal(saladeId) {
                 
                 <div style="margin-top: 15px; font-weight: 600; color: #333; border-top: 1px solid #ddd; padding-top: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px;">Viandes</div>
                 <label class="ingredient-checkbox">
-                    <input type="checkbox" name="saladeSupplement" value="jambon" onchange="updateSaladesCustomizePrice()">
-                    <span>+ Jambon <small>(+2.00€)</small></span>
-                </label>
-                <label class="ingredient-checkbox">
-                    <input type="checkbox" name="saladeSupplement" value="poulet" onchange="updateSaladesCustomizePrice()">
-                    <span>+ Poulet <small>(+2.00€)</small></span>
-                </label>
-                <label class="ingredient-checkbox">
-                    <input type="checkbox" name="saladeSupplement" value="merguez" onchange="updateSaladesCustomizePrice()">
-                    <span>+ Merguez <small>(+2.00€)</small></span>
+                    <input type="checkbox" name="saladeSupplement" value="boeuf" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Bœuf haché <small>(+2.00€)</small></span>
                 </label>
                 <label class="ingredient-checkbox">
                     <input type="checkbox" name="saladeSupplement" value="chorizo" onchange="updateSaladesCustomizePrice()">
                     <span>+ Chorizo <small>(+2.00€)</small></span>
                 </label>
                 <label class="ingredient-checkbox">
-                    <input type="checkbox" name="saladeSupplement" value="boeuf" onchange="updateSaladesCustomizePrice()">
-                    <span>+ Bœuf haché <small>(+2.00€)</small></span>
+                    <input type="checkbox" name="saladeSupplement" value="jambon" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Jambon <small>(+2.00€)</small></span>
                 </label>
                 <label class="ingredient-checkbox">
                     <input type="checkbox" name="saladeSupplement" value="lardons" onchange="updateSaladesCustomizePrice()">
                     <span>+ Lardons <small>(+2.00€)</small></span>
                 </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="merguez" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Merguez <small>(+2.00€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="poulet" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Poulet <small>(+2.00€)</small></span>
+                </label>
                 
                 <div style="margin-top: 15px; font-weight: 600; color: #333; border-top: 1px solid #ddd; padding-top: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px;">Produits de la mer</div>
-                <label class="ingredient-checkbox">
-                    <input type="checkbox" name="saladeSupplement" value="thon" onchange="updateSaladesCustomizePrice()">
-                    <span>+ Thon <small>(+2.50€)</small></span>
-                </label>
                 <label class="ingredient-checkbox">
                     <input type="checkbox" name="saladeSupplement" value="anchois" onchange="updateSaladesCustomizePrice()">
                     <span>+ Anchois <small>(+2.00€)</small></span>
@@ -3500,15 +3496,19 @@ function openSaladesCustomizeModal(saladeId) {
                     <input type="checkbox" name="saladeSupplement" value="saumon" onchange="updateSaladesCustomizePrice()">
                     <span>+ Saumon fumé <small>(+3.00€)</small></span>
                 </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="thon" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Thon <small>(+2.50€)</small></span>
+                </label>
                 
                 <div style="margin-top: 15px; font-weight: 600; color: #333; border-top: 1px solid #ddd; padding-top: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px;">Autres</div>
                 <label class="ingredient-checkbox">
-                    <input type="checkbox" name="saladeSupplement" value="oeuf" onchange="updateSaladesCustomizePrice()">
-                    <span>+ Œuf <small>(+1.00€)</small></span>
-                </label>
-                <label class="ingredient-checkbox">
                     <input type="checkbox" name="saladeSupplement" value="miel" onchange="updateSaladesCustomizePrice()">
                     <span>+ Miel <small>(+0.50€)</small></span>
+                </label>
+                <label class="ingredient-checkbox">
+                    <input type="checkbox" name="saladeSupplement" value="oeuf" onchange="updateSaladesCustomizePrice()">
+                    <span>+ Œuf <small>(+1.00€)</small></span>
                 </label>
             </div>
         </div>
