@@ -2680,7 +2680,7 @@ function openRollsCustomizeModal(rollId) {
     // Générer les ingrédients inclus (2 maximum)
     const ingredientsContainer = document.getElementById('rollsIngredients');
     ingredientsContainer.innerHTML = '';
-    roll.ingredients.forEach(ing => {
+    [...roll.ingredients].sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' })).forEach(ing => {
         const label = document.createElement('label');
         label.className = 'ingredient-checkbox';
         label.innerHTML = `
