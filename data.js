@@ -556,10 +556,10 @@ const COMPO_CONFIG = {
     mozzaBase: { moyenne: 1.00, grande: 1.50 },
     // ingrédients au choix (les olives et le mix fromages sont déjà inclus)
     groups: [
-        { label: 'Légumes', keys: ['champignons', 'poivrons', 'oignons', 'tomates', 'pommesDeTerre', 'mais', 'capres', 'grosPiment', 'salade'] },
-        { label: 'Fromages', keys: ['fromage', 'mozzarella', 'chevre', 'emmental', 'roquefort', 'raclette', 'reblochon', 'cheddar', 'gorgonzola', 'parmesan'] },
-        { label: 'Viandes', keys: ['chorizo', 'jambon', 'merguez', 'poulet', 'pouletFume', 'sarcivePoulet', 'saucisseFumee', 'boeuf', 'lardons'] },
-        { label: 'Poissons et autres', keys: ['thon', 'anchois', 'crevettes', 'saumon', 'oeuf'] }
+        { label: 'Légumes', keys: ['champignons', 'poivrons', 'oignons', 'tomates', 'pommesDeTerre', 'mais', 'capres', 'grosPiment', 'salade', 'carottes', 'ananas', 'citron'] },
+        { label: 'Fromages', keys: ['fromage', 'mozzarella', 'chevre', 'emmental', 'roquefort', 'raclette', 'reblochon', 'cheddar', 'gorgonzola', 'parmesan', 'bleu'] },
+        { label: 'Viandes', keys: ['chorizo', 'jambon', 'merguez', 'poulet', 'pouletFume', 'sarcivePoulet', 'saucisseFumee', 'boeuf', 'lardons', 'bouchon'] },
+        { label: 'Poissons et autres', keys: ['thon', 'anchois', 'crevettes', 'saumon', 'oeuf', 'miel', 'origan', 'creme', 'pimentMaison', 'sauceAil', 'oignonFrit'] }
     ]
 };
 
@@ -930,7 +930,16 @@ const EXTRAS = {
         oeuf: { name: 'Œuf', price: 1.00 },
         miel: { name: 'Miel', price: 0.50 },
         creme: { name: 'Crème fraîche', price: 1.00 },
-        citron: { name: 'Citron', price: 0.50 }
+        citron: { name: 'Citron', price: 1.00 },
+        // Ajouts (liste des suppléments pizza)
+        carottes: { name: 'Carottes', price: 1.00 },
+        ananas: { name: 'Ananas', price: 1.00 },
+        bouchon: { name: 'Bouchon', price: 1.50 },
+        bleu: { name: 'Bleu', price: 1.00 },
+        origan: { name: 'Origan', price: 0.50 },
+        pimentMaison: { name: 'Piment maison', price: 0.50 },
+        sauceAil: { name: 'Sauce ail', price: 1.00 },
+        oignonFrit: { name: 'Oignon frit', price: 1.00 }
     },
     americaine: {
         bases: {
@@ -961,10 +970,10 @@ const EXTRAS = {
 //   œuf : 1,00 € quelle que soit la taille · Marmaille (26 cm) = tarif 33 cm
 // ========================================
 const PIZZA_TOPPING_TIERS = [
-    { p33: 1.00, p40: 1.50, keys: ['champignons', 'olives', 'poivrons', 'oignons', 'tomates', 'pommesDeTerre', 'mais', 'capres', 'grosPiment', 'salade'] }, // légumes
-    { p33: 1.00, p40: 1.50, keys: ['fromage', 'mozzarella', 'chevre', 'emmental', 'roquefort', 'raclette', 'reblochon', 'cheddar', 'gorgonzola', 'parmesan'] }, // fromages
+    { p33: 1.00, p40: 1.50, keys: ['champignons', 'olives', 'poivrons', 'oignons', 'tomates', 'pommesDeTerre', 'mais', 'capres', 'grosPiment', 'salade', 'carottes', 'ananas', 'citron'] }, // légumes
+    { p33: 1.00, p40: 1.50, keys: ['fromage', 'mozzarella', 'chevre', 'emmental', 'roquefort', 'raclette', 'reblochon', 'cheddar', 'gorgonzola', 'parmesan', 'bleu'] }, // fromages
     { p33: 1.00, p40: 1.50, keys: ['thon', 'anchois', 'crevettes', 'saumon'] }, // poissons
-    { p33: 1.50, p40: 2.00, keys: ['chorizo', 'jambon', 'merguez', 'poulet', 'pouletFume', 'sarcivePoulet', 'saucisseFumee', 'boeuf', 'lardons', 'saucisses', 'bacon', 'viandeFumee'] } // viandes
+    { p33: 1.50, p40: 2.00, keys: ['chorizo', 'jambon', 'merguez', 'poulet', 'pouletFume', 'sarcivePoulet', 'saucisseFumee', 'boeuf', 'lardons', 'saucisses', 'bacon', 'viandeFumee', 'bouchon'] } // viandes
 ];
 
 /** Prix d'un supplément pizza selon la taille ('petite' | 'moyenne' | 'grande') */
@@ -1020,3 +1029,15 @@ const SANDWICHES_DATA = [
     { id: 518, name: 'Gratiné Saucisse',       base: 'Saucisse',    type: 'gratine',   price: 5.00, image: 'img/americain_dwich.png', description: 'Pain baguette • Crème • Origan • Fromage • Saucisse • 2 sauces au choix',      needsCustomization: true },
     { id: 519, name: 'Gratiné Végétarien',     base: 'Végétarien',  type: 'gratine',   price: 5.00, image: 'img/americain_dwich.png', description: 'Pain baguette • Crème • Origan • Fromage • Légumes • 2 sauces au choix',        needsCustomization: true },
 ];
+
+
+// ========================================
+// TOUT EST RANGÉ PAR ORDRE ALPHABÉTIQUE (produits, boissons, desserts…) ; mêmes noms : du plus petit au plus grand prix
+// Les produits sont retrouvés par leur numéro (id) : l'ordre d'affichage n'a aucun effet sur les commandes.
+// ========================================
+(function () {
+    const num = v => (typeof v === 'number' ? v : 0);
+    const cmp = (a, b) => String(a.name).localeCompare(String(b.name), 'fr', { sensitivity: 'base' }) || (num(a.price) - num(b.price));
+    [PIZZAS_DATA, PATES_DATA, SALADES_DATA, BUNS_DATA, ROLLS_DATA, DESSERTS_DATA, BOISSONS_DATA, SANDWICHES_DATA]
+        .forEach(list => { if (Array.isArray(list)) list.sort(cmp); });
+})();

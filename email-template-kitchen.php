@@ -56,8 +56,9 @@ function getKitchenEmailTemplate($orderData) {
                     $isScheduled = !empty($orderData['scheduledDate']) && $orderData['scheduledTime'] !== null;
                     if ($isScheduled):
                         $scheduledHour = (int)$orderData['scheduledTime'];
-                        $deliveryStart = $scheduledHour . ':00';
-                        $deliveryEnd = ($scheduledHour + 1) . ':00';
+                        $scheduledMin = isset($orderData['scheduledMinute']) ? max(0, min(59, (int)$orderData['scheduledMinute'])) : null;
+                        $deliveryStart = $scheduledHour . ':' . sprintf('%02d', $scheduledMin ?? 0);
+                        $deliveryEnd = $scheduledMin !== null ? $deliveryStart : ($scheduledHour + 1) . ':00';
 
                         // Déterminer si c'est le midi ou le soir
                         $period = ($scheduledHour < 16) ? 'MIDI' : 'SOIR';
@@ -86,7 +87,7 @@ function getKitchenEmailTemplate($orderData) {
                             </p>
                         <?php endif; ?>
                         <p style="margin: 12px 0 0 0; color: #856404;"><strong>📅 Date :</strong> <?= htmlspecialchars($scheduledDateObj->format('d/m/Y')) ?> (<?= htmlspecialchars($dayLabel) ?>)</p>
-                        <p style="margin: 10px 0 0 0; color: #856404;"><strong>🕐 Créneau demandé :</strong> <?= $deliveryStart ?> - <?= $deliveryEnd ?></p>
+                        <p style="margin: 10px 0 0 0; color: #856404;"><strong>🕐 Créneau demandé :</strong> <?= $deliveryStart === $deliveryEnd ? $deliveryStart : $deliveryStart . ' - ' . $deliveryEnd ?></p>
                     <?php else: ?>
                         <p style="margin: 0; color: #28a745;"><strong>⚡ Commande IMMÉDIATE</strong></p>
                         <p style="margin: 10px 0 0 0; color: #666;"><em>À préparer et livrer dès que possible</em></p>

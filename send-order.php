@@ -101,7 +101,7 @@ file_put_contents(
 require_once __DIR__ . '/check-closure.php';
 
 // Fonction pour vérifier si une date programmée est valide
-function isScheduledDateValid($scheduledDate, $scheduledTime) {
+function isScheduledDateValid($scheduledDate, $scheduledTime, $scheduledMinute = 0) {
     if (empty($scheduledDate)) {
         return ['valid' => true];
     }
@@ -130,6 +130,12 @@ function isScheduledDateValid($scheduledDate, $scheduledTime) {
     // Aujourd'hui : l'heure ne doit pas être déjà passée
     if ($scheduledDate === $now->format('Y-m-d') && $h < (int)$now->format('G')) {
         return ['valid' => false, 'message' => '⏰ Cette heure est déjà passée. Choisissez un créneau ultérieur.'];
+    }
+
+    // Délai minimum de 45 minutes entre la validation et le créneau (le client a pu rester longtemps sur le dernier écran)
+    $slot = DateTime::createFromFormat('Y-m-d H:i', $scheduledDate . ' ' . sprintf('%02d:%02d', $h, max(0, min(59, (int)$scheduledMinute))));
+    if ($slot && $slot->getTimestamp() < time() + 45 * 60) {
+        return ['valid' => false, 'message' => '⏰ Délai minimum de 45 minutes entre votre commande et le créneau choisi. Choisissez un créneau plus tard.'];
     }
 
     // Bloquer les lundis (fermé toute la journée)
@@ -171,7 +177,8 @@ if (isset($orderData['scheduledDate']) && !empty($orderData['scheduledDate'])) {
     // Vérifier que la date programmée est valide
     $scheduledValidation = isScheduledDateValid(
         $orderData['scheduledDate'], 
-        $orderData['scheduledTime'] ?? null
+        $orderData['scheduledTime'] ?? null,
+        $orderData['scheduledMinute'] ?? 0
     );
     
     if (!$scheduledValidation['valid']) {

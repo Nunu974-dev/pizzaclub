@@ -61,13 +61,14 @@ function getClientEmailTemplate($orderData) {
                     $isScheduled = !empty($orderData['scheduledDate']) && $orderData['scheduledTime'] !== null;
                     if ($isScheduled):
                         $scheduledHour = (int)$orderData['scheduledTime'];
-                        $deliveryStart = $scheduledHour . ':00';
-                        $deliveryEnd = ($scheduledHour + 1) . ':00';
+                        $scheduledMin = isset($orderData['scheduledMinute']) ? max(0, min(59, (int)$orderData['scheduledMinute'])) : null;
+                        $deliveryStart = $scheduledHour . ':' . sprintf('%02d', $scheduledMin ?? 0);
+                        $deliveryEnd = $scheduledMin !== null ? $deliveryStart : ($scheduledHour + 1) . ':00';
                     ?>
                         <br>
                         <strong style="color: #FF6600;">📅 Livraison programmée :</strong><br>
                         <span style="color: #666;">Date : <?= htmlspecialchars($orderData['scheduledDate']) ?></span><br>
-                        <span style="color: #666;">Créneau : <?= $deliveryStart ?> - <?= $deliveryEnd ?></span>
+                        <span style="color: #666;">Créneau : <?= $deliveryStart === $deliveryEnd ? $deliveryStart : $deliveryStart . ' - ' . $deliveryEnd ?></span>
                     <?php else: ?>
                         <br>
                         <strong style="color: #28a745;">⚡ Commande IMMÉDIATE</strong>

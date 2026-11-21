@@ -10,6 +10,8 @@ let orderNumber = null;
 // Variables globales pour l'heure de livraison
 let deliveryTimeMode = 'maintenant'; // 'maintenant' ou 'programmee'
 let scheduledDeliveryHour = null; // Heure programmée (ex: 19)
+let scheduledDeliveryMinute = 0; // Minutes du créneau programmé (ex: 15 pour 19h15)
+const MIN_LEAD_MINUTES = 45; // délai minimum entre la validation de la commande et le créneau choisi
 let scheduledDeliveryDate = null; // Date programmée (ex: '2024-01-15')
 let deliveryTimeSet = false; // True si le client a déjà choisi
 let pendingCartAction = null; // Action en attente après sélection de l'heure
@@ -176,6 +178,7 @@ function initApp() {
     // Charger les préférences de livraison depuis le localStorage
     const savedMode = localStorage.getItem('deliveryTimeMode');
     const savedHour = localStorage.getItem('scheduledDeliveryHour');
+    scheduledDeliveryMinute = parseInt(localStorage.getItem('scheduledDeliveryMinute')) || 0;
     const savedDate = localStorage.getItem('scheduledDeliveryDate');
     const savedDeliveryTimeSet = localStorage.getItem('deliveryTimeSet');
     const savedPromoApplied = localStorage.getItem('promoApplied');
@@ -189,7 +192,7 @@ function initApp() {
         ['deliveryTimeMode', 'deliveryTimeSet'].forEach(k => localStorage.removeItem(k));
         window.__staleSchedule = true;
     }
-    if (savedMode === 'programmee' && getScheduledSlotError(savedDate, parseInt(savedHour))) {
+    if (savedMode === 'programmee' && getScheduledSlotError(savedDate, parseInt(savedHour), scheduledDeliveryMinute, true)) {
         ['deliveryTimeMode', 'deliveryTimeSet', 'scheduledDeliveryDate', 'scheduledDeliveryHour'].forEach(k => localStorage.removeItem(k));
         window.__staleSchedule = true;
     }
@@ -1232,7 +1235,7 @@ function calculateItemPrice(basePrice, customization, quantity = 1, pizza = null
                 // Tarifs spéciaux formule midi
                 if (isFormuleMidi) {
                     // Légumes et produits de la mer (sauf crevettes/saumon) : 1€
-                    const legumes = ['champignons', 'olives', 'poivrons', 'oignons', 'tomates', 'pommesDeTerre', 'mais', 'capres', 'grosPiment', 'salade'];
+                    const legumes = ['champignons', 'olives', 'poivrons', 'oignons', 'tomates', 'pommesDeTerre', 'mais', 'capres', 'grosPiment', 'salade', 'carottes', 'ananas', 'citron'];
                     const poissonSimple = ['thon', 'anchois'];
                     
                     if (legumes.includes(ingredient) || poissonSimple.includes(ingredient)) {
@@ -1240,7 +1243,7 @@ function calculateItemPrice(basePrice, customization, quantity = 1, pizza = null
                     }
                     // Viandes et fromages : 1.50€
                     else if (['chorizo', 'jambon', 'merguez', 'poulet', 'pouletFume', 'sarcivePoulet', 'saucisseFumee', 'boeuf', 'lardons', 
-                             'fromage', 'mozzarella', 'chevre', 'emmental', 'roquefort', 'raclette', 'reblochon', 'cheddar'].includes(ingredient)) {
+                             'fromage', 'mozzarella', 'chevre', 'emmental', 'roquefort', 'raclette', 'reblochon', 'cheddar', 'bleu', 'bouchon'].includes(ingredient)) {
                         ingredientPrice = 1.50;
                     }
                     // Crevettes et saumon : 1.50€ (au lieu de 2.50€/3€)
@@ -3176,7 +3179,8 @@ function generatePatesSupplementsList() {
     const supplementPrice = EXTRAS.patesSupplements[selectedSize].price;
     
     const toppingsHTML = Object.entries(EXTRAS.toppings)
-        .filter(([key]) => !['base-creme', 'base-tomate'].includes(key))
+        .sort((a, b) => a[1].name.localeCompare(b[1].name, 'fr', { sensitivity: 'base' }))
+        .filter(([key]) => !['base-creme', 'base-tomate', 'carottes', 'ananas', 'bouchon', 'bleu', 'origan', 'pimentMaison', 'sauceAil', 'oignonFrit'].includes(key))
         .map(([key, topping]) => `
             <label class="ingredient-checkbox">
                 <input type="checkbox" name="patesSupplement" value="${key}" onchange="updatePatesCustomizePrice()">
@@ -4079,7 +4083,7 @@ function displayDeliveryTimeInfo() {
         // Mode programmée
         const dateParts = scheduledDeliveryDate.split('-');
         const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-        const formattedHour = `${scheduledDeliveryHour}h00`;
+        const formattedHour = `${scheduledDeliveryHour}h${String(scheduledDeliveryMinute || 0).padStart(2, '0')}`;
         
         displayDiv.innerHTML = `
             <div style="display: flex; align-items: center; gap: 15px;">
@@ -4569,8 +4573,17 @@ async function submitOrder() {
         const totalAmount = subtotalAmount + deliveryFeeAmount - discountAmount;
         
         if (deliveryTimeMode === 'programmee') {
-            const slotError = getScheduledSlotError(scheduledDeliveryDate, scheduledDeliveryHour);
+            const slotError = getScheduledSlotError(scheduledDeliveryDate, scheduledDeliveryHour, scheduledDeliveryMinute || 0);
             if (slotError) {
+                // créneau devenu trop proche pendant que le client validait : on propose le premier créneau disponible
+                const next = nextValidSlot();
+                if (next) {
+                    scheduledDeliveryDate = next.date;
+                    scheduledDeliveryHour = next.hour;
+                    scheduledDeliveryMinute = next.minute;
+                    editingDeliveryTime = true;
+                    deliveryTimeMode = 'programmee';
+                }
                 showNotification(slotError, 'error');
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('loading');
@@ -4595,7 +4608,8 @@ async function submitOrder() {
             estimatedTime: CONFIG.delivery.estimatedTime[customerData.deliveryMode],
             deliveryTimeMode: deliveryTimeMode,
             scheduledDate: scheduledDeliveryDate,
-            scheduledTime: scheduledDeliveryHour
+            scheduledTime: scheduledDeliveryHour,
+            scheduledMinute: deliveryTimeMode === 'programmee' ? (scheduledDeliveryMinute || 0) : null
         };
 
         // Sauvegarder la commande
@@ -5742,7 +5756,7 @@ async function openDeliveryTimeModal() {
         if (programmeeRadio) programmeeRadio.checked = true;
         if (scheduledSection) scheduledSection.style.display = 'block';
         if (dateInput && scheduledDeliveryDate >= dateInput.min) dateInput.value = scheduledDeliveryDate;
-        if (hourInput) hourInput.value = String(scheduledDeliveryHour).padStart(2, '0') + ':00';
+        if (hourInput) hourInput.value = String(scheduledDeliveryHour).padStart(2, '0') + ':' + String(scheduledDeliveryMinute || 0).padStart(2, '0');
     }
     
     openModal(modal);
@@ -5791,7 +5805,31 @@ function toggleGlobalScheduledTime() {
     }
 }
 
-function getScheduledSlotError(dateStr, hour, minutes = 0) {
+/** Premier créneau valable (au moins MIN_LEAD_MINUTES après maintenant, pas de 15 min, horaires de service) : {date, hour, minute} */
+function nextValidSlot() {
+    const start = new Date(Date.now() + MIN_LEAD_MINUTES * 60000);
+    start.setSeconds(0, 0);
+    start.setMinutes(Math.ceil(start.getMinutes() / 15) * 15);
+    for (let i = 0; i < 4 * 24 * 3; i++) {
+        const t = new Date(start.getTime() + i * 15 * 60000);
+        const dateStr = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+        if (!getScheduledSlotError(dateStr, t.getHours(), t.getMinutes(), true)) {
+            return { date: dateStr, hour: t.getHours(), minute: t.getMinutes() };
+        }
+    }
+    return null;
+}
+
+function formatSlot(slot) {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const hm = `${slot.hour}h${String(slot.minute).padStart(2, '0')}`;
+    if (slot.date === todayStr) return `aujourd'hui à ${hm}`;
+    const [y, m, d] = slot.date.split('-');
+    return `le ${d}/${m}/${y} à ${hm}`;
+}
+
+function getScheduledSlotError(dateStr, hour, minutes = 0, noHint = false) {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr || '');
     if (!m || hour === null || isNaN(hour)) return 'Veuillez sélectionner une date et une heure';
     const y = +m[1], mo = +m[2] - 1, d = +m[3];
@@ -5801,6 +5839,11 @@ function getScheduledSlotError(dateStr, hour, minutes = 0) {
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     if (day < todayStart) return 'Impossible de choisir une date passée : choisissez aujourd\'hui ou une date ultérieure';
     if (day <= now) return 'La date et l\'heure doivent être dans le futur';
+    // délai minimum : le temps de préparer (et de livrer) la commande
+    if (day.getTime() < now.getTime() + MIN_LEAD_MINUTES * 60000) {
+        const next = noHint ? null : nextValidSlot();
+        return `Délai minimum ${MIN_LEAD_MINUTES} minutes entre votre commande et le créneau choisi.` + (next ? ` Premier créneau disponible : ${formatSlot(next)}.` : '');
+    }
     const oh = CONFIG.openingHours;
     const inMidi = hour >= oh.midi.start && hour < oh.midi.end;
     const inSoir = hour >= oh.soir.start && hour < oh.soir.end;
@@ -5832,6 +5875,14 @@ async function confirmDeliveryTime() {
         const slotError = getScheduledSlotError(dateInput, parseInt(hours), parseInt(minutes) || 0);
         if (slotError) {
             showNotification(slotError, 'error');
+            // propose directement le premier créneau disponible
+            const next = nextValidSlot();
+            const di = document.getElementById('globalScheduledDate');
+            const hi = document.getElementById('globalScheduledHour');
+            if (next && di && hi && slotError.startsWith('Délai minimum')) {
+                di.value = next.date;
+                hi.value = `${String(next.hour).padStart(2, '0')}:${String(next.minute).padStart(2, '0')}`;
+            }
             return;
         }
         
@@ -5855,6 +5906,7 @@ async function confirmDeliveryTime() {
         
         scheduledDeliveryDate = dateInput;
         scheduledDeliveryHour = parseInt(hours);
+        scheduledDeliveryMinute = parseInt(minutes) || 0;
         
         console.log('Saved - scheduledDeliveryDate:', scheduledDeliveryDate, 'scheduledDeliveryHour:', scheduledDeliveryHour);
         
@@ -5920,6 +5972,7 @@ function confirmDeliveryChoice() {
     }
     if (scheduledDeliveryHour !== null) {
         localStorage.setItem('scheduledDeliveryHour', scheduledDeliveryHour.toString());
+        localStorage.setItem('scheduledDeliveryMinute', String(scheduledDeliveryMinute || 0));
     }
     
     // Mettre à jour la disponibilité de la formule midi
@@ -6260,7 +6313,7 @@ function openCompoModal() {
     const box = document.getElementById('compoIngredients');
     box.innerHTML = '';
     COMPO_CONFIG.groups.forEach(g => {
-        const keys = g.keys.filter(k => EXTRAS.toppings[k]);
+        const keys = g.keys.filter(k => EXTRAS.toppings[k]).sort((a, b) => EXTRAS.toppings[a].name.localeCompare(EXTRAS.toppings[b].name, 'fr', { sensitivity: 'base' }));
         if (!keys.length) return;
         const h = document.createElement('div');
         h.style.cssText = 'font-weight:700;margin:10px 0 4px;color:#555;';
@@ -6413,7 +6466,7 @@ function openMoitieModal() {
     const box = document.getElementById('moitieIngredients');
     box.innerHTML = '';
     COMPO_CONFIG.groups.forEach((g, gi) => {
-        const keys = (gi === 0 ? ['olives', ...g.keys] : g.keys).filter(k => EXTRAS.toppings[k]);
+        const keys = (gi === 0 ? ['olives', ...g.keys] : g.keys).filter(k => EXTRAS.toppings[k]).sort((a, b) => EXTRAS.toppings[a].name.localeCompare(EXTRAS.toppings[b].name, 'fr', { sensitivity: 'base' }));
         const h = document.createElement('div');
         h.style.cssText = 'font-weight:700;margin:10px 0 4px;color:#555;';
         h.textContent = g.label;

@@ -63,13 +63,13 @@ function pco_topping_price($key, $size)
     $tiers = [
         [1.00, 1.50, ['champignons', 'olives', 'poivrons', 'oignons', 'tomates', 'pommesDeTerre', 'mais', 'capres', 'grosPiment', 'salade',
                       'fromage', 'mozzarella', 'chevre', 'emmental', 'roquefort', 'raclette', 'reblochon', 'cheddar', 'gorgonzola', 'parmesan',
-                      'thon', 'anchois', 'crevettes', 'saumon']],
-        [1.50, 2.00, ['chorizo', 'jambon', 'merguez', 'poulet', 'pouletFume', 'sarcivePoulet', 'saucisseFumee', 'boeuf', 'lardons', 'saucisses', 'bacon', 'viandeFumee']],
+                      'thon', 'anchois', 'crevettes', 'saumon', 'carottes', 'ananas', 'citron', 'bleu']],
+        [1.50, 2.00, ['chorizo', 'jambon', 'merguez', 'poulet', 'pouletFume', 'sarcivePoulet', 'saucisseFumee', 'boeuf', 'lardons', 'saucisses', 'bacon', 'viandeFumee', 'bouchon']],
     ];
     foreach ($tiers as $t) {
         if (in_array($key, $t[2], true)) return $big ? $t[1] : $t[0];
     }
-    $fixed = ['maxiGarniture' => 3.00, 'miel' => 0.50, 'creme' => 1.00, 'citron' => 0.50];
+    $fixed = ['maxiGarniture' => 3.00, 'miel' => 0.50, 'creme' => 1.00, 'origan' => 0.50, 'pimentMaison' => 0.50, 'sauceAil' => 1.00, 'oignonFrit' => 1.00];
     return $fixed[$key] ?? null;
 }
 
@@ -83,7 +83,8 @@ function pco_topping_name($key)
         'gorgonzola' => 'Gorgonzola', 'parmesan' => 'Parmesan', 'chorizo' => 'Chorizo', 'jambon' => 'Jambon/Épaule', 'merguez' => 'Merguez poulet',
         'poulet' => 'Poulet', 'pouletFume' => 'Poulet fumé', 'sarcivePoulet' => 'Sarcive poulet', 'saucisseFumee' => 'Saucisse fumée poulet',
         'boeuf' => 'Bœuf haché', 'lardons' => 'Lardons', 'thon' => 'Thon', 'anchois' => 'Anchois', 'crevettes' => 'Crevettes', 'saumon' => 'Saumon fumé',
-        'oeuf' => 'Œuf', 'miel' => 'Miel', 'creme' => 'Crème fraîche', 'citron' => 'Citron'];
+        'oeuf' => 'Œuf', 'miel' => 'Miel', 'creme' => 'Crème fraîche', 'citron' => 'Citron', 'carottes' => 'Carottes', 'ananas' => 'Ananas', 'bouchon' => 'Bouchon',
+        'bleu' => 'Bleu', 'origan' => 'Origan', 'pimentMaison' => 'Piment maison', 'sauceAil' => 'Sauce ail', 'oignonFrit' => 'Oignon frit'];
     return $names[$key] ?? $key;
 }
 
@@ -143,6 +144,13 @@ function pco_item_details($item)
         foreach (pco_list($c['added'] ?? $c['addedIngredients'] ?? []) as $a) {
             $pr = pco_topping_price($a, $size);
             $d[] = '+ ' . pco_topping_name($a) . ($pr !== null ? pco_price_tag($pr) : '');
+        }
+        // L'Américaine : sa base (jambon, bœuf…) et ses 2 sauces
+        if (!empty($c['sauces'])) {
+            if (!in_array($b, ['tomate', 'creme', 'mozza', 'creme_mozza'], true)) {
+                $d[] = 'Base ' . $b . (!empty($c['baseSupplement']) ? pco_price_tag((float) $c['baseSupplement']) : '');
+            }
+            $d[] = 'Sauces : ' . implode(' + ', array_map('ucfirst', pco_list($c['sauces'])));
         }
         foreach (pco_list($c['removed'] ?? $c['removedIngredients'] ?? []) as $r) $d[] = 'SANS ' . $r;
         if (!empty($item['notes'])) $d[] = '>> ' . $item['notes'];
@@ -253,7 +261,7 @@ function pco_build_payload($orderData, $restaurant)
 
     $scheduled = null;
     if (!empty($orderData['scheduledDate']) && isset($orderData['scheduledTime']) && $orderData['scheduledTime'] !== '') {
-        $scheduled = sprintf('%sT%02d:00:00+04:00', $orderData['scheduledDate'], (int) $orderData['scheduledTime']);
+        $scheduled = sprintf('%sT%02d:%02d:00+04:00', $orderData['scheduledDate'], (int) $orderData['scheduledTime'], max(0, min(59, (int) ($orderData['scheduledMinute'] ?? 0))));
     }
 
     $payload = [

@@ -580,6 +580,25 @@ function sendOrderEmail($supplierName, $email, $items, $total, $comments = '') {
             gap: 10px;
         }
 
+        .product-quantity .qty-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: #e9e7e2;
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1;
+            cursor: pointer;
+            touch-action: manipulation;
+            user-select: none;
+        }
+        .product-quantity .qty-btn:active { background: #d6d3cc; }
+        /* pas de flèches natives : elles s'emballent quand on reste appuyé */
+        .product-quantity input::-webkit-outer-spin-button,
+        .product-quantity input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .product-quantity input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+
         .product-quantity input {
             width: 70px;
             padding: 8px;
@@ -844,13 +863,18 @@ function sendOrderEmail($supplierName, $email, $items, $total, $comments = '') {
                                             <?php endif; ?>
                                         </div>
                                         <div class="product-quantity">
+                                            <button type="button" class="qty-btn" aria-label="Moins" onclick="stepQty(this, -1, '<?= $name ?>')">−</button>
                                             <input type="number" 
                                                    name="quantities[<?= $index ?>]" 
                                                    min="0" 
                                                    value="0" 
+                                                   inputmode="numeric"
                                                    class="quantity-input"
                                                    data-price="<?= $product['price'] ?>"
+                                                   onfocus="this.select()"
+                                                   oninput="updateTotal('<?= $name ?>')"
                                                    onchange="updateTotal('<?= $name ?>')">
+                                            <button type="button" class="qty-btn" aria-label="Plus" onclick="stepQty(this, 1, '<?= $name ?>')">+</button>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
@@ -948,6 +972,13 @@ function sendOrderEmail($supplierName, $email, $items, $total, $comments = '') {
                         amountElement.textContent = total.toFixed(2).replace('.', ',') + ' €';
                     }
                 }
+            }
+
+            // − / + : un cran par appui (pas de répétition rapide si l'on reste appuyé)
+            function stepQty(btn, delta, supplier) {
+                const input = btn.parentElement.querySelector('.quantity-input');
+                input.value = Math.max(0, (parseInt(input.value) || 0) + delta);
+                updateTotal(supplier);
             }
 
             // Auto-hide notifications
